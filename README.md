@@ -24,6 +24,12 @@ Every number, with how it was measured: [RESULTS.md](RESULTS.md).
 
 ## Meet the virtual robot
 
+<p align="center">
+  <img src="docs/img/gr1_milk_to_microwave.gif" width="384"
+       alt="Simulated Fourier GR1 humanoid picking up a milk carton, placing it in a microwave and closing the door">
+  <br><em>GR00T N1.5 (RoboCasa post-trained) driving the GR1 on an RTX 5090: one successful episode, ~7x speed.</em>
+</p>
+
 A **Fourier GR1** humanoid (two arms, two hands, a waist) in **RoboCasa** (a MuJoCo simulator), told to *pick up the
 milk, put it in the microwave and close the door*. A few numbers decide everything:
 
