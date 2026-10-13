@@ -1,0 +1,94 @@
+{
+ "record": "CLOSED: the Thor DiT anomaly is a roofline effect -- predicted to 1.1% from independently measured hardware roofs -- plus one mis-selected kernel worth 14%",
+ "date": "2026-08-27",
+ "tag": "MEASURED",
+ "closes": "the then-undiagnosed Thor DiT anomaly carried in groot_compiled_fleet_2026-08-27.json",
+ "mechanism_1_dominant_dit_is_dram_weight_streaming_bound": {
+  "measured_hardware_roofs": {
+   "rtx_5090_sm120": {
+    "dram_gbs": 1477.6,
+    "pct_of_nominal": 82.5,
+    "fp16_tflops": 318.7,
+    "ridge_flop_per_byte": 216
+   },
+   "thor_sm110": {
+    "dram_gbs": 263.5,
+    "pct_of_nominal": 96.5,
+    "fp16_tflops": 83.3,
+    "ridge_flop_per_byte": 316
+   },
+   "orin_sm87": {
+    "dram_gbs": 173.0,
+    "pct_of_nominal": 84.5,
+    "fp16_tflops": 30.3,
+    "ridge_flop_per_byte": 175
+   },
+   "roof_validation": "Orin's LLM GEMMs hit 30.56 TFLOP/s against the 30.32 measured roof — 100.8%"
+  },
+  "arithmetic_intensity": {
+   "DiT": 64.4,
+   "ViT": 256,
+   "LLM": 296,
+   "dit_detail": "1097 MB of weights for only 70.7 GFLOP of work. It sits 4.9x BELOW Thor's ridge point of 316."
+  },
+  "key_measurement": "Thor's DiT GEMMs run at 261.5 GB/s = 99.3% OF THOR'S MEASURED DRAM ROOF, and 12.9% of its compute roof. It is pinned to memory.",
+  "why_thor_specifically": "Thor has 2.75x Orin's COMPUTE but only 1.52x its BANDWIDTH. So a compute-bound stage tracks 2.75 and a memory-bound stage tracks 1.52. Measured Thor/Orin: ViT 2.57x (compute), LLM 2.15x (AI 296 ~ Thor's ridge 316, in between), DiT 1.41x (bandwidth). THAT SPLIT IS THE ANOMALY.",
+  "prediction": {
+   "from": "independently measured roofs only, no fitting",
+   "calc": "Orin's DiT/ViT 0.654 x (compute ratio 2.749 / bandwidth ratio 1.523)",
+   "predicted": 1.18,
+   "measured": 1.193,
+   "error_pct": 1.1,
+   "significance": "this PREDICTS the anomaly rather than fitting it. The mechanism is closed."
+  },
+  "confirmed_by_controlled_probe": "the DiT's own GEMM shape (302 MB weights) with only M varying, M=1 -> 49 — i.e. 49x the arithmetic for the SAME bytes — costs Thor only +8.1%, the 5090 +12.3%, Orin +1.1%. The math is nearly free; the bytes are everything. This also rules occupancy out BY EXPERIMENT rather than by inference."
+ },
+ "mechanism_2_secondary_14pct_one_mis_selected_kernel_on_thor": {
+  "layer": "the vl_embs batched K/V projection [1,296,2048] x [16,2048,1536] -> [16,296,1536]",
+  "per_board": {
+   "rtx_5090": {
+    "ms": 0.1,
+    "pct_of_dit": 7.6,
+    "pct_of_compute_roof": 93,
+    "roofline_penalty": 1.07,
+    "tactic": "sm80_xmma_gemm...128x256x32"
+   },
+   "orin": {
+    "ms": 1.023,
+    "pct_of_dit": 12.7,
+    "pct_of_compute_roof": 96,
+    "roofline_penalty": 1.04,
+    "tactic": "sm80_xmma_gemm...160x128x32"
+   },
+   "thor": {
+    "ms": 1.465,
+    "pct_of_dit": 25.7,
+    "pct_of_compute_roof": 24,
+    "roofline_penalty": 3.84,
+    "tactic": "cutlass3x_sm100_tensorop_h128x64x16gemm...1sm...stream_k"
+   }
+  },
+  "isolated_repro": "standalone engine 1.150 ms against a 0.382 ms roofline ceiling; excess 0.794 ms = 13.9% of Thor's DiT",
+  "verdict": "a genuine kernel-SELECTION defect, not a hardware limit — Thor picks a Blackwell-datacenter CUTLASS stream-K kernel where the two fast boards pick sm80 xmma. Fixing it would give Thor DiT/ViT 1.027, still 1.57x Orin's 0.654. Real but secondary; the roofline dominates."
+ },
+ "ruled_out": {
+  "launch_small_kernel": "NO. GR00T on Thor: DiT 129 launches @ 47.0 us, ViT 192 @ 25.0 us — the DiT launches FEWER, LONGER kernels. Enqueue 0.354 ms (6.2% of compute) vs the ViT's 0.607 ms (12.7%).",
+  "compute_bound": "NO. 13.4 TFLOP/s = 16.1% of the 83.3 roof.",
+  "sm80_fallback": "NO. The 5090 and Orin use sm80_xmma kernels too, and those are the FAST ones.",
+  "fp32_accumulate": "REAL BUT NOT BINDING. Thor's DiT spends 59.2% of its time in fp32-accum GEMMs vs 0% for its ViT — a true Thor+DiT-only asymmetry — but at 99.3% of the bandwidth roof and 12.9% of compute, accumulate rate cannot be the constraint.",
+  "memory_clock_throttling": "NO. EMC pinned at 4266 MHz throughout both DiT and ViT runs, 44 C, pmode 0000."
+ },
+ "correction_history": {
+  "superseded_hypothesis": "'the DiT launches 3.2x MORE kernels than the ViT, each 3.1x shorter -- a launch-overhead signature', from ncu CSVs on Thor.",
+  "why_it_was_wrong": "those CSVs profiled another model's engines (202 MB DiT), not GR00T's (1102 MB DiT). Its kernel counts had been joined to GR00T's milliseconds, so the '11.4 us/kernel' figure was not a real quantity. Checking the profiled file paths exposed the mismatch.",
+  "corrected_finding": "for GR00T the DiT launches FEWER and LONGER kernels than the ViT (129 @ 47 us vs 192 @ 25 us)."
+ },
+ "published_thor_dit_figure_is_at_the_favourable_end_of_build_variance": {
+  "what": "today's re-measure put Thor's DiT at 5.39-5.84 ms across FIVE engine variants, against the 4.944 ms we published. ViT 4.79-4.90 vs 4.816; Orin (8.048/12.300) and the 5090 (1.314/1.820) reproduce our published figures exactly.",
+  "interpretation": "within the known ~8-10% TensorRT build-to-build variance -- but 4.944 is almost exactly the 4.915 ms the DiT would take with the mis-selected kernel (mechanism 2) fixed, so that build plausibly drew a better tactic for the mis-selected layer.",
+  "consequence": "our published Thor DiT is at the FAVOURABLE end of its build distribution. The anomaly is unaffected either way (DiT/ViT 1.03-1.19 on Thor versus 0.65-0.72 elsewhere), but the single figure should carry a range.",
+  "action": "quote Thor's DiT as a range or as a median of builds, not as 4.944 alone."
+ },
+ "still_open": "why the cutlass3x_sm100 stream-K kernel stalls at 24% of roof is not explained at the microarchitectural level. ncu hardware counters need root on both Thor and the 5090 (ERR_NVGPUCTRPERM), so there are no direct occupancy or tensor-op-utilisation numbers. Occupancy was ruled out by controlled experiment instead, which is sound but indirect; one ncu run as root on Thor would close it.",
+ "input_provenance": "synthetic by construction for the roofline probes and the GEMM-shape sweep, where the shapes and byte counts ARE the independent variable and input content is irrelevant. The GR00T stage timings being explained use a recorded (simulated) GR1 observation from NVIDIA's demo_data/robot_sim.PickNPlace, not synthetic data."
+}

@@ -1,0 +1,118 @@
+{
+ "record": "GR00T N1.5 compiled (TensorRT fp16) on all three NVIDIA boards: per-stage engine times, each gated against an fp32 reference. On Orin, where our TensorRT major version matches NVIDIA's, our stage times agree with their published figures to 0.5%.",
+ "date": "2026-08-27",
+ "tag": "MEASURED",
+ "external_validation_vs_nvidia_published": {
+  "source": "NVIDIA, Isaac-GR00T deployment_scripts/README.md — 'Model latency measured by trtexec with batch_size=1', our exact method",
+  "comparison_thor_trt_fp16": {
+   "vit": {
+    "nvidia": 5.21,
+    "ours": 4.816,
+    "delta_pct": -7.6
+   },
+   "llm": {
+    "nvidia": 8.53,
+    "ours": 7.356,
+    "delta_pct": -13.8
+   },
+   "dit_per_step": {
+    "nvidia": 5.46,
+    "ours": 4.944,
+    "delta_pct": -9.5
+   },
+   "total_our_accounting": {
+    "nvidia": 35.58,
+    "ours": 31.948,
+    "delta_pct": -10.2
+   }
+  },
+  "reading": "Corrected 2026-08-27 (an earlier version of this field read 'every stage within 14% and 10.2% FASTER overall ... independent confirmation the harness is honest'). The Thor comparison is VERSION-MISMATCHED (our TensorRT 10.16.2 vs NVIDIA's ~10.3-era figures), so the 10.2% is toolchain drift, not superiority. The valid comparison is Orin, where the major version matches: NVIDIA's ViT 11.96 / LLM 17.25 / DiT 7.77 = 60.29 ms on our accounting against our measured 60.005 -- agreement to 0.5%, with per-stage deltas mixed in sign (+2.0% / -11.1% / +4.5%). Mixed signs on identically exported ONNX is what genuine agreement looks like, and it also rules out the objection that we measure less work. jetson_clocks: NVIDIA's ON, ours OFF.",
+  "and_their_fp8_fp4_target": {
+   "vit": 4.1,
+   "llm": 5.81,
+   "dit_per_step": 3.41,
+   "total_our_accounting": 23.55,
+   "implied_vendor_speedup_over_fp16": 1.51
+  },
+  "thor_row_is_not_a_validation": "version-mismatched; retained for the record, not to be cited as agreement or as a win."
+ },
+ "cross_board_compiled_stage_sum": {
+  "accounting": "ViT + LLM + 4 x DiT_step on every board. EXCLUDES vlln_vl_self_attention, action_encoder, state_encoder, action_decoder, and all CPU-side transforms/prep/post.",
+  "rows": [
+   {
+    "board": "RTX 5090",
+    "trt": "10.16.1.11 (Python API — no trtexec on this host)",
+    "vit": 1.821,
+    "llm": 2.045,
+    "dit_step": 1.306,
+    "stage_sum": 9.091,
+    "eager_speedup": 3.0
+   },
+   {
+    "board": "Thor AGX",
+    "trt": "10.16.2",
+    "vit": 4.816,
+    "llm": 7.356,
+    "dit_step": 4.944,
+    "stage_sum": 31.948,
+    "eager_speedup": 1.87
+   },
+   {
+    "board": "Orin AGX",
+    "trt": "10.3.0.30",
+    "vit": 12.195,
+    "llm": 15.333,
+    "dit_step": 8.119,
+    "stage_sum": 60.005,
+    "eager_speedup": 3.72
+   }
+  ],
+  "headline": "compiling cuts the ViT + LLM + 4 x DiT-step stage sum 3.0x (RTX 5090), 1.87x (Thor) and 3.72x (Orin) relative to PyTorch eager (eager_speedup)."
+ },
+ "compile_headroom_varies_by_board": {
+  "groot_orin": 3.72,
+  "groot_5090": 3.0,
+  "groot_thor": 1.87,
+  "mechanism": "eager-to-compiled speed-up of the stage sum. At 2.72B parameters GR00T's eager kernels are already large, which limits what TensorRT's fusion can recover; and the headroom varies 2x across boards for the SAME model.",
+  "caveat": "predicting one model's compiled time by applying another model's (or another board's) eager-to-compiled speed-up is not sound: such predictions missed both Orin (predicted 18-51 ms, measured 60.0) and Thor (predicted 18-25 ms, measured 31.95)."
+ },
+ "thor_dit_anomaly": {
+  "what": "Thor's DiT costs 4.944 ms — essentially the same as its own ViT (4.816) — whereas DiT is far cheaper than ViT on Orin (8.12 vs 12.20) and the 5090 (1.31 vs 1.82).",
+  "magnitude": "Thor's DiT is only 1.64x faster than Orin's, while its ViT is 2.53x faster and its LLM 2.05x.",
+  "not_a_gate_failure": "the engine is correct — cosine 0.99999 against a fresh reference, three independent builds agreeing to 0.48%.",
+  "status": "diagnosed later the same day: see thor_dit_anomaly_CLOSED_2026-08-27.json (DRAM-bandwidth roofline effect plus one mis-selected kernel). At the time of this record the kernel-level cause had not been diagnosed."
+ },
+ "fp16_build_trap_reproduced_on_all_three_gpus": {
+  "orin": {
+   "cos": 0.852967,
+   "rel_mae": 0.6513
+  },
+  "thor": {
+   "cos": 0.853158,
+   "rel_mae": 0.6505
+  },
+  "rtx_5090": {
+   "cos": 0.85423,
+   "rel_mae": 0.6481
+  },
+  "symptom": "plain --fp16 on the Qwen3 LLM prints '&&&& PASSED' with NO zeros, NO NaNs, a plausible value range and a plausible mean — while being structurally wrong. An all-zeros check passes it.",
+  "detector": "the FLOAT-tensor count in the engine's layer info. A correct build keeps 98 Float tensors (the RMSNorm fp32 regions); a broken one has ZERO. One number, unambiguous, and it flagged every broken build.",
+  "speed_is_not_the_symptom": "an earlier note read 'the broken build is FASTER, so the error flatters'. That does not generalise: it was 1.9% faster on Orin but 3.9% SLOWER on Thor and 0.2% slower on the 5090. Correctness is free on two of three boards. The trap is dangerous because it is SILENT, not because it is fast."
+ },
+ "stored_dit_reference_offset": {
+  "finding": "the stored DiT reference gdit_ref.npy (and ref_dit.npy, a byte-copy) is NOT what onnxruntime-CPU produces from DiT_fp16.onnx. A fresh ORT run is bit-deterministic (run-to-run cosine exactly 1.0) yet differs from the stored reference by cosine 0.99754.",
+  "consequence": "the DiT cosines previously reported for Orin (0.997764) are dominated by that REFERENCE OFFSET, not by accelerator error. Against a fresh reference the DiT engines score 0.99999 on both new boards.",
+  "scope": "ViT and LLM are UNAFFECTED — stored and fresh references agree to 0.99999. NO TIMING IS AFFECTED. Fresh references saved at $GVRB_WORK/trtwork/freshref_{vit,llm,dit}.npy; both cosines are reported in the underlying records.",
+  "not_yet_done": "the origin of the offset is not identified — whether the stored reference was produced by a different opset, a different ORT version, or a different graph revision."
+ },
+ "method_and_rigour": {
+  "thor_and_orin": "median of THREE independent builds (Thor LLM spread 6.7%, consistent with the known TensorRT build-to-build variance floor — a single build would have misled)",
+  "rtx_5090": "median of SIX builds; timed via cudaEvents bracketing execute_async_v3 only, matching trtexec's GPU Compute Time. Four independent methods agree: per-stage 9.091, sum-of-parts 9.0909, sequential 3-engine chain 9.0659, 20 s sustained 9.0888 — handoff cost -0.28%.",
+  "4x_dit_accounting_verified": "measured 4-step DiT 5.1646 ms vs 4 x single-step 5.2236 (-1.13%), so the multiplication is fair",
+  "gating": "every engine's output dumped and compared against an fp32 reference in the SAME invocation, on cosine as well as all-zero",
+  "config": "jetson_clocks NOT applied on either Jetson; NVIDIA's published figures DO use it, so our comparison against them is conservative",
+  "5090_build_note": "TensorRT's Python API refuses dynamic dims without an explicit optimization profile, where trtexec infers one from --minShapes. Fixed with min=opt=max matching Orin's shapes."
+ },
+ "input_provenance": "the exact stage-input tensors of the GR00T runs, captured from a recorded (simulated) GR1 observation in NVIDIA's demo_data/robot_sim.PickNPlace episode (not synthetic data), md5-verified identical across host and boards. Inputs were re-cast to each engine's binding dtypes (fp16 for tensors, int64 for position_ids/attention_mask/timesteps_tensor) -- feeding the raw fp32/int32 files would have made trtexec reinterpret the bytes and produce confident garbage.",
+ "title_corrected_2026-08-27": "This record's title read '...and we beat NVIDIA's own published Thor figures by 10.2%' until 2026-08-27. That claim is withdrawn: our Thor runs use TensorRT 10.16.2 against NVIDIA's ~10.3-era figures, so the 10.2% is toolchain version drift, not harness superiority. Where the versions match (Orin, 10.3) the two agree to 0.5%, which is the stronger validation."
+}

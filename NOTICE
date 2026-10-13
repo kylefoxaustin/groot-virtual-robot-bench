@@ -1,0 +1,20 @@
+groot-virtual-robot-bench
+Copyright 2026 Kyle Fox. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository contains benchmark harnesses and measured results only. It does not redistribute any third-party
+code, model weights, ONNX graphs, TensorRT engines or simulation assets; setup/ downloads them from their sources.
+
+Third-party software and models used (each under its own license -- read them before use):
+  * NVIDIA Isaac-GR00T (N1.5 tree, commit 4af2b622), Apache License 2.0 -- https://github.com/NVIDIA/Isaac-GR00T
+      setup/patches/isaac-gr00t-n15-export_onnx.patch is a modification of deployment_scripts/export_onnx.py
+      from that repository and is distributed under the Apache License 2.0.
+  * NVIDIA GR00T N1.5-3B model weights -- NVIDIA One-Way Noncommercial License (see the model card)
+      https://huggingface.co/nvidia/GR00T-N1.5-3B
+  * gr00t-n1.5-robocasa-tabletop-posttrain weights (post-trained GR00T N1.5) -- derived from GR00T N1.5, so the
+      NVIDIA One-Way Noncommercial License applies; https://huggingface.co/youliangtan/gr00t-n1.5-robocasa-tabletop-posttrain
+  * robosuite, MIT License -- https://github.com/ARISE-Initiative/robosuite
+  * RoboCasa GR-1 Tabletop Tasks, MIT License -- https://github.com/robocasa/robocasa-gr1-tabletop-tasks
+      Its simulation assets (downloaded by setup/setup_x86.sh) carry their own licenses; see that repository.
+  * Qualcomm QAIRT/QNN SDK and Hexagon SDK -- NOT included and not redistributed; iq9/ code only #includes their headers
+      and expects you to obtain them from Qualcomm under Qualcomm's license.
+  * NVIDIA TensorRT, PyTorch, Transformers and the other Python packages listed in setup/ -- their respective licenses.

@@ -1,0 +1,15 @@
+{
+ "image_token_index": 151669,
+ "use_pixel_shuffle": false,
+ "downsample_ratio": -1.0,
+ "select_layer": 12,
+ "mlp1_type": "Sequential",
+ "mlp1_children": [
+  "0:Linear"
+ ],
+ "num_llm_layers": 12,
+ "compute_dtype": "torch.bfloat16",
+ "num_video_views": 1,
+ "N_tokens": 296,
+ "n_image_tokens": 256
+}

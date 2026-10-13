@@ -1,0 +1,288 @@
+{
+ "_schema": "fleet-bench-result/1",
+ "title": "GR00T N1.5 MEASURED end-to-end on Jetson AGX Thor (JetPack 7.2.1, MAXN, nvcr pytorch:25.08 container): NVIDIA's FULL-PIPELINE TensorRT path vs our hybrid, same session",
+ "date": "2026-10-12",
+ "provenance": "MEASURED",
+ "why": "How much of the engine-only rate survives the whole policy call, on the hybrid path (3 big engines in TRT, rest eager) vs NVIDIA's own N1.5 full-pipeline path (all 7 modules in TRT)?",
+ "method": "One process, one loaded policy, alternating blocks eager/hybrid/full/hybrid/full/eager (20 timed after 5 warmup each) so session drift cancels. HYBRID = ViT/LLM/DiT TRT engines patched at the module seams . FULL = NVIDIA deployment_scripts/trt_model_forward eagle_tensorrt_forward + action_head_tensorrt_forward (ViT, LLM, vlln+vl_self_attention, state_encoder, action_encoder, DiT, action_decoder all TRT; pixel-shuffle/mlp1/embedding merge + Euler loop in torch) — module deletion skipped so the A/B can alternate. Both modes share the SAME ViT/LLM/DiT engine objects. fp16 strongly-typed engines, fixed batch-1 shapes (LLM seq 296), built from the fp16 ONNX (speed/export_onnx.sh; md5-identical across boards). Two INDEPENDENT engine builds (A, B), each with its own A/B run. Noise: torch.manual_seed(1234) per call; FULL gets the identical eager noise draw as init_actions (bf16->fp16 exact).",
+ "host": "Jetson AGX Thor (JetPack 7.2.1, MAXN, nvcr pytorch:25.08 container)",
+ "trt": "10.13.2.6",
+ "torch": "2.8.0a0+34c6371d24.nv25.08",
+ "gpu": "NVIDIA Thor",
+ "clocks": "PINNED: jetson_clocks MAXN, EMC 4266 MHz min==max (read back); GPU clock asserted by jetson_clocks, not read back on JP7",
+ "input_provenance": "groot_step0.npz (PickNPlace ep0 step0, content-identical across boards) — a recorded (simulated) GR1 PickNPlace observation (camera image + proprio state + instruction), not synthetic data.",
+ "results": {
+  "full_trt_e2e_ms": {
+   "median": 48.27,
+   "min": 47.54,
+   "max": 51.12,
+   "block_medians": [
+    47.98,
+    48.33,
+    48.23,
+    48.3
+   ],
+   "n_per_block": 20
+  },
+  "full_trt_hz": 20.7,
+  "hybrid_e2e_ms_same_session": {
+   "median": 52.3,
+   "block_medians": [
+    52.16,
+    52.03,
+    52.45,
+    52.44
+   ]
+  },
+  "hybrid_hz_same_session": 19.1,
+  "eager_bf16_e2e_ms_same_session": {
+   "median": 64.02,
+   "block_medians": [
+    64.22,
+    63.63,
+    64.04,
+    64.0
+   ]
+  },
+  "full_vs_hybrid_speedup": 1.084,
+  "engines_in_pipeline_ms_per_inference": {
+   "hybrid": {
+    "median_sum": 33.27,
+    "detail_build_A_first_block": {
+     "vit_fp16": 5.466977320611477,
+     "llm_fp16": 7.551205083727837,
+     "DiT_fp16": 20.626787841320038
+    }
+   },
+   "full": {
+    "median_sum": 37.24,
+    "detail_build_A_first_block": {
+     "vit_fp16": 5.129234716296196,
+     "llm_fp16": 7.450765557587147,
+     "vlln_vl_self_attention": 2.3156141117215157,
+     "state_encoder": 0.16192853450775146,
+     "action_encoder": 1.246999129652977,
+     "DiT_fp16": 20.348838679492474,
+     "action_decoder": 0.6099480763077736
+    }
+   }
+  },
+  "host_and_glue_ms_MEASURED": {
+   "full": 11.03,
+   "hybrid": 19.03,
+   "note": "e2e minus synced in-pipeline engine time, same runs. FULL host+glue = pixel shuffle, mlp1, embedding merge, transforms, Euler loop, 7-engine handoffs + per-engine stream syncs (NVIDIA's Engine.forward syncs after every call)."
+  },
+  "engine_sum_standalone_ms_DERIVED": {
+   "vit_llm_4xdit": 31.99,
+   "all_7_modules": 34.84,
+   "per_engine_standalone_ms_build_A": {
+    "vit_fp16": 4.914,
+    "llm_fp16": 7.315,
+    "DiT_fp16": 4.961,
+    "vlln_vl_self_attention": 2.174,
+    "state_encoder": 0.038,
+    "action_encoder": 0.128,
+    "action_decoder": 0.033
+   },
+   "note": "each engine timed alone (CUDA events, 200 iters after 50 warm, same session); sum DERIVED. vit_llm_4xdit is the engine-sum basis of rate_lost_vs_engine_sum_pct."
+  },
+  "rate_lost_vs_engine_sum_pct": {
+   "full": 33.7,
+   "hybrid": 38.8,
+   "basis": "1 - e2e_Hz / (1000 / standalone ViT+LLM+4xDiT ms), same session"
+  }
+ },
+ "gate": {
+  "control_eager_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "hybrid_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.0059909018015642,
+    "abs_mae": 0.0020470661776406424,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.006276174919993525,
+    "abs_mae": 0.0027953492743628366,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.34513311990118506,
+    "abs_mae": 0.002699433515469233,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.002114594388847059,
+    "abs_mae": 0.004174688210090001,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "full_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.005522246809773801,
+    "abs_mae": 0.0018869287201336452,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.007030833970169733,
+    "abs_mae": 0.0031314673168318613,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.35829547466161366,
+    "abs_mae": 0.002802381912867228,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0020880133843169833,
+    "abs_mae": 0.0041222112874190016,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "full_vs_hybrid": {
+   "action.left_arm": {
+    "rel_mae": 0.0044642861724621535,
+    "abs_mae": 0.0015278378767626627,
+    "ref_mean_abs": 0.34223564927067074
+   },
+   "action.right_arm": {
+    "rel_mae": 0.004958410070438533,
+    "abs_mae": 0.002207810325281961,
+    "ref_mean_abs": 0.445265779537814
+   },
+   "action.left_hand": {
+    "rel_mae": 0.19757210059365332,
+    "abs_mae": 0.0016634855419397354,
+    "ref_mean_abs": 0.00841963787873586
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0016461718635084153,
+    "abs_mae": 0.003251935044924418,
+    "ref_mean_abs": 1.9754529384275277
+   }
+  }
+ },
+ "gate_build_B": {
+  "control_eager_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0,
+    "abs_mae": 0.0,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "hybrid_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.005576042937946508,
+    "abs_mae": 0.0019053106329270772,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.0069793445867006145,
+    "abs_mae": 0.0031085344297545297,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.31112850462281966,
+    "abs_mae": 0.0024334688981374106,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0021488811171466093,
+    "abs_mae": 0.0042423779765764875,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "full_vs_eager": {
+   "action.left_arm": {
+    "rel_mae": 0.005570752179347104,
+    "abs_mae": 0.0019035028027636664,
+    "ref_mean_abs": 0.3416958323546818
+   },
+   "action.right_arm": {
+    "rel_mae": 0.006380364091309704,
+    "abs_mae": 0.00284175415124212,
+    "ref_mean_abs": 0.445390593792711
+   },
+   "action.left_hand": {
+    "rel_mae": 0.35737829326783777,
+    "abs_mae": 0.0027952082455158234,
+    "ref_mean_abs": 0.007821427037318548
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0022123019095452745,
+    "abs_mae": 0.0043675849835077924,
+    "ref_mean_abs": 1.9742264673113823
+   }
+  },
+  "full_vs_hybrid": {
+   "action.left_arm": {
+    "rel_mae": 0.004710528253636337,
+    "abs_mae": 0.0016111050333295549,
+    "ref_mean_abs": 0.3420221568750484
+   },
+   "action.right_arm": {
+    "rel_mae": 0.004112944713535706,
+    "abs_mae": 0.001829549138035093,
+    "ref_mean_abs": 0.44482706806489397
+   },
+   "action.left_hand": {
+    "rel_mae": 0.20069551320308687,
+    "abs_mae": 0.001647340754667918,
+    "ref_mean_abs": 0.008208159357309341
+   },
+   "action.right_hand": {
+    "rel_mae": 0.0017317919999704338,
+    "abs_mae": 0.0034214258193969727,
+    "ref_mean_abs": 1.975656325618426
+   }
+  }
+ },
+ "gate_basis": "rel_mae per action key vs eager bf16, same seed; gate: rel_mae < 0.04 on keys with meaningful magnitude. action.left_hand is idle in this episode (|ref| mean ~0.008) -> rel_mae is a DENOMINATOR ARTIFACT; its abs_mae equals the other keys' fp16 floor (small denominator: compare abs_mae).",
+ "build_variance": {
+  "builds": 2,
+  "full_e2e_median_per_build": [
+   48.15,
+   48.27
+  ],
+  "hybrid_e2e_median_per_build": [
+   52.1,
+   52.44
+  ]
+ },
+ "scope": "Policy call only (policy.get_action on a recorded observation); excludes camera capture and robot I/O. NVIDIA's N1.5 full path as shipped (per-engine stream sync, torch Euler loop, no CUDA graph); a CUDA-graphed/fused export could be faster still — not measured."
+}

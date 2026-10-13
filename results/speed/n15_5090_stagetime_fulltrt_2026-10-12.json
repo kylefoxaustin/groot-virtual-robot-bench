@@ -1,0 +1,218 @@
+{
+ "tag": "MEASURED",
+ "study": "GR00T N1.5 stage timing on NVIDIA's FULL-PIPELINE TensorRT path \u2014 compiled counterpart of speed/stage_time_eager.py",
+ "device": "NVIDIA GeForce RTX 5090",
+ "trt": "11.2.1.2",
+ "stages_ms": {
+  "4": {
+   "transform": 2.087,
+   "backbone": 4.165,
+   "head": 7.075,
+   "other": 0.614,
+   "vit": 1.931,
+   "llm": 1.98,
+   "backbone_torch_glue": 0.253,
+   "vlln_vl_self_attention": 0.659,
+   "state_encoder": 0.052,
+   "action_encoder_total": 0.291,
+   "dit_total": 5.377,
+   "action_decoder_total": 0.203,
+   "head_torch_glue": 0.494,
+   "engines_sum": 10.494,
+   "host_and_glue": 3.446,
+   "e2e_instrumented_median": 13.832
+  },
+  "16": {
+   "transform": 2.313,
+   "backbone": 4.236,
+   "head": 26.383,
+   "other": 0.683,
+   "vit": 1.948,
+   "llm": 1.991,
+   "backbone_torch_glue": 0.297,
+   "vlln_vl_self_attention": 0.674,
+   "state_encoder": 0.065,
+   "action_encoder_total": 1.227,
+   "dit_total": 21.563,
+   "action_decoder_total": 0.962,
+   "head_torch_glue": 1.892,
+   "engines_sum": 28.429,
+   "host_and_glue": 5.185,
+   "e2e_instrumented_median": 33.45
+  }
+ },
+ "stages_note": "transform = policy.apply_transforms (on already-decoded frames); backbone = eagle_tensorrt_forward (ViT + LLM engines + pixel-shuffle/mlp1/embedding-merge torch glue); head = action_head_tensorrt_forward (vlln + state engines, then per step: action_encoder + DiT + action_decoder engines + torch glue); other = everything else in get_action (obs copy, prepare_input/collate, unapply/denormalize). *_total = summed over the denoise steps. Mean of two engine builds.",
+ "per_component_vs_steps_fit": {
+  "transform": {
+   "intercept_ms": 2.0,
+   "per_step_ms": 0.0082,
+   "r2_per_build": [
+    0.682,
+    0.251
+   ]
+  },
+  "backbone": {
+   "intercept_ms": 4.161,
+   "per_step_ms": 0.0021,
+   "r2_per_build": [
+    0.803,
+    0.218
+   ]
+  },
+  "head": {
+   "intercept_ms": 0.888,
+   "per_step_ms": 1.5644,
+   "r2_per_build": [
+    1.0,
+    0.999
+   ]
+  },
+  "other": {
+   "intercept_ms": 0.604,
+   "per_step_ms": 0.0021,
+   "r2_per_build": [
+    0.618,
+    0.306
+   ]
+  },
+  "vit": {
+   "intercept_ms": 1.932,
+   "per_step_ms": 0.0006,
+   "r2_per_build": [
+    0.567,
+    0.386
+   ]
+  },
+  "llm": {
+   "intercept_ms": 1.982,
+   "per_step_ms": 0.0001,
+   "r2_per_build": [
+    0.05,
+    0.094
+   ]
+  },
+  "backbone_torch_glue": {
+   "intercept_ms": 0.247,
+   "per_step_ms": 0.0014,
+   "r2_per_build": [
+    0.662,
+    0.192
+   ]
+  },
+  "vlln_vl_self_attention": {
+   "intercept_ms": 0.667,
+   "per_step_ms": 0.0001,
+   "r2_per_build": [
+    0.0,
+    0.025
+   ]
+  },
+  "state_encoder": {
+   "intercept_ms": 0.052,
+   "per_step_ms": 0.0002,
+   "r2_per_build": [
+    0.089,
+    0.125
+   ]
+  },
+  "action_encoder_total": {
+   "intercept_ms": 0.018,
+   "per_step_ms": 0.0714,
+   "r2_per_build": [
+    1.0,
+    0.994
+   ]
+  },
+  "dit_total": {
+   "intercept_ms": 0.026,
+   "per_step_ms": 1.3408,
+   "r2_per_build": [
+    1.0,
+    1.0
+   ]
+  },
+  "action_decoder_total": {
+   "intercept_ms": 0.006,
+   "per_step_ms": 0.0548,
+   "r2_per_build": [
+    0.998,
+    0.99
+   ]
+  },
+  "head_torch_glue": {
+   "intercept_ms": 0.118,
+   "per_step_ms": 0.0971,
+   "r2_per_build": [
+    0.999,
+    0.965
+   ]
+  },
+  "engines_sum": {
+   "intercept_ms": 4.684,
+   "per_step_ms": 1.468,
+   "r2_per_build": [
+    1.0,
+    1.0
+   ]
+  },
+  "host_and_glue": {
+   "intercept_ms": 2.969,
+   "per_step_ms": 0.1088,
+   "r2_per_build": [
+    0.994,
+    0.894
+   ]
+  },
+  "e2e_instrumented_median": {
+   "intercept_ms": 7.539,
+   "per_step_ms": 1.5749,
+   "r2_per_build": [
+    1.0,
+    0.999
+   ]
+  }
+ },
+ "action_head_per_step_ms": 1.5644,
+ "action_head_fixed_ms": 0.888,
+ "fixed_vs_scaling": {
+  "fixed_ms_at_any_step_count": 7.653,
+  "per_step_ms": 1.5768,
+  "fixed": {
+   "transform": 2.0,
+   "vit": 1.932,
+   "llm": 1.982,
+   "backbone_torch_glue": 0.247,
+   "vlln_vl_self_attention": 0.667,
+   "state_encoder": 0.052,
+   "other": 0.604
+  },
+  "scales_per_step": {
+   "dit_total": 1.3408,
+   "action_encoder_total": 0.0714,
+   "action_decoder_total": 0.0548,
+   "head_torch_glue": 0.0971
+  },
+  "host_and_glue": {
+   "intercept_ms": 2.969,
+   "per_step_ms": 0.1088,
+   "note": "host + glue = e2e - engine time; on this path it grows with steps (Euler loop + 3 engine handoffs per step)"
+  }
+ },
+ "instrumentation_overhead": {
+  "e2e_at_4_instrumented_ms": 13.832,
+  "e2e_at_4_uninstrumented_ms": 13.471,
+  "note": "per-stage cuda-synced timers add ~0.3-0.5 ms; the stage split is read from the instrumented pass, the latency law from the uninstrumented one"
+ },
+ "cross_validation_result": "Stage fit (instrumented): fixed 7.54 ms + 1.575 ms/step vs the uninstrumented sweep law 7.38 + 1.523 ms/step (the instrumented pass is expected to sit slightly higher: per-stage syncs).",
+ "utc": "2026-10-12T17:36:07Z",
+ "tenancy": {
+  "note": "one idle co-resident GPU process (8.7 GB allocated, 0% SM) throughout; the desktop X server briefly at 8% SM in one build-B block; host load average 4.6-8.3 from other work. Per-block logs are in the raw files."
+ },
+ "noise_floor": {
+  "reps": 25,
+  "warmup": 5,
+  "estimator": "mean of 25 synced reps per grid point per build (median e2e also kept); two builds averaged"
+ },
+ "metric_span": "Per-stage cuda-synced wall time within policy.get_action() on the full-TensorRT path, every grid step count; each engine's in-pipeline time summed per inference.",
+ "input_provenance": "a recorded (simulated) GR1 observation, not synthetic data: NVIDIA demo_data/robot_sim.PickNPlace ds[0] (same step as the sweep latency and as the eager stage timing)."
+}

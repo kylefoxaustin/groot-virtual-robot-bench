@@ -1,0 +1,2 @@
+{ "backend_extensions": { "shared_library_path": "libQnnHtpNetRunExtensions.so",
+    "config_file_path": "$GVRB_WORK/qnn/w16/cfg_w16.json" } }

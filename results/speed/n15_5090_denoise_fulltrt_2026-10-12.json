@@ -1,0 +1,662 @@
+{
+ "tag": "MEASURED",
+ "study": "GR00T N1.5 denoise-steps sweep on NVIDIA's FULL-PIPELINE TensorRT path, replicating the eager sweep protocol",
+ "model": "nvidia/GR00T-N1.5-3B",
+ "device": "NVIDIA GeForce RTX 5090",
+ "path": "NVIDIA Isaac-GR00T-n15 deployment_scripts/trt_model_forward: eagle_tensorrt_forward + action_head_tensorrt_forward \u2014 ViT, LLM, vlln_vl_self_attention, state_encoder, action_encoder, DiT, action_decoder all fp16 TensorRT; pixel-shuffle/mlp1/embedding merge, transforms and the Euler loop in torch (as shipped: per-engine stream sync, no CUDA graphs)",
+ "trt": "11.2.1.2",
+ "torch": "2.9.0+cu128",
+ "engines": "two independent fp16 strongly-typed builds (engA, engB) from the fp16 ONNX (speed/export_onnx.sh), fixed batch-1 shapes, LLM/DiT/vlln seq 296 (= the PickNPlace prompt; all five sweep episodes share the same instruction, so the fixed shape is valid \u2014 runtime shapes asserted by TRT)",
+ "clocks_under_load_sm_mem": {
+  "A": {
+   "sm_mhz_median": 2857.0,
+   "sm_mhz_min": 2677,
+   "sm_mhz_max": 2872,
+   "mem_mhz_median": 13801.0,
+   "util_pct_median": 75.0,
+   "n_samples": 190
+  },
+  "B": {
+   "sm_mhz_median": 2857,
+   "sm_mhz_min": 2842,
+   "sm_mhz_max": 2910,
+   "mem_mhz_median": 13801,
+   "util_pct_median": 75,
+   "n_samples": 189
+  }
+ },
+ "clocks_pinned": "DYNAMIC (boost ~2857 MHz): clocks not locked; mitigation: 3 passes per step count (ascending / descending / ascending), median of pass medians, same-session eager control.",
+ "data_config": "fourier_gr1_arms_only",
+ "embodiment": "gr1",
+ "dof": 26,
+ "action_horizon": 16,
+ "config_match_vs_eager_sweep": "IDENTICAL: same checkpoint, data config, embodiment, 26-DOF, 16-step chunk, episodes, seeds, 64-step reference, metric. Only the compute path changed (eager bf16 autocast -> full TensorRT fp16).",
+ "input_provenance": "recorded (simulated) GR1 observations from NVIDIA demo_data/robot_sim.PickNPlace, not synthetic data: 5 episodes [0, 20, 40, 60, 80] x 3 seeds [0, 1, 2] (same as the eager sweep); latency on ds[0]",
+ "noise_matching": "the eager torch.randn draw for each seed is captured (fp32, episode-independent \u2014 verified) and fed to NVIDIA's path via action_head.init_actions (cast to fp16), for every step count and the 64-step reference: full-TRT N-step vs full-TRT 64-step differ only by solver truncation, and full-TRT vs eager share the identical noise draw",
+ "scope": "policy.get_action() full e2e (transforms + ViT + LLM + action head; the video frames are already decoded by the dataset loader), full TensorRT, warm",
+ "ref_steps": 64,
+ "reference_note": "64 steps = near-converged (NOT exact), computed on the SAME full-TensorRT path",
+ "latency_ms": {
+  "1": {
+   "median_ms": 8.809,
+   "per_build_median_ms": [
+    8.789,
+    8.83
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     8.8,
+     8.789,
+     8.789
+    ],
+    [
+     8.796,
+     8.832,
+     8.83
+    ]
+   ],
+   "p10_ms": 8.755,
+   "p90_ms": 8.939,
+   "min_ms": 8.728,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "2": {
+   "median_ms": 10.358,
+   "per_build_median_ms": [
+    10.359,
+    10.357
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     10.369,
+     10.348,
+     10.359
+    ],
+    [
+     10.447,
+     10.341,
+     10.357
+    ]
+   ],
+   "p10_ms": 10.308,
+   "p90_ms": 10.913,
+   "min_ms": 10.27,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "3": {
+   "median_ms": 11.927,
+   "per_build_median_ms": [
+    11.951,
+    11.902
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     11.951,
+     11.926,
+     11.961
+    ],
+    [
+     11.942,
+     11.892,
+     11.902
+    ]
+   ],
+   "p10_ms": 11.852,
+   "p90_ms": 12.3,
+   "min_ms": 11.792,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "4": {
+   "median_ms": 13.471,
+   "per_build_median_ms": [
+    13.524,
+    13.418
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     13.524,
+     13.559,
+     13.501
+    ],
+    [
+     13.417,
+     13.511,
+     13.418
+    ]
+   ],
+   "p10_ms": 13.368,
+   "p90_ms": 13.736,
+   "min_ms": 13.308,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "6": {
+   "median_ms": 16.593,
+   "per_build_median_ms": [
+    16.69,
+    16.495
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     16.705,
+     16.69,
+     16.651
+    ],
+    [
+     16.495,
+     16.493,
+     16.542
+    ]
+   ],
+   "p10_ms": 16.433,
+   "p90_ms": 17.018,
+   "min_ms": 16.326,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "8": {
+   "median_ms": 19.647,
+   "per_build_median_ms": [
+    19.769,
+    19.525
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     19.769,
+     19.761,
+     19.777
+    ],
+    [
+     19.525,
+     19.598,
+     19.488
+    ]
+   ],
+   "p10_ms": 19.422,
+   "p90_ms": 19.952,
+   "min_ms": 19.35,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "12": {
+   "median_ms": 25.715,
+   "per_build_median_ms": [
+    25.936,
+    25.494
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     25.936,
+     25.912,
+     25.985
+    ],
+    [
+     25.478,
+     25.494,
+     25.571
+    ]
+   ],
+   "p10_ms": 25.384,
+   "p90_ms": 26.701,
+   "min_ms": 25.284,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "16": {
+   "median_ms": 31.795,
+   "per_build_median_ms": [
+    32.032,
+    31.558
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     32.175,
+     32.032,
+     31.958
+    ],
+    [
+     31.461,
+     31.558,
+     31.867
+    ]
+   ],
+   "p10_ms": 31.386,
+   "p90_ms": 32.439,
+   "min_ms": 31.289,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "24": {
+   "median_ms": 43.898,
+   "per_build_median_ms": [
+    44.264,
+    43.533
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     44.264,
+     44.296,
+     44.235
+    ],
+    [
+     43.528,
+     43.533,
+     43.654
+    ]
+   ],
+   "p10_ms": 43.395,
+   "p90_ms": 45.005,
+   "min_ms": 43.224,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  },
+  "32": {
+   "median_ms": 56.085,
+   "per_build_median_ms": [
+    56.397,
+    55.774
+   ],
+   "per_build_pass_medians_ms": [
+    [
+     56.386,
+     56.397,
+     56.696
+    ],
+    [
+     56.094,
+     55.774,
+     55.664
+    ]
+   ],
+   "p10_ms": 55.432,
+   "p90_ms": 57.207,
+   "min_ms": 55.211,
+   "reps": 240,
+   "estimator": "mean over 2 engine builds of (median of 3 pass medians, 40 reps each)"
+  }
+ },
+ "deviation_vs_ref_pct": {
+  "1": {
+   "mean_pct": 15.9294,
+   "std_pct": 17.0716,
+   "min_pct": 4.9086,
+   "max_pct": 52.0162,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    15.9242,
+    15.9346
+   ]
+  },
+  "2": {
+   "mean_pct": 10.859,
+   "std_pct": 13.2245,
+   "min_pct": 3.577,
+   "max_pct": 51.612,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    10.8446,
+    10.8734
+   ]
+  },
+  "3": {
+   "mean_pct": 6.0465,
+   "std_pct": 4.2541,
+   "min_pct": 2.8067,
+   "max_pct": 16.8578,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    6.0144,
+    6.0785
+   ]
+  },
+  "4": {
+   "mean_pct": 3.7074,
+   "std_pct": 0.9737,
+   "min_pct": 2.4077,
+   "max_pct": 5.7601,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    3.7064,
+    3.7085
+   ]
+  },
+  "6": {
+   "mean_pct": 2.5605,
+   "std_pct": 0.7178,
+   "min_pct": 1.5829,
+   "max_pct": 4.2431,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    2.5615,
+    2.5595
+   ]
+  },
+  "8": {
+   "mean_pct": 2.0658,
+   "std_pct": 0.6047,
+   "min_pct": 1.2453,
+   "max_pct": 3.4691,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    2.0681,
+    2.0635
+   ]
+  },
+  "12": {
+   "mean_pct": 1.4174,
+   "std_pct": 0.3799,
+   "min_pct": 0.9176,
+   "max_pct": 2.3111,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    1.4186,
+    1.4162
+   ]
+  },
+  "16": {
+   "mean_pct": 1.1304,
+   "std_pct": 0.2159,
+   "min_pct": 0.8142,
+   "max_pct": 1.67,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    1.1316,
+    1.1292
+   ]
+  },
+  "24": {
+   "mean_pct": 0.8934,
+   "std_pct": 0.0919,
+   "min_pct": 0.7572,
+   "max_pct": 1.093,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    0.8929,
+    0.8939
+   ]
+  },
+  "32": {
+   "mean_pct": 0.4226,
+   "std_pct": 0.05,
+   "min_pct": 0.3521,
+   "max_pct": 0.5603,
+   "n_samples": 15,
+   "per_build_mean_pct": [
+    0.4235,
+    0.4217
+   ]
+  }
+ },
+ "latency_decomposition": {
+  "backbone_intercept_ms": 7.378,
+  "per_denoise_step_ms": 1.523,
+  "r2": 0.99998,
+  "per_build_fit": {
+   "A": {
+    "intercept_ms": 7.387191158156913,
+    "per_step_ms": 1.5355471149854718,
+    "r2": 0.9999627181229918
+   },
+   "B": {
+    "intercept_ms": 7.368235367372355,
+    "per_step_ms": 1.5111448733914497,
+    "r2": 0.9999886817525152
+   }
+  },
+  "note": "full TensorRT; per-step = action_encoder + DiT + action_decoder engines + Euler-loop torch glue; intercept = denoise-independent transforms + ViT + LLM + vlln/state engines + glue (stage record has the measured split)"
+ },
+ "deviation_1overN_fit": {
+  "model": "dev_pct ~= C/steps",
+  "C": 17.257,
+  "eager_sweep_C": 17.93,
+  "note": "dev ~ C/N (Euler truncation); compare C with the eager sweep's C"
+ },
+ "eager_same_session_control": {
+  "latency": {
+   "1": {
+    "median_ms_per_build": [
+     18.383,
+     18.5
+    ],
+    "eager_sweep_median_ms": 23.108
+   },
+   "4": {
+    "median_ms_per_build": [
+     27.344,
+     27.266
+    ],
+    "eager_sweep_median_ms": 32.23
+   },
+   "16": {
+    "median_ms_per_build": [
+     66.443,
+     67.065
+    ],
+    "eager_sweep_median_ms": 73.82
+   }
+  },
+  "fit_1_4_16": {
+   "intercept_ms": 14.821,
+   "per_step_ms": 3.24,
+   "r2": 0.99971
+  },
+  "deviation_reproduces_eager_sweep": {
+   "1": {
+    "eager_sweep_mean_pct": 15.913,
+    "same_session_eager_mean_pct": 15.913
+   },
+   "2": {
+    "eager_sweep_mean_pct": 10.8322,
+    "same_session_eager_mean_pct": 10.8322
+   },
+   "3": {
+    "eager_sweep_mean_pct": 6.0443,
+    "same_session_eager_mean_pct": 6.0443
+   },
+   "4": {
+    "eager_sweep_mean_pct": 3.7906,
+    "same_session_eager_mean_pct": 3.7906
+   },
+   "6": {
+    "eager_sweep_mean_pct": 2.6721,
+    "same_session_eager_mean_pct": 2.6721
+   },
+   "8": {
+    "eager_sweep_mean_pct": 2.1149,
+    "same_session_eager_mean_pct": 2.1149
+   },
+   "12": {
+    "eager_sweep_mean_pct": 1.4829,
+    "same_session_eager_mean_pct": 1.4829
+   },
+   "16": {
+    "eager_sweep_mean_pct": 1.1813,
+    "same_session_eager_mean_pct": 1.1813
+   },
+   "24": {
+    "eager_sweep_mean_pct": 0.9371,
+    "same_session_eager_mean_pct": 0.9371
+   },
+   "32": {
+    "eager_sweep_mean_pct": 0.509,
+    "same_session_eager_mean_pct": 0.509
+   }
+  },
+  "note": "Eager latency drifts between sessions (clocks, driver); the eager DEVIATION is deterministic and should reproduce the published eager sweep to ~0.01 pp. Full-TRT vs eager speedup is quoted against THIS same-session eager."
+ },
+ "speedup_vs_same_session_eager": {
+  "1": 2.093,
+  "4": 2.027,
+  "16": 2.1
+ },
+ "output_gate": {
+  "A": {
+   "full_vs_eager_4step": {
+    "action.left_arm": {
+     "rel_mae": 0.00959,
+     "abs_mae": 0.00333,
+     "ref_mean_abs": 0.34802
+    },
+    "action.left_hand": {
+     "rel_mae": 0.38276,
+     "abs_mae": 0.00351,
+     "ref_mean_abs": 0.0094
+    },
+    "action.right_arm": {
+     "rel_mae": 0.00725,
+     "abs_mae": 0.00365,
+     "ref_mean_abs": 0.51522
+    },
+    "action.right_hand": {
+     "rel_mae": 0.00311,
+     "abs_mae": 0.00616,
+     "ref_mean_abs": 1.97987
+    }
+   },
+   "full_vs_eager_64step_ref": {
+    "action.left_arm": {
+     "rel_mae": 0.0046,
+     "abs_mae": 0.00171,
+     "ref_mean_abs": 0.36412
+    },
+    "action.left_hand": {
+     "rel_mae": 0.16161,
+     "abs_mae": 0.00064,
+     "ref_mean_abs": 0.00407
+    },
+    "action.right_arm": {
+     "rel_mae": 0.00302,
+     "abs_mae": 0.00144,
+     "ref_mean_abs": 0.50401
+    },
+    "action.right_hand": {
+     "rel_mae": 0.00124,
+     "abs_mae": 0.00248,
+     "ref_mean_abs": 1.99331
+    }
+   },
+   "control_eager_vs_eager_4step": {
+    "action.left_arm": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.34802
+    },
+    "action.left_hand": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.0094
+    },
+    "action.right_arm": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.51522
+    },
+    "action.right_hand": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 1.97987
+    }
+   }
+  },
+  "B": {
+   "full_vs_eager_4step": {
+    "action.left_arm": {
+     "rel_mae": 0.00967,
+     "abs_mae": 0.00336,
+     "ref_mean_abs": 0.34802
+    },
+    "action.left_hand": {
+     "rel_mae": 0.38174,
+     "abs_mae": 0.00351,
+     "ref_mean_abs": 0.0094
+    },
+    "action.right_arm": {
+     "rel_mae": 0.00727,
+     "abs_mae": 0.00366,
+     "ref_mean_abs": 0.51522
+    },
+    "action.right_hand": {
+     "rel_mae": 0.00311,
+     "abs_mae": 0.00616,
+     "ref_mean_abs": 1.97987
+    }
+   },
+   "full_vs_eager_64step_ref": {
+    "action.left_arm": {
+     "rel_mae": 0.00456,
+     "abs_mae": 0.0017,
+     "ref_mean_abs": 0.36412
+    },
+    "action.left_hand": {
+     "rel_mae": 0.16331,
+     "abs_mae": 0.00065,
+     "ref_mean_abs": 0.00407
+    },
+    "action.right_arm": {
+     "rel_mae": 0.00305,
+     "abs_mae": 0.00146,
+     "ref_mean_abs": 0.50401
+    },
+    "action.right_hand": {
+     "rel_mae": 0.00125,
+     "abs_mae": 0.00249,
+     "ref_mean_abs": 1.99331
+    }
+   },
+   "control_eager_vs_eager_4step": {
+    "action.left_arm": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.34802
+    },
+    "action.left_hand": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.0094
+    },
+    "action.right_arm": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 0.51522
+    },
+    "action.right_hand": {
+     "rel_mae": 0.0,
+     "abs_mae": 0.0,
+     "ref_mean_abs": 1.97987
+    }
+   }
+  }
+ },
+ "output_gate_note": "full TensorRT vs eager, identical noise. Expect rel_mae ~0.3-1% on keys with real motion; an idle key (|ref| mean ~0.01, e.g. left_hand in this episode) shows a large rel_mae from its tiny denominator -- judge it by abs_mae, which should match the other keys' fp16 floor. The eager-vs-eager same-seed control must be exactly 0.0.",
+ "build_variance": {
+  "per_step_ms": [
+   1.5355471149854718,
+   1.5111448733914497
+  ],
+  "intercept_ms": [
+   7.387191158156913,
+   7.368235367372355
+  ],
+  "max_step_count_spread_pct": 1.719
+ },
+ "torch_version": "2.9.0+cu128",
+ "utc": "2026-10-12T17:36:07Z",
+ "tenancy": {
+  "note": "one idle co-resident GPU process (8.7 GB allocated, 0% SM) throughout; the desktop X server briefly at 8% SM in one build-B block; host load average 4.6-8.3 from other work. Per-block logs are in the raw files."
+ },
+ "noise_floor": {
+  "reps": "40 per pass x 3 passes x 2 builds per step count",
+  "estimator": "median of 3 pass medians, mean over builds",
+  "warmup": 10,
+  "deviation_replication": "5 episodes x 3 seeds = 15 samples per step (mean\u00b1std); compare per_build_mean_pct across builds"
+ },
+ "metric_span": "Latency: full policy.get_action() wall on NVIDIA's full-TensorRT N1.5 path. Deviation: trajectory rel-MAE of the 26-DOF x 16-step action vs a 64-step near-converged reference on the same path, matched noise, 5 episodes x 3 seeds. Compiled-path counterpart of the eager sweep (speed/denoise_sweep_eager.py).",
+ "raw": [
+  "results/speed/raw/denoise_sweep_A.json",
+  "results/speed/raw/denoise_sweep_B.json"
+ ],
+ "harness": "speed/denoise_sweep_fulltrt.py + speed/make_sweep_record.py"
+}

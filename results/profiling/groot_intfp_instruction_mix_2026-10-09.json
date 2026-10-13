@@ -1,0 +1,160 @@
+{
+ "record": "groot_n15_integer_vs_fp_instruction_mix",
+ "date": "2026-10-09",
+ "provenance": "MEASURED",
+ "question": "Question: break each GR00T stage down by % integer vs floating-point instructions used.",
+ "method": "ncu (Nsight Compute) SASS executed-instruction-class counters over one fp16 inference per stage engine, run under sudo on-board. Metrics: smsp__sass_thread_inst_executed_op_{integer,fp16,fp32,fp64}_pred_on.sum, smsp__sass_thread_inst_executed.sum (total), sm__inst_executed_pipe_tensor.sum (HMMA). INT=integer; FP=fp16+fp32+fp64 (CUDA-core arithmetic); OTHER=total-INT-FP (memory load/store, control, conversion, movement). Kernels bucketed matmul vs glue by name. Engines = the same fp16 builds from $GVRB_WORK/onnx used for the compute-vs-glue sweep.",
+ "HEADLINE": "On NVIDIA, a GR00T stage's instructions are NOT majority-integer and NOT majority-fp-arithmetic -- the single largest class is usually OTHER (memory movement + control), and the tensor-core matmul is done in ~1% or less of instructions as HMMA (0.09-1.24%). FP (arithmetic) outweighs INT 1.6-3.9:1, and the INTEGER work concentrates in the GLUE kernels (addressing/layout/indexing), not the matmul -- the same glue that compiler fusion hides.",
+ "measured_all_stage_aggregate_pct": {
+  "thor_blackwell_sm110_trt10_16_2": {
+   "vit": {
+    "INT": 11.8,
+    "FP": 46.1,
+    "OTHER": 42.1,
+    "fp16": 9.0,
+    "fp32": 37.1,
+    "tensor_inst": 8070000.0,
+    "total_inst": 6563000000.0
+   },
+   "llm": {
+    "INT": 15.9,
+    "FP": 27.9,
+    "OTHER": 56.2,
+    "fp16": 11.0,
+    "fp32": 16.9,
+    "tensor_inst": 5500000.0,
+    "total_inst": 6194000000.0
+   },
+   "dit": {
+    "INT": 14.8,
+    "FP": 23.9,
+    "OTHER": 61.4,
+    "fp16": 9.0,
+    "fp32": 14.8,
+    "tensor_inst": 3690000.0,
+    "total_inst": 3158000000.0
+   }
+  },
+  "orin_ampere_sm87_trt10_3": {
+   "vit": {
+    "INT": 18.9,
+    "FP": 47.0,
+    "OTHER": 34.1,
+    "fp16": 35.4,
+    "fp32": 11.6,
+    "tensor_inst": 142500000.0,
+    "total_inst": 14500000000.0
+   },
+   "llm": {
+    "INT": 19.3,
+    "FP": 49.2,
+    "OTHER": 31.5,
+    "fp16": 45.2,
+    "fp32": 4.0,
+    "tensor_inst": 233700000.0,
+    "total_inst": 18870000000.0
+   },
+   "dit": {
+    "INT": 22.0,
+    "FP": 40.0,
+    "OTHER": 37.9,
+    "fp16": 31.9,
+    "fp32": 8.1,
+    "tensor_inst": 58990000.0,
+    "total_inst": 7903000000.0
+   }
+  }
+ },
+ "int_matmul_vs_glue_pct": {
+  "note": "INT% within matmul-kernels vs glue-kernels -- integer work is consistently HIGHER in glue.",
+  "thor": {
+   "vit": [
+    11.5,
+    13.2
+   ],
+   "llm": [
+    14.6,
+    19.0
+   ],
+   "dit": [
+    11.2,
+    29.6
+   ]
+  },
+  "orin": {
+   "vit": [
+    18.6,
+    22.5
+   ],
+   "llm": [
+    18.1,
+    33.2
+   ],
+   "dit": [
+    19.3,
+    29.4
+   ]
+  }
+ },
+ "key_findings": [
+  "Three-way split, not binary: OTHER (memory+control) is the largest class on Thor LLM/DiT (56-61%) and substantial everywhere. The matmul MACs are a few million HMMA instrs (0.09-1.24% of total) -- most matmul-kernel instructions just move tiles.",
+  "FP >> INT in arithmetic (1.6-3.9:1 every stage/board). The compute wants floating-point.",
+  "INTEGER work lives in the GLUE: glue-kernel INT% > matmul-kernel INT% on every stage (Thor DiT 29.6 glue vs 11.2 matmul; Orin LLM 33.2 vs 18.1). Integer = addressing, layout, indexing, quant -- the same glue fusion hides.",
+  "'fp16 engine' != 'fp16 instructions': Thor runs lots of fp32 (ViT 37%!) for norm/softmax accumulation + matmul epilogue; Orin runs more fp16 (LLM 45%). The fp16:fp32 split is TRT-version/arch dependent -- the robust cut is INT / FP / OTHER."
+ ],
+ "coverage": {
+  "measured": "Thor (Blackwell sm_110), Orin (Ampere sm_87) -- ncu SASS counters, run as root 2026-10-09.",
+  "rtx5090": "n/a direct: ncu 2024.3.2 predates Blackwell sm_120 ('Failed to load Nsight Compute CUDA modules'). Thor (also Blackwell, same TensorRT family) is the nearest stand-in, but it is not a measurement of the 5090: the compute-vs-glue record shows the two architectures choose different tactics for the same ViT (64% vs 90% 'compute')."
+ },
+ "w4a16_weight_only_int4_llm_thor": {
+  "question": "Question: wouldn't int8/int4 weights show up for the LLM? Built W4A16 (weight-only int4) GR00T LLM on Thor from llm_w4a16_int4.onnx (85 DequantizeLinear, no QuantizeLinear) and profiled vs fp16.",
+  "engine_size": "300 MiB vs fp16 1.15 GB (3.84x smaller; weights memory 311 MB = packed int4 + fp32 block-scales; int4 genuinely honored, not upcast)",
+  "all_kernels": {
+   "fp16": {
+    "INT": 15.9,
+    "FP16": 11.0,
+    "FP32": 16.9,
+    "OTHER": 56.2,
+    "total_inst": 6190000000.0
+   },
+   "w4a16": {
+    "INT": 31.6,
+    "FP16": 29.3,
+    "FP32": 2.4,
+    "OTHER": 36.6,
+    "total_inst": 42700000000.0
+   }
+  },
+  "matmul_kernels": {
+   "fp16": {
+    "INT": 14.6,
+    "FP16": 5.2,
+    "FP32": 14.1,
+    "OTHER": 66.1
+   },
+   "w4a16": {
+    "INT": 23.6,
+    "FP16": 36.5,
+    "FP32": 2.0,
+    "OTHER": 37.9
+   }
+  },
+  "glue_kernels": {
+   "fp16": {
+    "INT": 19.0,
+    "FP16": 24.5,
+    "FP32": 23.2,
+    "OTHER": 33.3
+   },
+   "w4a16": {
+    "INT": 51.7,
+    "FP16": 11.2,
+    "FP32": 3.6,
+    "OTHER": 33.5
+   }
+  },
+  "FINDING": "int4 weights show up as INTEGER (on-the-fly unpack: shift/mask), nearly doubling the integer share (all 16->32%, glue 19->52%). The matmul STILL computes in fp16 (weight-only int4 dequantized before MatMul; NO int8 arithmetic / no IMMA int tensor ops). Total instructions ~7x higher (4.27e10 vs 6.19e9) -- on-the-fly dequant of every weight each forward. So W4A16 trades 3.8x less weight memory (bandwidth) for ~7x more instructions (dequant), and the extra work is INTEGER. Win when memory-bandwidth-bound (LLM decode); costly when compute-bound. Directly answers 'where do int weights show up': as integer unpack in the glue, not as int matmul. True int8 ARITHMETIC would need W8A8 (int8 activations too) -> IMMA ops."
+ },
+ "caveats": "Absolute INT/FP/OTHER split is compiler(TRT-version)+arch dependent (Thor vs Orin diverge, esp OTHER and fp16:fp32); the INVARIANTS are: INT is a minority (12-22%) and lives in glue; FP dominates arithmetic; OTHER(memory) is large; HMMA is ~1% or less of instrs (Orin LLM 1.24%). Orin ViT had one kernel error (ncu rc=9); re-parsed with nan-hardened parser, kernels≈483 (representative).",
+ "_correction_2026-10-12": "Headline prose corrected to the record's own counts: HMMA is 0.09-1.24% of instructions (Orin LLM 1.24%, so not '<1%'); FP:INT ranges 1.6-3.9:1 across stage/board pairs (not '~2-3:1'). Counts unchanged."
+}

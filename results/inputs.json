@@ -1,0 +1,23 @@
+{
+ "speed_input": {
+  "file": "groot_step0.npz written by speed/make_step0.py (PickNPlace ds[0], data config fourier_gr1_arms_only)",
+  "content_sha256": "3fa53621464390cd327ef6aaecb1fa2c7d9b2b62bd01e5d0d7db13c882a71eb5",
+  "hash_definition": "sha256 over sorted keys: key name, dtype string, raw array bytes"
+ },
+ "noise_bank": {
+  "generator": "accuracy/gen_noise.py --n_episodes 20 --seed_a 5000 --only_a",
+  "shape": [
+   20,
+   50,
+   1,
+   16,
+   32
+  ],
+  "dtype": "float32",
+  "sha256_raw_bytes": "912f1eef81ba928e916d73d739cc2d85318f8acf31f7c8a4cc24bca2d93067ac"
+ },
+ "models": {
+  "nvidia/GR00T-N1.5-3B": "869830fc749c35f34771aa5209f923ac57e4564e",
+  "youliangtan/gr00t-n1.5-robocasa-tabletop-posttrain": "b46fb3c1d01487f7927bde93374621ae934d7d26"
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "record": "groot_n15_stage_compute_vs_glue_roofline",
+ "date": "2026-10-09",
+ "provenance": "MEASURED",
+ "question": "A common belief: 'ViT is mostly compute, needs more compute.' Measure, per GR00T stage and platform, what fraction of work is actual matmul/conv COMPUTE vs GLUE (softmax, norm, activation, elementwise, layout).",
+ "method": "Per-op/per-layer profiling, fp16, batch 1. NVIDIA: trtexec --dumpProfile fresh fp16 builds (Thor TRT10.16.2, Orin TRT10.3) + 5090 via TRT IProfiler (roofline_prof.py). All from the SAME base fp16 ONNX ($GVRB_WORK/onnx/{eagle2/vit_fp16.onnx, eagle2/llm_fp16.onnx, action_head/DiT_fp16.onnx}).",
+ "HEADLINE": "The 'compute %' a profiler reports for a GR00T stage reflects TensorRT fusion and per-architecture tactic choice, not a silicon compute ratio: TensorRT folds softmax/norm/activation glue into the matmul epilogue, so stages read ~84-92% 'compute' on Thor/Orin (Orin LLM after reconciliation), and the same ViT under the same TensorRT 10.16 reads 64% on the 5090 (Blackwell sm_120) and 90% on Thor (Blackwell sm_110).",
+ "nvidia_fused_view_trt": {
+  "note": "TRT myelin fusion folds softmax/norm/activation INTO the matmul epilogue -> reads as COMPUTE. Numbers are directional (fusion granularity + per-SM tactics + profiler differ). Thor is the cleanest internally-consistent set.",
+  "vit": {
+   "rtx5090": 64.2,
+   "thor": 90.0,
+   "orin": 92.5
+  },
+  "llm": {
+   "rtx5090": 80.9,
+   "thor": 87.2,
+   "orin": "66.1 MEASURED (classifier output) -> ~89 DERIVED by reconciliation (the fused attention block __myl_FcNegExpAddDivMulMul is mislabeled elementwise by name; reclassified as compute)"
+  },
+  "dit": {
+   "rtx5090": 51.8,
+   "thor": 85.8,
+   "orin": 83.9
+  },
+  "times_ms_per_inf": {
+   "vit": {
+    "5090": 1.94,
+    "thor": 5.4,
+    "orin": 12.0
+   },
+   "llm": {
+    "5090": 2.12,
+    "thor": 7.2,
+    "orin": 12.48
+   },
+   "dit": {
+    "5090": 1.39,
+    "thor": 6.71,
+    "orin": 8.09
+   }
+  },
+  "classifier_caveats": "Automated keyword classifier mislabels some fused Myelin blocks: node_linear_* (fixed: +linear/bmm/qkv -> COMPUTE); __myl_FcNegExp... (attention+softmax, reads elementwise); __mye<hex> super-blocks (unnamed adaLN, reads 'other'). Each was reconciled by elimination; Thor stages are clean because attention sits in named _gemm_mha_v2 blocks. The 5090's lower/uneven numbers (profiled via IProfiler on sm_120, less-aggressive fusion) show the metric depends on the compiler's per-architecture choices and on the profiling tool."
+ },
+ "actionable": "TRT fuses softmax+LN+GELU into the matmul kernels (reads 'compute' AND skips DDR round-trips). On a runtime that leaves each glue op as a separate kernel, the glue is exposed; operator fusion, not more matmul TOPS, is then the lever.",
+ "next": "Integer vs floating-point instruction mix per stage (ncu SASS inst-class counters on Thor + Orin): see groot_intfp_instruction_mix_2026-10-09.json."
+}

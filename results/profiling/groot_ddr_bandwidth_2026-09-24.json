@@ -1,0 +1,290 @@
+{
+ "record": "groot_ddr_bandwidth_crossboard",
+ "date": "2026-09-24",
+ "method": {
+  "counter": "/sys/kernel/debug/bpmp/debug/actmon/mc_all_avg_activity (BPMP actmon, mc_all; root-only)",
+  "note": "jtop EMC.val is INERT (hard 0) on these JetPacks; the working DDR-bandwidth counter is the BPMP actmon debugfs node.",
+  "workload": "sustained trtexec replay of the canonical GR00T stage engines (st5c on Thor; g{vit,llm,dit} on Orin), --duration=12 --warmUp=2000",
+  "actmon_unit": "raw counter (M tx/s); NOT GB/s. linear at low load, COMPRESSES near saturation.",
+  "gbps_derivation": "DERIVED by interpolating each stage's MEASURED actmon on the per-board MEASURED GPU-d2d bandwidth calibration curve (gpu_d2d_calibration). Reference for %-of-peak is the MEASURED achieved saturation (d2d copy), NOT the datasheet nameplate. Supersedes the 2026-09-24 datasheet-anchor derivation, which a review found circular (it drew the peak line at the DiT bar) and which overstated ViT/LLM.",
+  "peak_sourced_gbps": {
+   "Thor_LPDDR5X": 273.0,
+   "Orin_LPDDR5": 204.8
+  },
+  "cpu_pct": "MEASURED, /proc/stat aggregate over sample window",
+  "provenance": "actmon/gpu_ms/cpu_pct = MEASURED; gpu_d2d_calibration = MEASURED; ddr_gbps = DERIVED; datasheet_peak = SOURCED"
+ },
+ "census": {
+  "Thor": "clean (desktop only; no model tenant). self-reaped after run.",
+  "Orin": "cleaned before the run: a leftover 14.75 GB numpy test process from earlier work (non-daemon threads, stop flag never set, running 1767 s) was loading the memory bus and inflating the idle floor 47x; it was killed, the idle floor dropped 21.7M->0.05M, then the stages were measured clean."
+ },
+ "provenance_tags": {
+  "actmon": "MEASURED",
+  "cpu_pct": "MEASURED",
+  "gpu_ms": "MEASURED",
+  "gbps": "DERIVED",
+  "peak": "SOURCED"
+ },
+ "thor": {
+  "board": "Thor",
+  "idle_floor": 433596,
+  "stages": {
+   "vit": {
+    "stage": "vit",
+    "actmon": 54993412,
+    "sd": 900032,
+    "cpu_pct": 6.0,
+    "gpu_ms": 4.80938,
+    "n": 24,
+    "ddr_gbps": 171.8,
+    "ddr_gbps_band": [
+     166.9,
+     176.8
+    ],
+    "ddr_pct_achieved_sat": 67.6
+   },
+   "llm": {
+    "stage": "llm",
+    "actmon": 64319253,
+    "sd": 406562,
+    "cpu_pct": 5.3,
+    "gpu_ms": 7.12226,
+    "n": 24,
+    "ddr_gbps": 223.4,
+    "ddr_gbps_band": [
+     221.2,
+     225.7
+    ],
+    "ddr_pct_achieved_sat": 87.9
+   },
+   "dit": {
+    "stage": "dit",
+    "actmon": 71881775,
+    "sd": 735040,
+    "cpu_pct": 5.6,
+    "gpu_ms": 4.94902,
+    "n": 24,
+    "ddr_gbps": 253.5,
+    "ddr_gbps_band": [
+     253.5,
+     253.5
+    ],
+    "ddr_pct_achieved_sat": 99.7
+   }
+  },
+  "cal": [
+   {
+    "nproc": 1,
+    "actmon": 18728669,
+    "gbps": 44.8
+   },
+   {
+    "nproc": 2,
+    "actmon": 24363483,
+    "gbps": 79.6
+   },
+   {
+    "nproc": 3,
+    "actmon": 32990616,
+    "gbps": 106.8
+   },
+   {
+    "nproc": 4,
+    "actmon": 40378259,
+    "gbps": 129.5
+   },
+   {
+    "nproc": 6,
+    "actmon": 52823349,
+    "gbps": 170.5
+   }
+  ],
+  "gpu_d2d_calibration": {
+   "method": "MEASURED GPU device-to-device cudaMemcpy: GB/s = 2*bytes/wall (exact, a pure copy is 1 read + 1 write, no write-allocate ambiguity); duty-cycled to sweep average bandwidth. Sampled simultaneously with BPMP actmon. This maps actmon->GB/s WHERE THE WORKLOAD ACTUALLY SITS (a CPU burn cannot reach the GPU actmon range).",
+   "points": [
+    {
+     "actmon": 69914846,
+     "gbps": 253.5,
+     "duty": 1.0
+    },
+    {
+     "actmon": 51188325,
+     "gbps": 150.8,
+     "duty": 0.6
+    },
+    {
+     "actmon": 29930172,
+     "gbps": 86.3,
+     "duty": 0.35
+    },
+    {
+     "actmon": 17061519,
+     "gbps": 48.8,
+     "duty": 0.2
+    },
+    {
+     "actmon": 69414016,
+     "gbps": 251.6,
+     "streams": 1
+    },
+    {
+     "actmon": 79174890,
+     "gbps": 253.4,
+     "streams": 2
+    },
+    {
+     "actmon": 79445553,
+     "gbps": 254.2,
+     "streams": 3
+    },
+    {
+     "actmon": 79459110,
+     "gbps": 254.2,
+     "streams": 4
+    }
+   ],
+   "idle_floor": 2379758,
+   "achieved_saturation": {
+    "actmon": 79445553,
+    "gbps": 254.2,
+    "pct_datasheet": 93.1
+   },
+   "datasheet_peak_gbps": 273.0,
+   "note": "actmon is LINEAR in bandwidth at low load then COMPRESSES near saturation (measured: Thor 51M/151 -> 70M/253); GB/s is interpolated on this measured curve, not anchored to the datasheet."
+  }
+ },
+ "orin": {
+  "board": "Orin",
+  "idle_floor": 182884,
+  "stages": {
+   "vit": {
+    "stage": "vit",
+    "actmon": 30184667,
+    "sd": 787422,
+    "cpu_pct": 0.7,
+    "gpu_ms": 12.2977,
+    "n": 24,
+    "ddr_gbps": 88.7,
+    "ddr_gbps_band": [
+     86.4,
+     91.0
+    ],
+    "ddr_pct_achieved_sat": 53.1
+   },
+   "llm": {
+    "stage": "llm",
+    "actmon": 39165869,
+    "sd": 704157,
+    "cpu_pct": 0.4,
+    "gpu_ms": 15.655,
+    "n": 24,
+    "ddr_gbps": 131.1,
+    "ddr_gbps_band": [
+     127.3,
+     134.9
+    ],
+    "ddr_pct_achieved_sat": 78.5
+   },
+   "dit": {
+    "stage": "dit",
+    "actmon": 45925913,
+    "sd": 716362,
+    "cpu_pct": 0.6,
+    "gpu_ms": 8.0763,
+    "n": 24,
+    "ddr_gbps": 166.5,
+    "ddr_gbps_band": [
+     163.7,
+     166.7
+    ],
+    "ddr_pct_achieved_sat": 99.7
+   }
+  },
+  "cal": [
+   {
+    "nproc": 1,
+    "actmon": 10434253,
+    "gbps": 24.1
+   },
+   {
+    "nproc": 2,
+    "actmon": 13424227,
+    "gbps": 45.1
+   },
+   {
+    "nproc": 3,
+    "actmon": 19204229,
+    "gbps": 63.7
+   },
+   {
+    "nproc": 4,
+    "actmon": 22228392,
+    "gbps": 72.2
+   },
+   {
+    "nproc": 6,
+    "actmon": 27614529,
+    "gbps": 90.6
+   },
+   {
+    "nproc": 10,
+    "actmon": 27849653,
+    "gbps": 90.4
+   }
+  ],
+  "gpu_d2d_calibration": {
+   "method": "MEASURED GPU device-to-device cudaMemcpy: GB/s = 2*bytes/wall (exact, a pure copy is 1 read + 1 write, no write-allocate ambiguity); duty-cycled to sweep average bandwidth. Sampled simultaneously with BPMP actmon. This maps actmon->GB/s WHERE THE WORKLOAD ACTUALLY SITS (a CPU burn cannot reach the GPU actmon range).",
+   "points": [
+    {
+     "actmon": 45972929,
+     "gbps": 166.7,
+     "duty": 1.0
+    },
+    {
+     "actmon": 32666663,
+     "gbps": 96.0,
+     "duty": 0.6
+    },
+    {
+     "actmon": 18958890,
+     "gbps": 55.7,
+     "duty": 0.35
+    },
+    {
+     "actmon": 10912831,
+     "gbps": 31.8,
+     "duty": 0.2
+    },
+    {
+     "actmon": 45398824,
+     "gbps": 164.7,
+     "streams": 1
+    },
+    {
+     "actmon": 51707946,
+     "gbps": 166.5,
+     "streams": 2
+    },
+    {
+     "actmon": 51679312,
+     "gbps": 166.9,
+     "streams": 3
+    },
+    {
+     "actmon": 51398894,
+     "gbps": 167.0,
+     "streams": 4
+    }
+   ],
+   "idle_floor": 2007319,
+   "achieved_saturation": {
+    "actmon": 51398894,
+    "gbps": 167.0,
+    "pct_datasheet": 81.5
+   },
+   "datasheet_peak_gbps": 204.8,
+   "note": "actmon is LINEAR in bandwidth at low load then COMPRESSES near saturation (measured: Thor 51M/151 -> 70M/253); GB/s is interpolated on this measured curve, not anchored to the datasheet."
+  }
+ },
+ "revision": "2 (GPU-d2d calibration; corrected)"
+}

@@ -1,0 +1,50 @@
+{
+ "date": "2026-10-12",
+ "device": "NVIDIA GeForce RTX 5090",
+ "trt": "11.2.1.2",
+ "method": "standalone fp16 strongly-typed engines, CUDA events, median of 200 after 50 warm-up",
+ "tag": "MEASURED",
+ "part1_action_head_ms_per_call": {
+  "state_encoder": 0.0116,
+  "action_encoder": 0.0403,
+  "action_decoder": 0.0136,
+  "vlln_vl_self_attention": 0.6063,
+  "DiT_step": 1.3229
+ },
+ "part1_dof_dependent": {
+  "per_call_ms": 0.0539,
+  "per_inference_ms_4_steps": 0.2156,
+  "share_of_action_head_4_steps_pct": 3.52
+ },
+ "part2_vit_ms_by_views": {
+  "1": 1.8611,
+  "2": 2.3662,
+  "4": 3.6993
+ },
+ "part3_llm_ms_by_vision_tokens": {
+  "256": 1.6863,
+  "512": 2.8246,
+  "1024": 5.1873
+ },
+ "script": "speed/multiarm/camera_token_scaling.py",
+ "vs_published_2026-10-10": {
+  "note": "The 2026-10-10 numbers came from an earlier, unpreserved version of this measurement (TensorRT 10.16.1); this re-run (TensorRT 11.2) re-implements its method. ViT within 6%, LLM within 15%, DoF-dependent cost per module call within 1%; VL self-attention reads 0.61 ms here vs 0.39 ms published (shape/build difference not recoverable). The conclusion -- arms cost ~0.05 ms per module call, cameras cost ~ms -- holds in both.",
+  "published_components_ms": {
+   "state_encoder": 0.015,
+   "action_encoder": 0.037,
+   "action_decoder": 0.017,
+   "vlln_vl_self_attn": 0.386,
+   "DiT_body": 1.382
+  },
+  "published_vit_ms_by_views": {
+   "1": 1.978,
+   "2": 2.559,
+   "4": 3.822
+  },
+  "published_llm_ms_by_vision_tokens": {
+   "256": 1.967,
+   "512": 2.908,
+   "1024": 4.969
+  }
+ }
+}

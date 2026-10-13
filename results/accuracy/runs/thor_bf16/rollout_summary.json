@@ -1,0 +1,555 @@
+{
+  "env_name": "gr1_unified/PnPMilkToMicrowaveClose_GR1ArmsAndWaistFourierHands_Env",
+  "n_episodes": 20,
+  "n_completed": 20,
+  "n_success": 8,
+  "success_rate": 0.4,
+  "max_episode_steps": 720,
+  "base_seed": 0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "episodes": [
+    {
+      "episode": 0,
+      "seed": 0,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "d794dd21d097b2a5ce7d626c2ad27b93783042e3",
+      "server_ms_median": 76.10344886779785,
+      "actions_file": "episode_00_seed0_actions.npy"
+    },
+    {
+      "episode": 1,
+      "seed": 1,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "5e4a4189781ffe86454747b70598fd45562d583c",
+      "server_ms_median": 77.03852653503418,
+      "actions_file": "episode_01_seed1_actions.npy"
+    },
+    {
+      "episode": 2,
+      "seed": 2,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "5a312c0e3b54b1202994a386c9b9b05a39a749bb",
+      "server_ms_median": 76.16686820983887,
+      "actions_file": "episode_02_seed2_actions.npy"
+    },
+    {
+      "episode": 3,
+      "seed": 3,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "b2f5cb1b64de466cd02214b83e332c26ab56b4f2",
+      "server_ms_median": 76.14755630493164,
+      "actions_file": "episode_03_seed3_actions.npy"
+    },
+    {
+      "episode": 4,
+      "seed": 4,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "c694b9a2a15728661f71cf32c2efcdd27089fee7",
+      "server_ms_median": 76.37977600097656,
+      "actions_file": "episode_04_seed4_actions.npy"
+    },
+    {
+      "episode": 5,
+      "seed": 5,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "5cf3f1b97d30dc84c8c3ddd3b3560f0d15b87f1a",
+      "server_ms_median": 77.56686210632324,
+      "actions_file": "episode_05_seed5_actions.npy"
+    },
+    {
+      "episode": 6,
+      "seed": 6,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "8765532fa837dcc4afea9e0aa55b8db9301e5d68",
+      "server_ms_median": 76.36427879333496,
+      "actions_file": "episode_06_seed6_actions.npy"
+    },
+    {
+      "episode": 7,
+      "seed": 7,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "a3b4ee19e73437ee954a76bd29aa9922bb6b2aa7",
+      "server_ms_median": 75.99234580993652,
+      "actions_file": "episode_07_seed7_actions.npy"
+    },
+    {
+      "episode": 8,
+      "seed": 8,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "eb73915de598db3cc095d714743f704cb1f80de1",
+      "server_ms_median": 75.87170600891113,
+      "actions_file": "episode_08_seed8_actions.npy"
+    },
+    {
+      "episode": 9,
+      "seed": 9,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "8cee07c57c54ce6f4ac8145a49c3b75b84b59c85",
+      "server_ms_median": 75.32739639282227,
+      "actions_file": "episode_09_seed9_actions.npy"
+    },
+    {
+      "episode": 10,
+      "seed": 10,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "ee23d000667ea6931736e35e1cb0d6dd13b00881",
+      "server_ms_median": 77.16488838195801,
+      "actions_file": "episode_10_seed10_actions.npy"
+    },
+    {
+      "episode": 11,
+      "seed": 11,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "90ee9514b03896433dbf1c038da1f38834adef57",
+      "server_ms_median": 77.42929458618164,
+      "actions_file": "episode_11_seed11_actions.npy"
+    },
+    {
+      "episode": 12,
+      "seed": 12,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "9e477fe14551bf87f648ba98f1dd8ad98768d046",
+      "server_ms_median": 76.04241371154785,
+      "actions_file": "episode_12_seed12_actions.npy"
+    },
+    {
+      "episode": 13,
+      "seed": 13,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "5059f22a4872d1d45bd1373ae6a0c8b7ab26a9f6",
+      "server_ms_median": 76.46656036376953,
+      "actions_file": "episode_13_seed13_actions.npy"
+    },
+    {
+      "episode": 14,
+      "seed": 14,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "59af39e9c95f42eff8443c52067e5ce3163b8bc2",
+      "server_ms_median": 76.7827033996582,
+      "actions_file": "episode_14_seed14_actions.npy"
+    },
+    {
+      "episode": 15,
+      "seed": 15,
+      "success": true,
+      "n_bigsteps": 45,
+      "max_reward": 1.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "4d782290a95dc771e59fba6c6544ded910ff074c",
+      "server_ms_median": 78.26828956604004,
+      "actions_file": "episode_15_seed15_actions.npy"
+    },
+    {
+      "episode": 16,
+      "seed": 16,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "bd9dfc237f17a050f8bcf1529a31501cafdbb0be",
+      "server_ms_median": 74.51629638671875,
+      "actions_file": "episode_16_seed16_actions.npy"
+    },
+    {
+      "episode": 17,
+      "seed": 17,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "9c9e6347d27efd406ff5480e2ec557c6788782e0",
+      "server_ms_median": 74.33581352233887,
+      "actions_file": "episode_17_seed17_actions.npy"
+    },
+    {
+      "episode": 18,
+      "seed": 18,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "4aeeefaa7de751c6df86797827c9adc3653b6db8",
+      "server_ms_median": 76.99704170227051,
+      "actions_file": "episode_18_seed18_actions.npy"
+    },
+    {
+      "episode": 19,
+      "seed": 19,
+      "success": false,
+      "n_bigsteps": 45,
+      "max_reward": 0.0,
+      "action_keys": [
+        "action.left_arm",
+        "action.right_arm",
+        "action.left_hand",
+        "action.right_hand",
+        "action.waist"
+      ],
+      "action_per_key_dims": {
+        "action.left_arm": 7,
+        "action.right_arm": 7,
+        "action.left_hand": 6,
+        "action.right_hand": 6,
+        "action.waist": 3
+      },
+      "action_total_dim": 29,
+      "n_action_steps": 16,
+      "call0_obs_sha1": "6c92bedf83468de05a9256263d6c67f54d84cee1",
+      "server_ms_median": 75.41537284851074,
+      "actions_file": "episode_19_seed19_actions.npy"
+    }
+  ],
+  "action_net_ms_overall_median": 76.19035243988037,
+  "n_action_calls": 900
+}

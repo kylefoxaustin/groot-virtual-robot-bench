@@ -1,0 +1,87 @@
+diff --git a/deployment_scripts/export_onnx.py b/deployment_scripts/export_onnx.py
+index fefec7a..472b1b7 100644
+--- a/deployment_scripts/export_onnx.py
++++ b/deployment_scripts/export_onnx.py
+@@ -848,7 +848,17 @@ def quantize_llm(
+     if precision == "nvfp4":
+         # NVFP4_AWQ configs usually have better accuracy. You may also try other configs.
+         assert hasattr(mtq, "NVFP4_AWQ_LITE_CFG")
+-        quant_cfg = mtq.NVFP4_AWQ_FULL_CFG
++        # W4A16 arm (added 2026-08-27): NVFP4 WEIGHTS with fp16 ACTIVATIONS. The default
++        # NVFP4_AWQ_FULL_CFG is W4A4 — it quantizes activations too. Setting
++        # GROOT_NVFP4_WEIGHT_ONLY=1 selects the weight-only config, which is the control
++        # that separates "4-bit weights are too coarse" from "4-bit activations are the
++        # killer". Default behaviour is unchanged when the variable is unset.
++        import os as _os
++        if _os.environ.get("GROOT_NVFP4_WEIGHT_ONLY") == "1":
++            print("USING W4A16_NVFP4_CFG — NVFP4 weights, fp16 activations")
++            quant_cfg = mtq.W4A16_NVFP4_CFG
++        else:
++            quant_cfg = mtq.NVFP4_AWQ_FULL_CFG
+     else:  # fp8
+         # FP8 quantization configuration
+         quant_cfg = mtq.FP8_DEFAULT_CFG
+@@ -857,22 +867,32 @@ def quantize_llm(
+     if precision == "nvfp4" and not full_layer_quant:
+         # Disable quantization for specific layers when full_layer_quant is False
+         print("Using selective layer quantization (disabling down_proj and o_proj)")
+-        quant_cfg["quant_cfg"][
+-            "eagle_model.language_model.model.layers.*.mlp.down_proj.*_quantizer"
+-        ] = {
+-            "num_bits": (2, 1),
+-            "block_sizes": {-1: 16, "type": "dynamic", "scale_bits": (4, 3)},
+-            "axis": None,
+-            "enable": False,
+-        }
+-        quant_cfg["quant_cfg"][
+-            "eagle_model.language_model.model.layers.*.self_attn.o_proj.*_quantizer"
+-        ] = {
+-            "num_bits": (2, 1),
+-            "block_sizes": {-1: 16, "type": "dynamic", "scale_bits": (4, 3)},
+-            "axis": None,
+-            "enable": False,
+-        }
++        # ── modelopt-version COMPATIBILITY SHIM (added 2026-08-27) ──
++        # This script indexes quant_cfg["quant_cfg"] as a DICT. In modelopt >= 0.4x it is
++        # a LIST of {"quantizer_name": pattern, "enable"/"cfg": ...} entries, so the
++        # original raises TypeError: list indices must be integers or slices, not str.
++        # Both shapes are handled so the file still works on the older modelopt this
++        # script was written against. Semantics preserved: DISABLE quantization on
++        # down_proj and o_proj (NVIDIA's selective-layer recipe). In list form, later
++        # entries override earlier ones, so these are APPENDED.
++        import copy as _copy
++        quant_cfg = _copy.deepcopy(quant_cfg)   # never mutate the module-level constant
++        _excl = [
++            "eagle_model.language_model.model.layers.*.mlp.down_proj.*_quantizer",
++            "eagle_model.language_model.model.layers.*.self_attn.o_proj.*_quantizer",
++        ]
++        _qc = quant_cfg["quant_cfg"]
++        if isinstance(_qc, list):
++            for _name in _excl:
++                _qc.append({"quantizer_name": _name, "enable": False})
++        else:
++            for _name in _excl:
++                _qc[_name] = {
++                    "num_bits": (2, 1),
++                    "block_sizes": {-1: 16, "type": "dynamic", "scale_bits": (4, 3)},
++                    "axis": None,
++                    "enable": False,
++                }
+     elif precision == "nvfp4" and full_layer_quant:
+         print("Using full layer quantization (all layers enabled)")
+ 
+@@ -1200,6 +1220,14 @@ def export_eagle2_llm(
+             input_names=["inputs_embeds", "attention_mask"],
+             output_names=["embeddings"],
+             opset_version=19,
++            # torch >= 2.6 defaults torch.onnx.export to the DYNAMO exporter, which does
++            # not consult legacy TorchScript symbolics. modelopt registers its NVFP4
++            # block-quantize symbolic via symbolic_helper.parse_args (the legacy API), so
++            # under dynamo the export dies with:
++            #   No ONNX function found for tensorrt.dynamic_block_quantize_op
++            # Forcing the TorchScript exporter is what lets the NVFP4 Q/DQ nodes serialise.
++            # (Added 2026-08-27; this script predates the dynamo default.)
++            dynamo=False,
+             do_constant_folding=True,
+             dynamic_axes={
+                 "inputs_embeds": {0: "batch_size", 1: "sequence_length"},

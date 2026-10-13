@@ -1,0 +1,223 @@
+{
+ "campaign": "Jetson AGX Thor (fp8) vs RTX 5090 (bf16) reference: FINE-TUNED GR00T closed-loop success-RATE + per-seed PARITY over the same 20-seed sweep and noise bank",
+ "date": "2026-10-12",
+ "tag": "MEASURED",
+ "board": "Jetson AGX Thor",
+ "precision": "fp8",
+ "N_seeds": 20,
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19
+ ],
+ "reference": "RTX-5090 bf16 reference run (same noise bank), win set [2, 3, 5, 6, 7, 11, 12, 14, 15] = 9/20",
+ "scene_bit_match": {
+  "n_seeds": 20,
+  "n_match": 19,
+  "mismatches": [
+   {
+    "seed": 14,
+    "ref": "f07c9283ceb99ca291750020156084fc65e66eb6",
+    "board": "59af39e9c95f42eff8443c52067e5ce3163b8bc2"
+   }
+  ],
+  "all_match": false,
+  "checked": true
+ },
+ "success_rate": {
+  "board": {
+   "k": 10,
+   "n": 20,
+   "rate": 0.5,
+   "wilson95": [
+    0.2993,
+    0.7007
+   ],
+   "success_seeds": [
+    2,
+    3,
+    5,
+    6,
+    8,
+    10,
+    11,
+    12,
+    14,
+    15
+   ]
+  },
+  "ref_5090": {
+   "k": 9,
+   "n": 20,
+   "rate": 0.45,
+   "wilson95": [
+    0.2582,
+    0.6579
+   ],
+   "success_seeds": [
+    2,
+    3,
+    5,
+    6,
+    7,
+    11,
+    12,
+    14,
+    15
+   ]
+  },
+  "published_anchor": "~60% NVIDIA"
+ },
+ "PARITY_headline": {
+  "n_agree": 17,
+  "n_disagree": 3,
+  "agreement_rate": 0.85,
+  "flips": [
+   {
+    "seed": 7,
+    "5090": true,
+    "board": false,
+    "direction": "board_LOSE/5090_win"
+   },
+   {
+    "seed": 8,
+    "5090": false,
+    "board": true,
+    "direction": "board_WIN/5090_lose"
+   },
+   {
+    "seed": 10,
+    "5090": false,
+    "board": true,
+    "direction": "board_WIN/5090_lose"
+   }
+  ],
+  "note": "a flip = the board's precision changed a win/lose outcome vs the 5090 bf16 reference on the bit-identical scene+noise"
+ },
+ "fidelity_arm_joints_board_vs_5090": {
+  "arm_joints_rel_mae_pooled": 0.13585,
+  "per_seed_arm_joint_rel_mae": {
+   "0": 0.08508,
+   "1": 0.07674,
+   "2": 0.02882,
+   "3": 0.05448,
+   "4": 0.10821,
+   "5": 0.37113,
+   "6": 0.1002,
+   "7": 0.24162,
+   "8": 0.06602,
+   "9": 0.02493,
+   "10": 0.53833,
+   "11": 0.05251,
+   "12": 0.05667,
+   "13": 0.10984,
+   "14": 0.24854,
+   "15": 0.04652,
+   "16": 0.19881,
+   "17": 0.04023,
+   "18": 0.10417,
+   "19": 0.22219
+  },
+  "per_seed_all_joint_rel_mae": {
+   "0": 0.03974,
+   "1": 0.03411,
+   "2": 0.01457,
+   "3": 0.03528,
+   "4": 0.05543,
+   "5": 0.47355,
+   "6": 0.21927,
+   "7": 0.34992,
+   "8": 0.06151,
+   "9": 0.01006,
+   "10": 0.84744,
+   "11": 0.0623,
+   "12": 0.03851,
+   "13": 0.06185,
+   "14": 0.40712,
+   "15": 0.01544,
+   "16": 0.48656,
+   "17": 0.01935,
+   "18": 0.05524,
+   "19": 0.19294
+  },
+  "arm_rel_mae_distribution": {
+   "min": 0.02493,
+   "median": 0.09264,
+   "mean": 0.13875,
+   "max": 0.53833
+  },
+  "top3_seeds_by_arm_rel_mae": [
+   {
+    "seed": 10,
+    "arm_rel_mae": 0.53833,
+    "class": "FLIP"
+   },
+   {
+    "seed": 5,
+    "arm_rel_mae": 0.37113,
+    "class": "both_win"
+   },
+   {
+    "seed": 14,
+    "arm_rel_mae": 0.24854,
+    "class": "both_win"
+   }
+  ],
+  "flip_seed_arm_rel_mae": {
+   "7": 0.24162,
+   "8": 0.06602,
+   "10": 0.53833
+  },
+  "agree_only_median": 0.08508
+ },
+ "in_loop_hz": {
+  "n_calls": 900,
+  "board_compute_ms_median": 136.2,
+  "board_compute_hz": 7.34,
+  "in_loop_net_ms_median": 141.0,
+  "in_loop_policy_call_hz_incl_zmq": 7.064,
+  "note": "in-loop Hz INCLUDES host<->board ZMQ network latency (client on host, policy on board); board_compute_hz is the board's get_action compute only (server-side timer)."
+ },
+ "determinism_spotcheck": null,
+ "fp8_engaged_proof": {
+  "backend": "torch-native float8_e4m3fn via torch._scaled_mm (per-tensor dynamic-act + static-weight scales, E4M3)",
+  "torch_version": "2.14.0+cu130",
+  "device": "NVIDIA Thor",
+  "compute_capability": [
+   11,
+   0
+  ],
+  "stats": {
+   "n_linear_converted": 391,
+   "n_scaled_mm_calls": 664200,
+   "operand_dtype": "torch.float8_e4m3fn",
+   "out_dtype": "torch.bfloat16",
+   "e4m3_max": 448.0
+  }
+ },
+ "caveats": [
+  "5090 reference is bf16, NOT fp32 -- part of any small residual is the 5090's own bf16.",
+  "Board attention runs on torch SDPA (no flash_attn on Jetson); SDPA is exact attention, far below the precision effect measured, and both boards use it consistently.",
+  "n=20 seeds; Wilson CI reflects the modest n.",
+  "Board runs the SAME fine-tuned policy brain as the 5090; flips are boundary disagreements, not capability."
+ ],
+ "verdict": "[scene hash match 19/20 -- seeds [14] differ from the reference scene; inspect them (in the published runs seed 14's initial observation is host-nondeterministic)] Jetson AGX Thor (fp8) vs RTX 5090 (bf16): 10/20 = 50% success; agrees on 17/20 seeds, 3 FLIP(S) at [7, 8, 10]. Reference 9/20 = 45%. Arm-joint fidelity median 0.093. A flip is a win/lose disagreement on the bit-identical scene + noise -- report it plainly.",
+ "committed": false
+}

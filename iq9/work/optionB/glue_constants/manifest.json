@@ -1,0 +1,46 @@
+{
+ "backbone.eagle_model.mlp1.0.weight": {
+  "file": "mlp1_0_weight.npy",
+  "shape": [
+   2048,
+   1152
+  ],
+  "std": 0.01877,
+  "absmax": 0.1021
+ },
+ "backbone.eagle_model.mlp1.0.bias": {
+  "file": "mlp1_0_bias.npy",
+  "shape": [
+   2048
+  ],
+  "std": 0.0185,
+  "absmax": 0.054
+ },
+ "backbone.eagle_model.language_model.model.embed_tokens.weight": {
+  "file": "embed_tokens_weight.npy",
+  "shape": [
+   151680,
+   2048
+  ],
+  "std": 0.03404,
+  "absmax": 0.3477
+ },
+ "action_head.future_tokens.weight": {
+  "file": "ah_future_tokens_weight.npy",
+  "shape": [
+   32,
+   1536
+  ],
+  "std": 0.05853,
+  "absmax": 0.5352
+ },
+ "action_head.position_embedding.weight": {
+  "file": "ah_position_embedding_weight.npy",
+  "shape": [
+   1024,
+   1536
+  ],
+  "std": 0.07291,
+  "absmax": 2.7188
+ }
+}

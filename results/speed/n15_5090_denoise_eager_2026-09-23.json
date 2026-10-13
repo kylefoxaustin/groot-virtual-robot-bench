@@ -1,0 +1,180 @@
+{
+ "tag": "MEASURED",
+ "study": "GR00T N1.5 denoise-steps sweep, PyTorch eager e2e (RTX 5090)",
+ "model": "nvidia/GR00T-N1.5-3B",
+ "device": "NVIDIA RTX 5090",
+ "clocks_pinned": "locked SM 2700 / MEM 14001 MHz (nvidia-smi -lgc/-lmc); measured under load 2692 MHz, 13801 MHz",
+ "data_config": "fourier_gr1_arms_only",
+ "embodiment": "gr1",
+ "dof": 26,
+ "action_horizon": 16,
+ "input_provenance": "recorded (simulated) GR1 observations from NVIDIA demo_data/robot_sim.PickNPlace, not synthetic data: 5 episodes [0, 20, 40, 60, 80] x 3 seeds [0, 1, 2]; latency on ds[0]",
+ "scope": "policy.get_action() full e2e (transforms+ViT+LLM+DiT; the video frames are already decoded by the dataset loader), PyTorch eager, warm",
+ "ref_steps": 64,
+ "reference_note": "64 steps = near-converged (NOT exact); Euler error ~C/N, so 16 steps is itself ~1% from the infinite-step limit",
+ "latency_ms": {
+  "1": {
+   "median_ms": 23.108,
+   "p10_ms": 22.395,
+   "p90_ms": 25.767,
+   "min_ms": 22.163,
+   "reps": 40
+  },
+  "2": {
+   "median_ms": 26.284,
+   "p10_ms": 25.639,
+   "p90_ms": 27.93,
+   "min_ms": 24.189,
+   "reps": 40
+  },
+  "3": {
+   "median_ms": 29.265,
+   "p10_ms": 27.929,
+   "p90_ms": 30.189,
+   "min_ms": 27.71,
+   "reps": 40
+  },
+  "4": {
+   "median_ms": 32.23,
+   "p10_ms": 31.259,
+   "p90_ms": 34.009,
+   "min_ms": 30.614,
+   "reps": 40
+  },
+  "6": {
+   "median_ms": 39.907,
+   "p10_ms": 38.126,
+   "p90_ms": 52.444,
+   "min_ms": 37.363,
+   "reps": 40
+  },
+  "8": {
+   "median_ms": 45.54,
+   "p10_ms": 44.385,
+   "p90_ms": 48.134,
+   "min_ms": 43.897,
+   "reps": 40
+  },
+  "12": {
+   "median_ms": 60.147,
+   "p10_ms": 58.272,
+   "p90_ms": 63.471,
+   "min_ms": 57.722,
+   "reps": 40
+  },
+  "16": {
+   "median_ms": 73.82,
+   "p10_ms": 71.666,
+   "p90_ms": 85.906,
+   "min_ms": 70.706,
+   "reps": 40
+  },
+  "24": {
+   "median_ms": 103.711,
+   "p10_ms": 101.509,
+   "p90_ms": 137.371,
+   "min_ms": 99.641,
+   "reps": 40
+  },
+  "32": {
+   "median_ms": 130.459,
+   "p10_ms": 127.133,
+   "p90_ms": 145.66,
+   "min_ms": 125.7,
+   "reps": 40
+  }
+ },
+ "deviation_vs_ref_pct": {
+  "1": {
+   "mean_pct": 15.913,
+   "std_pct": 17.0148,
+   "min_pct": 5.0569,
+   "max_pct": 51.8597,
+   "n_samples": 15
+  },
+  "2": {
+   "mean_pct": 10.8322,
+   "std_pct": 12.7115,
+   "min_pct": 3.8098,
+   "max_pct": 49.3937,
+   "n_samples": 15
+  },
+  "3": {
+   "mean_pct": 6.0443,
+   "std_pct": 3.7228,
+   "min_pct": 3.0897,
+   "max_pct": 16.1986,
+   "n_samples": 15
+  },
+  "4": {
+   "mean_pct": 3.7906,
+   "std_pct": 0.9778,
+   "min_pct": 2.5338,
+   "max_pct": 5.8646,
+   "n_samples": 15
+  },
+  "6": {
+   "mean_pct": 2.6721,
+   "std_pct": 0.7201,
+   "min_pct": 1.7297,
+   "max_pct": 4.4178,
+   "n_samples": 15
+  },
+  "8": {
+   "mean_pct": 2.1149,
+   "std_pct": 0.6004,
+   "min_pct": 1.3012,
+   "max_pct": 3.5091,
+   "n_samples": 15
+  },
+  "12": {
+   "mean_pct": 1.4829,
+   "std_pct": 0.3955,
+   "min_pct": 0.9686,
+   "max_pct": 2.435,
+   "n_samples": 15
+  },
+  "16": {
+   "mean_pct": 1.1813,
+   "std_pct": 0.2292,
+   "min_pct": 0.8653,
+   "max_pct": 1.7599,
+   "n_samples": 15
+  },
+  "24": {
+   "mean_pct": 0.9371,
+   "std_pct": 0.0861,
+   "min_pct": 0.805,
+   "max_pct": 1.1183,
+   "n_samples": 15
+  },
+  "32": {
+   "mean_pct": 0.509,
+   "std_pct": 0.0478,
+   "min_pct": 0.4289,
+   "max_pct": 0.6312,
+   "n_samples": 15
+  }
+ },
+ "latency_decomposition": {
+  "backbone_intercept_ms": 18.715,
+  "per_denoise_step_ms": 3.494,
+  "r2": 0.99959,
+  "note": "eager PyTorch; per-step is the DiT flow-matching pass; intercept is denoise-independent SEE+READ+THINK+prep"
+ },
+ "deviation_1overN_fit": {
+  "model": "dev_pct ~= C/steps",
+  "C": 17.93,
+  "note": "Euler truncation decays ~1/N; there is no saturation knee in the metric \u2014 it is a cost/benefit trade vs the linear latency"
+ },
+ "torch_version": "2.9.0+cu128",
+ "utc": "2026-09-23T05:32:36Z",
+ "noise_floor": {
+  "reps": 40,
+  "estimator": "median",
+  "warmup": 10,
+  "deviation_replication": "5 episodes x 3 seeds = 15 samples per step (mean\u00b1std)"
+ },
+ "metric_span": "Latency: full policy.get_action() wall (transforms+ViT+LLM+DiT on already-decoded frames), PyTorch EAGER -- the relative denoise law; the deployable compiled latency is the full-TensorRT sweep. Deviation: trajectory rel-MAE of the 26-DOF x 16-step action vs a 64-step near-converged reference, matched noise.",
+ "harness": "speed/denoise_sweep_eager.py"
+}

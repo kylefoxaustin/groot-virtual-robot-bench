@@ -1,0 +1,61 @@
+{
+ "note": "md5 of the fp16 ONNX export behind the published engines (export_onnx.py at the pinned Isaac-GR00T commit, patched; torch 2.9.0+cu128). A re-export under another torch/onnx version may differ byte-wise; what must match is the graph (input/output names and shapes) and the engines' numerics (the output check in every e2e record).",
+ "files": {
+  "eagle2/vit_fp16.onnx": {
+   "md5": "1111eb87f86e33fc741c97c84878474d",
+   "bytes": 2044912
+  },
+  "eagle2/vit_fp16.onnx.data": {
+   "md5": "5804539b3a2581ac63f57fa41a47cfa1",
+   "bytes": 830885888
+  },
+  "eagle2/llm_fp16.onnx": {
+   "md5": "2a4bb3205e34f626120d9d7c7309ee51",
+   "bytes": 2546133
+  },
+  "eagle2/llm_fp16.onnx.data": {
+   "md5": "7dce112f1a70af34d447817fb7654338",
+   "bytes": 1208090624
+  },
+  "action_head/vlln_vl_self_attention.onnx": {
+   "md5": "4768bb9636756550dfaf439e796b75d4",
+   "bytes": 335274
+  },
+  "action_head/vlln_vl_self_attention.onnx.data": {
+   "md5": "04761bbe00a07e99d84a0b1076d77909",
+   "bytes": 402915328
+  },
+  "action_head/state_encoder.onnx": {
+   "md5": "db6f632be471c9b50291cacda137e67e",
+   "bytes": 13986
+  },
+  "action_head/state_encoder.onnx.data": {
+   "md5": "195f20931fb869d85ab961a54477504b",
+   "bytes": 105054208
+  },
+  "action_head/action_encoder.onnx": {
+   "md5": "dca095fdd20d9b5c81257bb34e5105d7",
+   "bytes": 30681
+  },
+  "action_head/action_encoder.onnx.data": {
+   "md5": "9e6d84c34ed55905028c3a760710587b",
+   "bytes": 456458240
+  },
+  "action_head/DiT_fp16.onnx": {
+   "md5": "46ab39a157db457fd7898925f8a99248",
+   "bytes": 1224222
+  },
+  "action_head/DiT_fp16.onnx.data": {
+   "md5": "31251599f415e7dd292ce9538db88e57",
+   "bytes": 1100939264
+  },
+  "action_head/action_decoder.onnx": {
+   "md5": "850175c5fc29d91c3d3c8f710e8ca14a",
+   "bytes": 13996
+  },
+  "action_head/action_decoder.onnx.data": {
+   "md5": "7e923656dfcebc6e9d87f0273b6b8f7b",
+   "bytes": 69337088
+  }
+ }
+}

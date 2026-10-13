@@ -1,0 +1,72 @@
+{
+ "tag": "MEASURED (NVIDIA figures: SOURCED)",
+ "date": "2026-08-27",
+ "study": "GR00T N1.5 fp16 TensorRT engines timed standalone (trtexec-style, batch 1): ViT, LLM, one DiT denoise step",
+ "accounting": "stage_sum = ViT + LLM + 4 x DiT_step (4 denoise steps). Excludes the small action-head graphs, transforms and host glue -- see the full-pipeline e2e records for the whole policy call.",
+ "rows": [
+  {
+   "board": "RTX 5090",
+   "trt": "10.16.1.11 (Python API)",
+   "vit_ms": 1.821,
+   "llm_ms": 2.045,
+   "dit_step_ms": 1.306,
+   "stage_sum_ms": 9.091,
+   "speedup_vs_pytorch_eager": 3.0
+  },
+  {
+   "board": "Jetson AGX Thor",
+   "trt": "10.16.2",
+   "vit_ms": 4.816,
+   "llm_ms": 7.356,
+   "dit_step_ms": 4.944,
+   "stage_sum_ms": 31.948,
+   "speedup_vs_pytorch_eager": 1.87
+  },
+  {
+   "board": "Jetson AGX Orin",
+   "trt": "10.3.0.30",
+   "vit_ms": 12.195,
+   "llm_ms": 15.333,
+   "dit_step_ms": 8.119,
+   "stage_sum_ms": 60.005,
+   "speedup_vs_pytorch_eager": 3.72
+  }
+ ],
+ "vs_nvidia_published": {
+  "source": "SOURCED: NVIDIA Isaac-GR00T N1.5 deployment_scripts/README.md (trtexec, batch_size=1)",
+  "orin_valid_comparison": {
+   "note": "same TensorRT major version (10.3) as NVIDIA's table",
+   "nvidia": {
+    "vit": 11.96,
+    "llm": 17.25,
+    "dit_per_step": 7.77,
+    "stage_sum": 60.29
+   },
+   "ours": {
+    "vit": 12.195,
+    "llm": 15.333,
+    "dit_per_step": 8.119,
+    "stage_sum": 60.005
+   },
+   "per_stage_delta_pct": [
+    2.0,
+    -11.1,
+    4.5
+   ],
+   "total_delta_pct": -0.5,
+   "reading": "agreement to 0.5% in total, with per-stage deltas mixed in sign -- consistent with identical work measured identically (theirs with jetson_clocks on, ours off)"
+  },
+  "thor_not_a_validation": {
+   "nvidia": 35.58,
+   "ours": 31.948,
+   "note": "TensorRT versions differ (ours 10.16.2 vs NVIDIA's older table), so the -10% is version drift, not a harness advantage. Recorded, not claimed."
+  }
+ },
+ "fp16_build_trap": {
+  "what": "Building the Qwen3 LLM engine with plain --fp16 (not strongly typed) prints PASSED and produces plausible values while being structurally wrong (cosine ~0.853, rel_mae ~0.65 vs the ONNX reference) on all three GPUs.",
+  "detector": "a correct build keeps the RMSNorm fp32 regions (98 Float tensors in the engine's layer info); a broken build has zero.",
+  "consequence": "speed/build_engines.py builds STRONGLY TYPED networks; do not switch it to --fp16."
+ },
+ "thor_dit_note": "Thor's DiT step (4.94 ms) is about as slow as its own ViT and only 1.64x faster than Orin's (ViT 2.53x, LLM 2.05x); three independent builds agree to 0.48% and the engine is numerically correct (cosine 0.99999). A first-order roofline places the DiT below Thor's ridge, i.e. memory-bandwidth-bound (DERIVED, not measured here).",
+ "harness": "speed/e2e_eager_hybrid_fulltrt.py (standalone_engine_ms) reproduces these per-engine times in the same session as the e2e runs"
+}

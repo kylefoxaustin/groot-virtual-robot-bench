@@ -1,0 +1,47 @@
+{
+ "record": "groot_multiarm_scaling_arms_vs_cameras",
+ "date": "2026-10-10",
+ "provenance": "MEASURED (components) + DERIVED (4-arm projection, labeled)",
+ "question": "Question: realistic robots have 2-4 arms (humanoid, AMR w/ 4 graspers). Is GR00T 'one core per arm', or does the backbone share? How to benchmark multi-arm?",
+ "key_context": "GR00T N1.5 is a UNIFIED whole-body policy. The embodiment we already benchmark (Fourier GR1, gr1_arms_only, eid 24) is BIMANUAL -- one policy, one forward pass ALREADY drives TWO arms.",
+ "platform": "RTX 5090, fp16, TRT 10.16.1",
+ "exp1_action_head_dof_decomposition": {
+  "finding": "Adding arms is nearly free. The action head's DoF-dependent parts (action_encoder + action_decoder) are ~1-3% of its latency; the DiT diffusion body (DoF-INVARIANT) dominates. The backbone (ViT+LLM) doesn't know how many arms exist.",
+  "action_dim_bimanual_gr1": 32,
+  "components_ms_per_inf": {
+   "state_encoder": 0.015,
+   "action_encoder": 0.037,
+   "action_decoder": 0.017,
+   "vlln_vl_self_attn": 0.386,
+   "DiT_body": 1.382
+  },
+  "dof_dependent_ms": 0.054,
+  "dof_dependent_fraction": {
+   "per_step_all_once": "2.9% (total 1.837ms)",
+   "four_step_weighted_DiT_x4": "0.90% (total 5.983ms)"
+  },
+  "dof_invariant": "DiT body (runs x4 denoise = 5.53ms = 92%), vlln (0.386), state_encoder; these are fixed regardless of arm count",
+  "four_arm_projection_DERIVED": "2 arms (action_dim 32) -> 4 arms (action_dim ~64) ~doubles only the 0.054ms encoder/decoder -> +~0.05ms = +0.3% e2e. One brain per ROBOT, not one core per arm."
+ },
+ "exp2_camera_view_scaling": {
+  "finding": "Perception (cameras/views) is the real scaling cost -- dwarfs the ~0.05ms DoF cost. More arms usually means more wrist cameras.",
+  "vit_ms_by_views": {
+   "1": 1.978,
+   "2": 2.559,
+   "4": 3.822
+  },
+  "vit_scaling": "SUBLINEAR -- batching amortizes: per-view 1.98 -> 0.96 ms (2x efficiency at 4 views)",
+  "llm_ms_by_vision_tokens": {
+   "256": 1.967,
+   "512": 2.908,
+   "1024": 4.969
+  },
+  "llm_scaling": "superlinear per doubling (1.48x then 1.71x) -- O(n^2) attention emerging as vision context grows",
+  "takeaway": "each camera ~ +1ms ViT (amortizes well) + a growing LLM-context tax; the ViT+LLM path (2-5ms each) is 40-100x the DoF cost"
+ },
+ "exp3_independent_agents_case_B": {
+  "when": "If the N arms are INDEPENDENT agents (separate brains / independently tasked graspers), not a unified policy -> N x full backbone -> THROUGHPUT regime -> literally one core per arm."
+ },
+ "bottom_line": "For a unified robot (humanoid / coordinated AMR) GR00T cost is set by SENSING + THINKING (shared ViT+LLM), not by the number of ARMS (acting is ~free). It's one big core per ROBOT. 'One core per arm' applies only to INDEPENDENT agents, where it becomes a throughput problem.",
+ "_correction_2026-10-12_per_step_weighting": "DEFECT in dof_dependent_fraction.four_step_weighted_DiT_x4 and four_arm_projection_DERIVED: GR00T's flow-matching loop runs action_encoder -> DiT -> action_decoder on EVERY denoise step, so the DoF-dependent graphs must be weighted x4 like the DiT. Corrected (DERIVED, 5090): DoF-dependent = 4 x 0.054 = 0.216 ms per inference = 3.5% of the action head (0.216 / 6.145 ms), not 0.90%; 2->4-arm projection ~doubles it -> +~0.22 ms = ~1.3% of the 17.2 ms MEASURED e2e, not +0.3%. Component ms values are per single call. Conclusion (arms nearly free) unchanged."
+}

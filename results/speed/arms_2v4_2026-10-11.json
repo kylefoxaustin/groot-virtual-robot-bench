@@ -1,0 +1,98 @@
+{
+ "tag": "MEASURED",
+ "date": "2026-10-11",
+ "question": "Does going from 2 arms (GR1, action_dim 32) to 4 arms (action_dim 64) cost anything in GR00T's action head?",
+ "what_was_measured": "The two DoF-dependent action-head sub-graphs (action_encoder + action_decoder) at the bimanual GR1 action_dim 32 (2 arms) vs a SYNTHETIC widened action_dim 64 (4 arms). The 64-wide head was produced by ONNX surgery (duplicate the 32-wide input-projection / output columns). This is MEASURED PERFORMANCE on a synthetic widened head -- it is NOT a trained 4-arm policy and makes no accuracy claim.",
+ "why_only_these_two_graphs": "Of the whole GR00T action head, only action_encoder (projects the action vector in) and action_decoder (projects it out) depend on action_dim. The DiT diffusion body (runs x4 denoise steps, ~92% of head latency), the VL self-attention, and the state encoder are DoF-INVARIANT -- they do not know how many arms exist. The ViT+LLM backbone likewise does not.",
+ "method": {
+  "RTX_5090_and_Orin": "speed/arms_2v4/bench_2v4.py: 5 fresh fp16 engine builds per (stage, dim), each the CUDA-event mean of 300 executes",
+  "Thor": "speed/arms_2v4/bench_2v4_trtexec.sh: 3 fresh builds per (stage, dim), trtexec --fp16 --iterations=2000 --avgRuns=2000 --noDataTransfers --useSpinWait, GPU Compute Time mean",
+  "why_multi_build": "a single TensorRT build is a tactic lottery for these tiny graphs: one Orin single-build pass showed a bogus 2x encoder delta in the impossible direction; five builds collapsed it to 0.4223 vs 0.4233 ms"
+ },
+ "results": {
+  "RTX_5090": {
+   "trt": "10.16.1",
+   "unit": "ms per CALL of each sub-graph (x4 per inference at 4 denoise steps)",
+   "action_encoder": {
+    "2arm_mean": 0.02869,
+    "4arm_mean": 0.03019,
+    "build_spread": 0.00323
+   },
+   "action_decoder": {
+    "2arm_mean": 0.01231,
+    "4arm_mean": 0.0123,
+    "build_spread": 2e-05
+   },
+   "dof_total_2arm": 0.041,
+   "dof_total_4arm": 0.04249,
+   "delta_total": 0.0015,
+   "verdict": "within build spread -> FREE. The ops are launch-bound at this speed (sub-0.05ms); action_dim is invisible."
+  },
+  "Jetson_AGX_Thor": {
+   "trt": "10.16.2",
+   "unit": "ms per CALL of each sub-graph (x4 per inference at 4 denoise steps)",
+   "action_encoder": {
+    "2arm_builds": [
+     0.10989,
+     0.10664,
+     0.10664
+    ],
+    "4arm_builds": [
+     0.11011,
+     0.10656,
+     0.10648
+    ],
+    "2arm_mean": 0.10772,
+    "4arm_mean": 0.10772
+   },
+   "action_decoder": {
+    "2arm_builds": [
+     0.05272,
+     0.04372,
+     0.04612
+    ],
+    "4arm_builds": [
+     0.04001,
+     0.04371,
+     0.05254
+    ],
+    "2arm_mean": 0.04752,
+    "4arm_mean": 0.04542
+   },
+   "dof_total_2arm": 0.15524,
+   "dof_total_4arm": 0.15314,
+   "delta_total": -0.0021,
+   "verdict": "within build spread (decoder swings ~0.01ms build-to-build) -> FREE. 4-arm total measured slightly LOWER = noise."
+  },
+  "Jetson_AGX_Orin": {
+   "trt": "10.3.0",
+   "unit": "ms per CALL of each sub-graph (x4 per inference at 4 denoise steps)",
+   "action_encoder": {
+    "2arm_mean": 0.42226,
+    "4arm_mean": 0.42326,
+    "build_spread": 0.00587
+   },
+   "action_decoder": {
+    "2arm_mean": 0.06784,
+    "4arm_mean": 0.07094,
+    "build_spread": 0.00785
+   },
+   "dof_total_2arm": 0.4901,
+   "dof_total_4arm": 0.4942,
+   "delta_total": 0.0041,
+   "verdict": "within build spread -> FREE. (Single-build artifact caught and discarded, see method.why_multi_build.)"
+  }
+ },
+ "per_inference": {
+  "note": "the encoder and decoder run once per denoise step, so per-inference deltas are 4x delta_total",
+  "delta_ms_per_inference": {
+   "RTX_5090": 0.006,
+   "Jetson_AGX_Thor": -0.0084,
+   "Jetson_AGX_Orin": 0.0164
+  }
+ },
+ "headline": "2 -> 4 arms moves the DoF-dependent encoder + decoder by <=0.005 ms per module call (<=0.02 ms per policy call), within build-to-build spread on every board. Thor's delta is slightly negative (noise).",
+ "clocks": "5090 not locked (delta measured back-to-back, insensitive to absolute clock); Jetsons at their default governor",
+ "variable_check": "ONNX shapes verified to differ before running: encoder input [.,16,32]->[.,16,64]; decoder output [.,49,32]->[.,49,64]",
+ "scope": "synthetic widened head; timing only -- NOT a trained 4-arm policy, no accuracy claim"
+}

@@ -1,0 +1,22 @@
+{
+ "tag": "MEASURED",
+ "study": "GR00T N1.5 direct stage timing, PyTorch eager (RTX 5090) -- cross-check of the eager sweep law",
+ "device": "NVIDIA RTX 5090",
+ "clocks_pinned": "locked SM 2700 / MEM 14001 MHz",
+ "stages_ms": {
+  "4": {
+   "transform": 2.616,
+   "backbone": 14.524,
+   "head": 15.435
+  },
+  "16": {
+   "transform": 2.668,
+   "backbone": 14.716,
+   "head": 56.965
+  }
+ },
+ "action_head_per_step_ms": 3.461,
+ "action_head_fixed_ms": 1.592,
+ "utc": "2026-09-23T05:16:31Z",
+ "harness": "speed/stage_time_eager.py"
+}

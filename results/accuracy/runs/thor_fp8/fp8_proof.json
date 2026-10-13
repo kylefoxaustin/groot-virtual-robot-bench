@@ -1,0 +1,16 @@
+{
+ "backend": "torch-native float8_e4m3fn via torch._scaled_mm (per-tensor dynamic-act + static-weight scales, E4M3)",
+ "torch_version": "2.14.0+cu130",
+ "device": "NVIDIA Thor",
+ "compute_capability": [
+  11,
+  0
+ ],
+ "stats": {
+  "n_linear_converted": 391,
+  "n_scaled_mm_calls": 664200,
+  "operand_dtype": "torch.float8_e4m3fn",
+  "out_dtype": "torch.bfloat16",
+  "e4m3_max": 448.0
+ }
+}

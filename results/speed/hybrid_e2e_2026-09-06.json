@@ -1,0 +1,45 @@
+{
+ "tag": "MEASURED",
+ "date": "2026-09-06",
+ "study": "GR00T N1.5 hybrid path (ViT, LLM, DiT as TensorRT engines; everything else PyTorch eager) -- whole policy.get_action() call",
+ "status": "historical: superseded for comparisons by the same-session hybrid control inside groot_*_fulltrt_e2e_2026-10-12.json (2-8% faster session-to-session)",
+ "method": "policy.get_action() on the recorded (simulated) PickNPlace step, median of 20 after 5 warmup, synced; host_and_glue = e2e minus in-pipeline engine time",
+ "boards": {
+  "RTX 5090": {
+   "hybrid_e2e_ms_median": 17.2,
+   "hybrid_hz": 58.1,
+   "engines_inside_pipeline_ms": {
+    "vit": 2.06,
+    "llm": 2.07,
+    "dit_per_step": 1.43,
+    "dit_x4": 5.73,
+    "sum": 9.86
+   },
+   "host_and_glue_ms": 7.34
+  },
+  "Jetson AGX Thor": {
+   "hybrid_e2e_ms_median": 53.14,
+   "hybrid_hz": 18.8,
+   "engines_inside_pipeline_ms": {
+    "vit": 5.38,
+    "llm": 7.71,
+    "dit_per_step": 5.2,
+    "dit_x4": 20.81,
+    "sum": 33.9
+   },
+   "host_and_glue_ms": 19.24
+  },
+  "Jetson AGX Orin": {
+   "hybrid_e2e_ms_median": 105.98,
+   "hybrid_hz": 9.4,
+   "engines_inside_pipeline_ms": {
+    "vit": 14.92,
+    "llm": 16.11,
+    "dit_per_step": 8.75,
+    "dit_x4": 35.01,
+    "sum": 66.05
+   },
+   "host_and_glue_ms": 39.94
+  }
+ }
+}

@@ -1,0 +1,10 @@
+# Simulator environment on the x86 host (RoboCasa GR1 tabletop), Python 3.10.
+# robosuite and robocasa-gr1-tabletop-tasks are installed editable from the pinned clones (setup_x86.sh).
+mujoco==3.2.6
+numpy==1.26.4
+gymnasium==1.3.0
+opencv-python==4.11.0.86
+pyzmq==27.2.0
+msgpack==1.2.2
+msgpack-numpy==0.4.8
+robosuite_models==1.0.0

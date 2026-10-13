@@ -1,0 +1,163 @@
+{
+ "tag": "MEASURED",
+ "date": "2026-09-18",
+ "task": "RoboCasa GR1 tabletop PnPMilkToMicrowaveClose (Fourier GR1, arms+waist+hands, 29-DoF action), 20 seeds (0-19) x 720 sim steps, 20 Hz control, 16-step action chunks, 4 denoise steps",
+ "policy": "youliangtan/gr00t-n1.5-robocasa-tabletop-posttrain @ b46fb3c (GR00T N1.5 post-trained on the RoboCasa tabletop tasks); PyTorch (not TensorRT) on every backend",
+ "pairing": "one diffusion-noise bank (seed 5000, 20x50x1x16x32 fp32) injected bit-identically into every backend; scenes deep-reseeded per seed; per-(episode, call) noise pairing",
+ "reference": {
+  "board": "RTX 5090",
+  "precision": "bf16",
+  "success": "9/20",
+  "rate": 0.45,
+  "wilson95": [
+   0.2582,
+   0.6579
+  ],
+  "success_seeds": [
+   2,
+   3,
+   5,
+   6,
+   7,
+   11,
+   12,
+   14,
+   15
+  ],
+  "run": "results/accuracy/runs/rtx5090_bf16_reference"
+ },
+ "boards": {
+  "Jetson AGX Orin fp16": {
+   "success": "9/20",
+   "rate": 0.45,
+   "wilson95": [
+    0.2582,
+    0.6579
+   ],
+   "success_seeds": [
+    2,
+    3,
+    5,
+    6,
+    7,
+    11,
+    12,
+    14,
+    15
+   ],
+   "agreement_with_reference": "20/20",
+   "flip_seeds": [],
+   "arm_joint_rel_mae_vs_reference": {
+    "median": 0.04318,
+    "max": 0.50656
+   },
+   "scene_hash_match": "19/20",
+   "board_compute_ms_median": 338.9,
+   "in_loop_ms_median_incl_zmq": 345.4,
+   "source": "results/accuracy/finalize_orin_fp16_vs_5090.json"
+  },
+  "Jetson AGX Thor fp8": {
+   "success": "10/20",
+   "rate": 0.5,
+   "wilson95": [
+    0.2993,
+    0.7007
+   ],
+   "success_seeds": [
+    2,
+    3,
+    5,
+    6,
+    8,
+    10,
+    11,
+    12,
+    14,
+    15
+   ],
+   "agreement_with_reference": "17/20",
+   "flip_seeds": [
+    7,
+    8,
+    10
+   ],
+   "arm_joint_rel_mae_vs_reference": {
+    "median": 0.09264,
+    "max": 0.53833
+   },
+   "scene_hash_match": "19/20",
+   "board_compute_ms_median": 136.2,
+   "in_loop_ms_median_incl_zmq": 141.0,
+   "source": "results/accuracy/finalize_thor_fp8_vs_5090.json"
+  },
+  "Jetson AGX Thor bf16 (control)": {
+   "success": "8/20",
+   "rate": 0.4,
+   "wilson95": [
+    0.2188,
+    0.6134
+   ],
+   "success_seeds": [
+    2,
+    3,
+    5,
+    6,
+    11,
+    12,
+    14,
+    15
+   ],
+   "agreement_with_reference": "19/20",
+   "flip_seeds": [
+    7
+   ],
+   "arm_joint_rel_mae_vs_reference": {
+    "median": 0.03882,
+    "max": 0.4827
+   },
+   "scene_hash_match": "19/20",
+   "board_compute_ms_median": 70.7,
+   "in_loop_ms_median_incl_zmq": 76.3,
+   "source": "results/accuracy/finalize_thor_bf16_vs_5090.json"
+  }
+ },
+ "fp8_isolation_same_board": {
+  "comparison": "Thor fp8 vs Thor bf16",
+  "agreement": "18/20",
+  "flip_seeds": [
+   8,
+   10
+  ],
+  "arm_joint_rel_mae_median": 0.1012,
+  "reading": "Thor fp8's flips vs the 5090 decompose into one hardware/stack flip (seed 7, which also flips under Thor bf16) and two fp8-precision flips (seeds 8 and 10).",
+  "source": "results/accuracy/finalize_thor_fp8_vs_thor_bf16.json"
+ },
+ "fp8_engagement_proof": {
+  "backend": "torch-native float8_e4m3fn via torch._scaled_mm (per-tensor dynamic-act + static-weight scales, E4M3)",
+  "torch_version": "2.14.0+cu130",
+  "device": "NVIDIA Thor",
+  "compute_capability": [
+   11,
+   0
+  ],
+  "stats": {
+   "n_linear_converted": 391,
+   "n_scaled_mm_calls": 664200,
+   "operand_dtype": "torch.float8_e4m3fn",
+   "out_dtype": "torch.bfloat16",
+   "e4m3_max": 448.0
+  }
+ },
+ "fp8_engagement_accounting": "664,200 e4m3 GEMMs / 900 policy calls = 738 per call = 165 (SigLIP) + 84 (Qwen LLM, select_layer 12) + 1 (mlp1) + 24 (VL self-attn) + 4 x 116 (DiT per Euler step). Attention, norms, patch-embed and the per-embodiment state/action encoder+decoder stay bf16.",
+ "latency_note": "closed-loop latencies are PyTorch eager policy calls (not TensorRT): board compute, and in-loop incl. host<->board ZMQ. On Thor, fp8 is slower than bf16 at batch 1 (dynamic-quantisation overhead): in-loop incl. ZMQ ~141 vs ~76 ms; board compute in the table. Use results/speed for deployable latency.",
+ "caveats": [
+  "The 5090 reference is bf16, not fp32 ground truth.",
+  "n = 20 seeds, one noise draw per seed: Wilson 95% CIs are about +/-20 points and overlap for every backend (all ~40-50%). The data rule out a collapse, not a 10-20 point degradation; the fp8 > bf16 rate ordering is noise.",
+  "The checkpoint authors report 0.60 for this task (SOURCED: Isaac-GR00T examples/RoboCasa/README.md at the pinned commit); our 45% (Wilson CI 26-66%) is consistent with it.",
+  "Seed 14's initial observation is nondeterministic on the host simulator (3 distinct call-0 hashes over 7 host sweeps; not the seeded layout RNG). It is a win on every backend and in no flip; excluding it leaves the conclusions unchanged (Orin 8/19 = 5090 8/19; Thor fp8 9/19 vs 8/19).",
+  "The 5090 reference run predates call-0 hashing, so its scene identity is inferred (host probe + call-0 action agreement <=0.013 vs ~0.30 for a different scene). The 2026-09-18 board runs hash-match each other on 19/20 seeds (all but 14); the 2026-10-12 Thor bf16 re-run also differs at seed 5, which is not a flip seed.",
+  "Thor fp8 determinism was not tested (no repeat run); Orin fp16 is bit-exact across two processes.",
+  "Thor fp8's flips are heterogeneous: seed 8 is a true boundary case; seed 10 is a large-divergence success (per-call rel_mae peaks at 1.70) that won the seed the 5090 lost."
+ ],
+ "reproduce": "accuracy/run_closed_loop.py per backend, then accuracy/finalize.py and accuracy/make_summary.py (docs/ACCURACY.md)"
+}
