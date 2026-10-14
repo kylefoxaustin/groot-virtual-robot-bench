@@ -1,0 +1,108 @@
+--- a/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp
++++ b/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp
+@@ -126,6 +126,7 @@
+ 
+ #include <cuda_runtime.h>
+ #include "../include/state_logger.hpp"
++#include "sonic_probe.hpp"
+ 
+ // Encoder
+ #include "../include/encoder.hpp"
+@@ -1664,7 +1665,11 @@
+       }
+ 
+       // Run encoder inference (handles CPU→GPU transfer, inference, GPU→CPU transfer)
+-      if (!encoder_engine_->Encode()) {
++      const int64_t sonic_enc_t0 = SonicProbe::now_ns();
++      const bool sonic_enc_ok = encoder_engine_->Encode();
++      const int64_t sonic_enc_t1 = SonicProbe::now_ns();
++      if (sonic_enc_ok) g_sonic_probe.SetEnc(encoder_engine_->GetInputBuffer().data(), encoder_engine_->GetTokenBuffer().data(), sonic_enc_t1 - sonic_enc_t0);
++      if (!sonic_enc_ok) {
+         std::cerr << "✗ Error: Encoder inference failed" << std::endl;
+         return false;
+       }
+@@ -3142,7 +3147,11 @@
+       }
+ 
+       // Run policy inference (handles CPU→GPU transfer, inference, GPU→CPU transfer)
+-      if (!policy_engine_->Infer()) {
++      const int64_t sonic_dec_t0 = SonicProbe::now_ns();
++      const bool sonic_dec_ok = policy_engine_->Infer();
++      const int64_t sonic_dec_t1 = SonicProbe::now_ns();
++      if (sonic_dec_ok) g_sonic_probe.SetDec(policy_engine_->GetInputBuffer().data(), policy_engine_->GetActionBuffer().data(), sonic_dec_t1 - sonic_dec_t0);
++      if (!sonic_dec_ok) {
+         std::cerr << "✗ Error: Control policy inference failed" << std::endl;
+         return false;
+       }
+@@ -3612,7 +3621,11 @@
+                 joint_positions[i] = ls->motor_state()[i].q();
+               }
+               // Initialize planner with robot state
+-              if(!planner_->Initialize(base_quat, joint_positions)) {
++              const int64_t sonic_pi0 = SonicProbe::now_ns();
++              const bool sonic_pi_ok = planner_->Initialize(base_quat, joint_positions);
++              g_sonic_probe.Planner(sonic_pi0, SonicProbe::now_ns() - sonic_pi0, planner_->last_timing_.model_duration.count() * 1000LL, 0);
++              if (sonic_pi_ok) g_sonic_probe.PlannerIO(sonic_pi0, 0, planner_.get());
++              if(!sonic_pi_ok) {
+                 throw std::runtime_error("Error when initializing planner");
+               }
+ 
+@@ -3766,7 +3779,8 @@
+               // Update planning with current movement parameters
+ 
+               // gotta make sure planner_motion actually has data...
+-              if(!planner_->UpdatePlanning(
++              const int64_t sonic_pu0 = SonicProbe::now_ns();
++              const bool sonic_pu_ok = planner_->UpdatePlanning(
+                 current_frame_,
+                 planner_motion_,
+                 current_mode,
+@@ -3774,7 +3788,10 @@
+                 target_height,
+                 movement_direction,
+                 facing_direction
+-              )) {
++              );
++              g_sonic_probe.Planner(sonic_pu0, SonicProbe::now_ns() - sonic_pu0, planner_->last_timing_.model_duration.count() * 1000LL, 1);
++              if (sonic_pu_ok) g_sonic_probe.PlannerIO(sonic_pu0, 1, planner_.get());
++              if(!sonic_pu_ok) {
+                 throw std::runtime_error("Error when updating planner");
+               }
+               
+@@ -3879,6 +3896,7 @@
+ 
+           // NEW: Get data with timestamps for loop timing analysis
+           auto obs_start_time = std::chrono::steady_clock::now();
++          g_sonic_probe.cur.t_start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(obs_start_time.time_since_epoch()).count();
+           // Increment independent logging counter every control iteration
+           logging_counter_++;
+ 
+@@ -4072,6 +4090,20 @@
+             operator_state.stop = true;
+             return;
+           }
++          if (g_sonic_probe.enabled()) {
++            auto& c = g_sonic_probe.cur;
++            c.step_ns = SonicProbe::now_ns() - c.t_start_ns;
++            c.enc_mode = current_encoder_mode_copy; c.frame = current_frame_copy; c.play = current_play_copy ? 1 : 0;
++            c.planner_active = (planner_ && planner_->planner_state_.enabled && planner_->planner_state_.initialized) ? 1 : 0;
++            const auto ls_probe = used_low_state_data_.data;
++            const double* refq = current_motion_copy ? current_motion_copy->JointPositions(current_frame_copy) : nullptr;
++            for (int k = 0; k < 29; ++k) {
++              c.ref_q[k] = refq ? static_cast<float>(refq[k]) : 0.f;
++              c.meas_q[k] = ls_probe ? static_cast<float>(ls_probe->motor_state()[mujoco_to_isaaclab[k]].q()) : 0.f;
++            }
++            if (current_motion_copy && current_motion_copy->timesteps > 0) { const auto bp = current_motion_copy->BodyPositions(current_frame_copy); for (int k = 0; k < 3; ++k) c.ref_root[k] = static_cast<float>(bp[0][k]); }
++            g_sonic_probe.Commit();
++          }
+ 
+           if (logging_counter_ % 50 == 0) {
+             auto control_loop_end_time = std::chrono::steady_clock::now();
+@@ -4530,6 +4562,7 @@
+   custom.Stop();
+   std::cout << "[DEBUG] Waiting for cleanup..." << std::endl;
+   sleep(0.5);
++  g_sonic_probe.Dump();
+   std::cout << "[DEBUG] Program exiting normally..." << std::endl;
+   return 0;
+ }

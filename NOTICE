@@ -15,6 +15,11 @@ Third-party software and models used (each under its own license -- read them be
   * robosuite, MIT License -- https://github.com/ARISE-Initiative/robosuite
   * RoboCasa GR-1 Tabletop Tasks, MIT License -- https://github.com/robocasa/robocasa-gr1-tabletop-tasks
       Its simulation assets (downloaded by setup/setup_x86.sh) carry their own licenses; see that repository.
+  * NVIDIA GR00T-WholeBodyControl (GEAR-SONIC; commit b042411f), Apache License 2.0 -- https://github.com/NVlabs/GR00T-WholeBodyControl
+      sonic/harness/sonic_probe.patch is a modification of gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp
+      from that repository (Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES) and is distributed under the Apache License 2.0.
+      No other upstream file is included.
+  * NVIDIA GEAR-SONIC model weights -- NVIDIA Open Model License; https://huggingface.co/nvidia/GEAR-SONIC (downloaded, not included)
   * Qualcomm QAIRT/QNN SDK and Hexagon SDK -- NOT included and not redistributed; iq9/ code only #includes their headers
       and expects you to obtain them from Qualcomm under Qualcomm's license.
   * NVIDIA TensorRT, PyTorch, Transformers and the other Python packages listed in setup/ -- their respective licenses.

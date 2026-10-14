@@ -8,6 +8,9 @@ and **whether it still decides the same way**. Every script we ran is here, alon
 rebuilds the published numbers from it. There are also scripts for the Qualcomm IQ-9075, so you can measure that one
 yourself (we publish no IQ-9075 results).
 
+New: NVIDIA's GEAR-SONIC whole-body controller, timed in closed loop on the same three NVIDIA machines
+([below](#also-measured-gear-sonic-the-controller-that-keeps-a-humanoid-on-its-feet)).
+
 ## The headline
 
 <!-- results:start -->
@@ -21,6 +24,28 @@ Speed = NVIDIA's full TensorRT path, fp16 engines, image + instruction in, actio
 <!-- results:end -->
 
 Every number, with how it was measured: [RESULTS.md](RESULTS.md).
+
+## Also measured: GEAR-SONIC, the controller that keeps a humanoid on its feet
+
+GR00T decides *what* to do a few times a second; a whole-body controller has to keep the robot balanced 50 times a second.
+We ran NVIDIA's **GEAR-SONIC** ([NVlabs/GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl), unmodified
+apart from a timing probe) on a simulated **Unitree G1** in MuJoCo: the same 82 s script (stand, drop, walk, turn, run, dance) on
+each machine, with the simulator on the same computer, idle and under load. Details: [sonic/README.md](sonic/README.md).
+
+<!-- sonic:start -->
+| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop |
+|---|---|---|---|---|---|---|---|---|
+| RTX 5090 | unloaded | 3 | 0.21–0.24 / 2.53–2.59 | 0 | 0 | 0 | 20.17 | 0/3 · 0/3 |
+| Jetson AGX Thor | unloaded | 10 | 0.72–0.74 / 4.76–4.83 | 0 | 0 | 1 | 21.06 | 1/10 · 3/10 |
+| Jetson AGX Orin 64 GB | unloaded | 10 | 1.05–1.07 / 7.64–7.68 | 0 | 0 | 0 | 20.15 | 0/10 · 1/10 |
+| Jetson AGX Thor | CPU saturated | 3 | 0.75–0.76 / 6.03–7.09 | 11 | 16 | 316 | 40.03 | 0/3 · 0/3 |
+| Jetson AGX Thor | GPU co-tenant | 3 | 3.79–3.86 / 11.47–11.76 | 0 | 0 | 6 | 21.88 | 0/3 · 0/3 |
+| Jetson AGX Orin 64 GB | CPU saturated | 3 | 1.14–1.26 / 132.53–153.73 | 571 | 567 | 686 | 341.78 | 3/3 · 1/3 |
+| Jetson AGX Orin 64 GB | GPU co-tenant | 3 | 5.11–5.25 / 14.32–18.17 | 91 | 6 | 82 | 26.81 | 0/3 · 1/3 |
+| RTX 5090 | loaded | n/a — not measured (the loaded arms ran on the Jetsons only) | | | | | | |
+
+MEASURED. Same upstream program, probe, step span, keyboard script and scoring on all three; ranges are across runs, counts are totals over all runs. 50 Hz = a new step every 20 ms. Unloaded, no computer missed a step deadline or a slot (worst step 11.10 ms; worst gap 21.06 ms). Under CPU saturation the Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. The band-drop falls are an **open item**: cause unknown, a controlled test is running. Planner engine accuracy, the TF32 finding, loaded-arm details and caveats: [RESULTS.md §8](RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14).
+<!-- sonic:end -->
 
 ## Meet the virtual robot
 
@@ -124,6 +149,7 @@ speed/      ONNX export, engine builder, whole-call harness, denoise sweeps, arm
 accuracy/   closed-loop harness: noise bank, policy servers (incl. fp8), sim client, scoring
 shims/      stand-ins for packages GR00T imports but never calls on our paths (see docs/SETUP.md)
 profiling/  where the time goes: per-engine timing, matmul vs glue, int vs FP, DDR bandwidth, Thor DiT anomaly
+sonic/      GEAR-SONIC whole-body controller: timing probe + patch, sim driver, run scripts, scoring, engine gate, table builder
 iq9/        scripts for the Qualcomm IQ-9075: port, speed, closed loop, int8/int16, Hexagon microbench (no results)
 results/    every published number as JSON + the raw data behind it (see results/README.md)
 tools/      make_results_md.py (writes RESULTS.md + the headline above), check_results.py (rebuilds and compares)
@@ -134,4 +160,6 @@ tools/      make_results_md.py (writes RESULTS.md + the headline above), check_r
 Our code and results: Apache License 2.0 ([LICENSE](LICENSE)). **Model weights are not included** and come under
 NVIDIA's model license (GR00T N1.5-3B: NVIDIA One-Way Noncommercial License) -- read it before use. robosuite and
 RoboCasa-GR1 are MIT; Isaac-GR00T is Apache-2.0; RoboCasa's downloaded simulation assets carry their own licenses.
+GR00T-WholeBodyControl (GEAR-SONIC) code is Apache-2.0 and is not included (only our probe patch against it); its model weights
+come under the NVIDIA Open Model License.
 Qualcomm's SDKs are not included. See [NOTICE](NOTICE).

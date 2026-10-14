@@ -13,6 +13,9 @@ Every published number lives here as JSON. [RESULTS.md](../RESULTS.md) is genera
 | `accuracy/finalize_<run>_vs_<reference>.json` | one board run scored seed by seed against a reference run |
 | `accuracy/closed_loop_summary_2026-09-18.json` | the summary table, rebuilt from the `finalize_*` files by `accuracy/make_summary.py` |
 | `accuracy/runs/<run>/` | the raw closed-loop runs: per-seed success (`rollout_summary.json`), every action chunk (`episode_*_actions.npy`), the server's per-call timings (`server_calllog.json`) |
+| `sonic/sonic_<board>_<date>.json` | GEAR-SONIC whole-body controller records (RTX 5090 reference, Jetson AGX Thor, Jetson AGX Orin): setup, versions, engine hashes, engine-correctness gate, loaded arms, predictions vs outcomes |
+| `sonic/sonic_same_span_table_2026-10-14.json` | every SONIC run and group, rebuilt from `sonic/raw/` by `sonic/make_sonic_table.py` |
+| `sonic/raw/<board>/<run>__*` | per-tick timing (`__ticks.csv.gz`), planner calls (`__planner.csv.gz`) and the per-run simulator record (`__run.json`); times relative to control start |
 | `profiling/` | profiling records, published as measured. `_CLOSED_` in a file name means the investigation is finished |
 
 Dates in file names are when the measurement was made. Most records carry a `tag` (MEASURED / DERIVED / SOURCED), plus software versions and method. Clocks are in the speed

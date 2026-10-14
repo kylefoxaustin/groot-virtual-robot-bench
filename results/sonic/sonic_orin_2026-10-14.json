@@ -1,0 +1,350 @@
+{
+ "_schema": "groot-virtual-robot-bench/sonic-closed-loop/1",
+ "date": "2026-10-14",
+ "tag": "MEASURED",
+ "what": "NVIDIA GEAR-SONIC whole-body controller (Unitree G1) in closed loop ON the Jetson AGX Orin 64GB Developer Kit (the AGX Orin dev kit, not the G1 robot's onboard Orin NX): the MuJoCo G1 simulator on the board CPU + the upstream gear_sonic_deploy C++/TensorRT controller built natively with the board's TensorRT. Same scripted commands, probe, span and scoring as the RTX 5090 record.",
+ "board": "Jetson AGX Orin 64GB Developer Kit (the AGX Orin dev kit, not the G1 robot's onboard Orin NX)",
+ "versions": {
+  "l4t": "R36.4.7 (nvidia-l4t-core 36.4.7-20250918154033)",
+  "jetpack": "JetPack 6 series (L4T R36.4.x; the nvidia-jetpack metapackage is not installed on this board)",
+  "cuda": "12.6 (nvcc cuda_12.6.r12.6)",
+  "tensorrt": "10.3.0.30 (libnvinfer10 10.3.0.30-1+cuda12.5, system install)",
+  "gpu_driver": "540.4.0 (nvgpu)",
+  "kernel": "5.15.148-tegra",
+  "cpu": "12x Cortex-A78AE @ 2.2016 GHz",
+  "gpu": "Orin (Ampere, sm_87)",
+  "gcc": "11.4.0",
+  "cmake": "3.22.1",
+  "onnxruntime": "1.16.3 aarch64 (same version as the 5090 container)",
+  "sim_python": "CPython 3.12.11 (python-build-standalone 20250818), mujoco 3.15.0, numpy 1.26.4, cyclonedds-python 0.10.2 (aarch64 build against unitree libddsc 0.10.2)",
+  "tag": "MEASURED (read off the board: /etc/nv_tegra_release, dpkg, nvcc, nvidia driver, uname, lscpu)"
+ },
+ "versions_vs_upstream": "SOURCED (upstream docs @ b042411: docs/source/getting_started/installation_deploy.md + user_guide/troubleshooting.md): \"Jetson / G1 onboard Orin: TensorRT 10.7 (required; JetPack 6)\"; the docs warn that other TensorRT versions are \"known to produce incorrect inference results\". This board: JetPack 6 YES, TensorRT 10.3 (NOT the required 10.7).",
+ "clocks": "PINNED: nvpmodel MAXN + jetson_clocks (run again at session start; read back identical to the pre-existing lock): CPU 12x min=max=cur 2201600 kHz (governor schedutil, floored), GPU min=max=cur 1300.5 MHz, EMC 3199 MHz FreqOverride=1. Read back while stress-ng ran: all 12 cores at 2201600 kHz.",
+ "run_to_run_spread_pct_step_p50": 0.88,
+ "what_ran": {
+  "controller": "upstream NVlabs/GR00T-WholeBodyControl @ b042411fae38ee4d1af9aac82a37a1f8d14d6dd0 (2026-09-23), gear_sonic_deploy g1_deploy_onnx_ref (C++ + TensorRT) + the measurement probe (sonic/harness/sonic_probe.hpp + sonic_probe.patch), built natively on the board with upstream CMake (cmake Release, upstream -O3 -ffast-math flags), HAS_ROS2=0, TensorRT_ROOT -> system TensorRT, onnxruntime 1.16.3 aarch64 (sonic/harness/build_jetson.sh). Upstream CMake enabled DLA linking (cudla) as on any non-Thor Jetson; the deploy does not use the DLA.",
+  "binary_sha256": "082aaa6a425daf0c327939613669808c3e8924449002cee9af7a9f41b88c86f3",
+  "deploy_flags": "lo policy/release/model_decoder.onnx <reference dir> --obs-config policy/release/observation_config.yaml --encoder-file policy/release/model_encoder.onnx --planner-file planner/target_vel/V2/planner_sonic.onnx --input-type keyboard --output-type zmq --zmq-host localhost --disable-crc-check (identical on all three machines)",
+  "models_sha256": {
+   "model_encoder.onnx": "013ab0287236aa2721e13f1e936d699db982302d0de0bfcdae76d5c3245362d3",
+   "model_decoder.onnx": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
+   "planner_sonic.onnx": "39b553e197f62f077975ba38512bc04781a3fc37c2af7c6756e04629f760edea",
+   "source": "huggingface nvidia/GEAR-SONIC (x-linked-etag match)",
+   "observation_config.yaml": "HF == repo policy/release/observation_config.yaml (identical)"
+  },
+  "trt_engines": {
+   "precision": "fp32 (upstream defaults: encoder use_fp16=false, --policy-precision / --planner-precision default 32). Upstream does NOT clear TF32, so TensorRT may pick TF32 tactics (A2 shows it does for the planner on both boards and for the encoder on Thor).",
+   "built_where": "ON THIS BOARD, by upstream code (TRTInference ConvertOnnxToEngine) at the first deploy launch; upstream writes a 64-char hash prefix = sha256(sha256(onnx)+device name+precision). No engine was copied from another machine.",
+   "sha256": {
+    "encoder_model_encoder.trt": "71ee2540db7a5505d29eb9e3329cc2a51c595eb7cda1897ee87ee0d7679d345c",
+    "policy_model_decoder.trt": "bb3814446c575da6f361a0185aa269e7ebfc648254077525ad6af354027edc13",
+    "planner_planner_sonic.trt": "593626bd3786ddc9f6545ead05992c6a29eff3c40797a687212e2ef65909ac67"
+   },
+   "build_s_from_deploy_log": {
+    "decoder": 4.3,
+    "encoder": 4.4,
+    "planner": 92.4
+   },
+   "build_contention_disclosure": "all three engines built in the second smoke launch before Init Done (control loop not running); the MuJoCo sim process was running (1 CPU core, no GPU). The board was otherwise idle (load 0.1-0.8).",
+   "build_variance": "one build per board, reused by every run (same-build); TensorRT build-to-build variance NOT sampled"
+  },
+  "sim": "upstream gear_sonic MuJoCo BaseSimulator (scene_43dof, 200 Hz) via sonic/harness/sim_driver.py with SIM_POLL_CMDS=1, headless, absolute-deadline pacing, on the board CPU",
+  "harness_adjustments_disclosed": [
+   "SIM_POLL_CMDS=1 (sonic/harness/sim_driver.py): the simulator polls the LowCmd / hand-command DDS readers once per physics step (latest sample, <= 5 ms old) instead of the upstream per-sample Python listener callback, which can fall behind the controller's 500 Hz LowCmd stream on a slower CPU. Used on both Jetsons; the RTX 5090 runs used the upstream listener.",
+   "reference motions recreated on tmpfs (/dev/shm, as root, every run; sonic/harness/mkref.py) in an order that reproduces the RTX 5090 load order exactly (directory iteration order sets the stand reference); every run checks that its load order equals the RTX 5090 v1_r1 load order (true in every run).",
+   "deploy run as ROOT: the upstream main thread's SCHED_FIFO 99 + CPU0 pin and its sleep(0) busy-spin take effect (thread snapshot: main thread FIFO 99 on CPU0). The RTX 5090 ran it non-root in a container, where the FIFO request fails silently.",
+   "simulator Python = standalone CPython 3.12.11 with PYTHONNOUSERSITE=1 (user site-packages otherwise shadow the wheels)."
+  ],
+  "script": "identical v1 keyboard script (sonic/harness/run_closed_loop_jetson.py SCRIPTS[v1] == the RTX 5090 script): start, band drop +2 s, planner +7 s, walk +10 s, 3x30 deg turn +18-19 s, run +25 s, stop +31 s, slow walk +36 s, stop +41 s, reference mode +45 s, macarena clip +49 s (27.5 s), exit +82 s",
+  "stops": "graceful only (stdin o, then SIGINT, then SIGTERM; never SIGKILL); every measured run exited rc 0"
+ },
+ "input_provenance": {
+  "closed_loop": "observations generated in closed loop by the upstream controller acting on the upstream MuJoCo G1 sim on the board, driven by the fixed script. No replayed tensors in A1/A3/A4.",
+  "A2": "the RTX 5090 reference sets (sonic_5090_v1_r1_refset.npz sha256 07c62321..., and a planner reference set of 86 calls): the exact tensors TensorRT consumed/produced on the 5090; not published (size)",
+  "A4b_groot": "one recorded frame of NVIDIA's simulated GR1 PickNPlace demo (camera image + proprio state + instruction), md5-matched across boards"
+ },
+ "co_resident": "nothing else running (load 0.1-0.8 idle, no other user sessions); A4b adds the GR00T process by design",
+ "metric_span": "same upstream program (NVlabs/GR00T-WholeBodyControl @ b042411fae38ee4d1af9aac82a37a1f8d14d6dd0 (2026-09-23), gear_sonic_deploy g1_deploy_onnx_ref (C++ + TensorRT)), same measurement probe (sonic/harness/sonic_probe.hpp + sonic_probe.patch), same span: step = obs_start -> after CurrentFrameAdvancement (robot-state gather, observation build, encoder, decoder, hand commands, ZMQ publish, frame advance); late starts / slot misses = raw tick start-to-start gaps > 21 / > 25 ms; compute miss = step > 20 ms; enc_us / dec_us = Encode() / Infer() walls (H2D + enqueue/CUDA graph + D2H + sync); planner_model_ms = upstream last_timing_.model_duration (TensorRT inference only), planner_total_ms = UpdatePlanning wall. The RTX 5090 reference = runs v1_r1..v1_r3.",
+ "deadline_rule": "50 Hz => 20 ms. compute miss = step > 20 ms; late start = tick start-to-start gap > 21 ms; slot miss = gap > 25 ms; all from the raw per-tick start timestamps (never a self-reported counter)",
+ "fall_rule": "rule window (pre-registered): pelvis z < 0.30 m OR tilt > 60 deg OR a sim fall-reset inside [band_off + 1 s, stop). Band-drop falls (found in this campaign, reported separately): a sim fall-reset within 3 s after the band-off command; the rule window excludes the first 1.0 s of it, so a reset later than +1.0 s is counted in both. In every run with a band-drop fall, the first reset came 0.63-1.22 s after the command (Orin a4cpu_r3, under CPU load, had two more resets inside 3 s), so the 1.5 s window of the original records gives the same counts. Cause not determined; a controlled band-drop test is running.",
+ "preregistration": "predictions for A2/A3 were written after the board was built and clocks read back but BEFORE any deploy launch, engine build or latency was seen. Then three smoke launches (one failed at startup, one built the engines, one ran the full v1 script; its latency WAS seen before the 3 measured runs). A4 predictions were written after A3. Two addenda were written after results were seen and are labelled as such: the 7 extra unloaded runs (cl_r4..cl_r10, added because one Thor run fell at the band drop and 3 runs bound a fall rate only loosely) and the non-FIFO diagnostic. No prediction was edited after measuring.",
+ "A2_correctness": {
+  "status": "encoder/decoder PASS; planner FAIL against the pre-registered gate (npf 86/86, but per-call max |dqpos| p90 above 0.05 rad) - diagnosed as TensorRT TF32 (left enabled by upstream), not the TensorRT version",
+  "gate": {
+   "enc_token_exact_frac_min": 0.999,
+   "enc_max_flip_levels": 1,
+   "dec_rel_mae_max": 0.001,
+   "dec_max_abs_rad_max": 0.02,
+   "dec_cos_min": 0.99999,
+   "planner_npf_agree_min": 84,
+   "planner_p90_max": 0.05
+  },
+  "encoder": {
+   "token_exact_frac": 1.0,
+   "n_token_flips": 0,
+   "tick_anyflip_rate": 0.0,
+   "max_flip_levels": 0.0,
+   "max_abs_nonflip": 0.0,
+   "on_grid": true,
+   "pass": true,
+   "note": "0 FSQ token flips in 262,336 tokens vs the RTX 5090 reference. The counter is live: the same scorer (sonic/gate/score_gate.py) counts 201 one-level flips (4.8% of ticks) on the Thor engine, and the planted faults fail."
+  },
+  "decoder": {
+   "rel_mae": 2.2400980981274188e-07,
+   "max_abs_rad": 5.245208740234375e-06,
+   "p99_abs_rad": 9.5367431640625e-07,
+   "cos": 1.0000003576278687,
+   "pass": true
+  },
+  "planner": {
+   "vs_ort_fp32": {
+    "npf_agree": 86,
+    "of": 86,
+    "per_call_max_abs_dqpos_p50": 0.013607814908027649,
+    "p90": 0.07473907619714737,
+    "max": 0.13118481636047363,
+    "calls_lt_1e3": 0
+   },
+   "vs_5090_trt": {
+    "npf_agree": 86,
+    "of": 86,
+    "per_call_max_abs_dqpos_p50": 0.01313963532447815,
+    "p90": 0.07236485183238983,
+    "max": 0.13187497854232788,
+    "calls_lt_1e3": 0
+   },
+   "pass": false,
+   "planted_shifted_1call": {
+    "p90": 2.97829532623291,
+    "gate_fails_as_required": true
+   }
+  },
+  "verdict_as_preregistered": "FAIL",
+  "planted_faults_all_failed_as_required": true,
+  "planted_detail": {
+   "dec_vs_ref_shifted_1tick": {
+    "rel_mae": 0.06812116503715515,
+    "max_abs_rad": 8.627294540405273,
+    "p99_abs_rad": 0.5368201732635498,
+    "cos": 0.9943928718566895,
+    "gate_fails_as_required": true
+   },
+   "dec_wrong_observation_input": {
+    "rel_mae": 1.1215152740478516,
+    "max_abs_rad": 16.249114990234375,
+    "p99_abs_rad": 8.84725570678711,
+    "cos": 0.3677317202091217,
+    "gate_fails_as_required": true
+   }
+  },
+  "planner_diagnosis_TF32": {
+   "what": "same ONNX built with trtexec --noTF32 on the same board/TensorRT, same 86 calls, same Python runner",
+   "noTF32_build": {
+    "engine": "trtexec --onnx planner_sonic.onnx --noTF32 (fp32, TF32 disabled), same board + TensorRT",
+    "vs_ort_fp32": {
+     "npf_agree": 86,
+     "of": 86,
+     "per_call_max_abs_dqpos_p50": 2.1770596504211426e-05,
+     "p90": 3.6150217056274414e-05,
+     "max": 8.33272933959961e-05
+    },
+    "vs_5090_trt": {
+     "npf_agree": 86,
+     "of": 86,
+     "per_call_max_abs_dqpos_p50": 0.0006486843340098858,
+     "p90": 0.014892656356096268,
+     "max": 0.07315033674240112
+    },
+    "gate_pass": true
+   },
+   "harness_check": "the planner feed construction run through host onnxruntime 1.22 fp32 reproduces the logged fp32 reference outputs: npf 86/86, per-call max |dq| p50 5.9e-6 / p90 1.0e-5 / max 2.2e-5 (sonic/gate/planner_ort_check.py)",
+   "reading": "with TF32 disabled the board TensorRT planner matches ORT fp32 to <1e-4 rad, so the deviation is TF32 (upstream leaves it enabled), not TensorRT 10.3/10.16 being \"wrong\". The 5090 TRT 10.13 planner also deviates from ORT under the same default (p90 0.0149), less than either Jetson.",
+   "closed_loop_consequence": "none detected: every closed-loop run uses the upstream (TF32-permitted) engines and tracking is inside the pre-registered tolerance in all 10 unloaded runs"
+  },
+  "reference_spread_5090_trt_vs_ort": "npf 86/86, per-call max |dqpos| p50 6.5e-4 / p90 0.0149 / max 0.073 (computed from the planner refset; the gate 0.05 was set from this)",
+  "what": "run the exact .trt engines the upstream deploy built on this board (sonic/gate/engine_gate.py) on the RTX 5090 reference sets: encoder tokens and decoder actions vs the RTX 5090 TensorRT outputs; planner joint trajectories vs an onnxruntime fp32 run of the same ONNX on the same 86 inputs (and vs the RTX 5090 TensorRT planner). Scored by sonic/gate/score_gate.py against a gate written before the runs. Planted faults (shifted reference, wrong observation) must fail the gate."
+ },
+ "A3_closed_loop": {
+  "runs": "cl_r1..cl_r3 pre-registered; cl_r4..cl_r10 a disclosed extension (same harness, back-to-back)",
+  "numbers": "results/sonic/sonic_same_span_table_2026-10-14.json groups orin/unloaded (10 runs) and orin/unloaded_preregistered_r1-r3, rebuilt from results/sonic/raw/orin/cl_r*",
+  "step_tail_finding": "The step tail is the planner sharing the GPU: 860 of the 870 ticks with step > 3 ms (10 runs) overlap a planner call (MEASURED overlap; that enc/dec queue behind the planner's GPU work is INFERRED, not traced).",
+  "band_drop_resets_rel_s": {
+   "cl_r1": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r10": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r2": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r3": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r4": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r5": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r6": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r7": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   },
+   "cl_r8": {
+    "sim_resets_rel_s": [
+     2.83
+    ],
+    "after_band_off_s": [
+     0.83
+    ]
+   },
+   "cl_r9": {
+    "sim_resets_rel_s": [],
+    "after_band_off_s": []
+   }
+  }
+ },
+ "A4_loaded": {
+  "a4cpu": {
+   "arm": "CPU saturated: stress-ng --cpu 12 --cpu-method matrixprod (one matrix-multiply hog per core), started 5 s before each closed-loop run and stopped with SIGTERM after it",
+   "numbers": "results/sonic/sonic_same_span_table_2026-10-14.json group orin/cpu_saturated",
+   "note": "the hogs also starve the Python MuJoCo simulator on the same CPU (sim overrun steps per run in the table record); on a robot the physics is not on the computer, so this arm is pessimistic for the simulator side and realistic for the controller side"
+  },
+  "a4gpu": {
+   "arm": "GPU co-tenant: GR00T N1.5 on NVIDIA's full TensorRT path (deployment_scripts, all 7 engines) running get_action back-to-back on the same GPU (sonic/harness/groot_cotenant.py); 60 s alone first, then 3 closed-loop runs, then a graceful stop-file",
+   "numbers": "results/sonic/sonic_same_span_table_2026-10-14.json group orin/gpu_cotenant",
+   "groot": {
+    "meta": {
+     "trt": "10.3.0",
+     "torch": "2.8.0",
+     "gpu": "Orin",
+     "input": "one recorded frame of NVIDIA's simulated GR1 PickNPlace demo (the same input as the speed benchmarks, results/inputs.json)",
+     "calls": 5521,
+     "duration_s": 524.523145184,
+     "rate_hz": 10.523832977888473,
+     "call_ms": {
+      "p50": 93.66642218083143,
+      "p90": 103.06972125545144,
+      "p99": 112.83614924177527,
+      "max": 214.69477890059352,
+      "min": 86.4802161231637,
+      "mean": 94.64917966333167
+     },
+     "gate_full_vs_eager_rel_mae": {
+      "action.left_arm": 0.005645140667020543,
+      "action.right_arm": 0.007142724639420561,
+      "action.left_hand": 0.3720600981565192,
+      "action.right_hand": 0.0024107609196231403
+     },
+     "gate_every25_max_rel_mae_vs_first_full": {
+      "n": 221,
+      "max": 0.0
+     },
+     "engines": "fp16 full-TensorRT engines built by speed/build_engines.py on this board (the engines of results/speed/groot_orin_fulltrt_e2e_2026-10-12.json, build A)"
+    },
+    "windows": {
+     "a4gpu_r1_control_window": {
+      "calls": 807,
+      "rate_hz": 9.841500730604459,
+      "call_ms_p50": 99.63,
+      "call_ms_p99": 116.61499999999997,
+      "call_ms_max": 158.531
+     },
+     "a4gpu_r2_control_window": {
+      "calls": 809,
+      "rate_hz": 9.865890837664946,
+      "call_ms_p50": 99.581,
+      "call_ms_p99": 116.45284,
+      "call_ms_max": 164.209
+     },
+     "a4gpu_r3_control_window": {
+      "calls": 805,
+      "rate_hz": 9.817107123076973,
+      "call_ms_p50": 99.81,
+      "call_ms_p99": 119.63856000000006,
+      "call_ms_max": 155.081
+     },
+     "alone_before_first_run": {
+      "calls": 726,
+      "rate_hz": 11.363422617706727,
+      "call_ms_p50": 87.286,
+      "call_ms_p99": 94.39075,
+      "call_ms_max": 98.789,
+      "span_s": 63.889201733
+     }
+    },
+    "reading": "GR00T alone (same session) 11.36 Hz -> 9.82-9.87 Hz while SONIC runs; its output stayed identical (every 25th call vs the first: max rel_mae 0.0)"
+   }
+  }
+ },
+ "diag_nonroot_cpu": {
+  "what": "diagnostic, n=1: the CPU-saturated arm with the deploy launched via setpriv --bounding-set=-sys_nice --inh-caps=-sys_nice -- so its SCHED_FIFO 99 request fails (main thread SCHED_OTHER in the thread snapshot), as in the RTX 5090 non-root container",
+  "hypothesis_INFERRED": "the upstream main thread busy-spins at SCHED_FIFO 99 pinned to CPU0 (effective as root), so SCHED_OTHER threads (control loop, simulator) that land on CPU0 run only in RT-throttle gaps unless migrated, and migration is slow when every other core runs a hog",
+  "prediction_if_true": "compute misses <= 10 and max step <= 60 ms (vs 187 compute misses / 257 ms max step in a4cpu_r1)",
+  "outcome": "compute misses 0 (pred <= 10), max step 4.25 ms (pred <= 60): hypothesis CONFIRMED on this board (n=1)",
+  "numbers": "results/sonic/sonic_same_span_table_2026-10-14.json group orin/diag_cpu_saturated_no_fifo"
+ },
+ "prediction_vs_measured": {
+  "A2": {
+   "enc_token_exact_frac_point_ge_0.9999": "1.000000 (0 one-level flips) HIT",
+   "dec_rel_mae_point_le_1e-5": "2.24e-07 HIT",
+   "planner_vs_5090_trt_p50_point_le_2e-3": "0.0131 MISS",
+   "gate": "enc PASS, dec PASS, planner FAIL (p90 vs ORT 0.0747 > 0.05; npf 86/86)",
+   "planted_faults_fail": "HIT"
+  },
+  "A3_preregistered_3_runs": {
+   "falls_rule_window_0": "0 HIT",
+   "planner_model_ms_p50": "7.21-7.23 vs [8, 30] MISS",
+   "step_ms_p50": "1.049-1.058 vs [0.4, 1.5] HIT",
+   "step_ms_max": "11.10 vs <= 10.2 MISS",
+   "compute_misses_0": "0 HIT",
+   "late_starts_gt21_per_run": "[0, 0, 0] vs <= 10 HIT",
+   "slot_misses_0": "0 HIT",
+   "max_start_gap_ms": "20.15 vs <= 25 HIT",
+   "sim_rtf_ge_0.98": "HIT in every run without a sim reset (a reset rewinds sim_time, so the rtf field is not meaningful in runs with a reset: {'cl_r1': 1.0, 'cl_r2': 1.0, 'cl_r3': 1.0})",
+   "tracking_within_tolerance": "HIT"
+  },
+  "A4a_cpu_saturated": {
+   "step_ms_p50": "1.14-1.26 vs [1.0, 2.5] HIT",
+   "step_ms_p99": "132.53-153.73 vs [7.5, 15] MISS",
+   "compute_misses_0": "571 MISS",
+   "late_starts_gt21_per_run": "[222, 246, 218] vs <= 50 MISS",
+   "slot_misses_gt25_per_run": "[179, 206, 182] vs <= 5 MISS",
+   "max_start_gap_ms": "341.78 vs <= 30 MISS",
+   "falls_0": "3 of 3 runs fell in the rule window MISS",
+   "sim_overrun_steps_per_run": "[297, 36, 92]"
+  },
+  "A4b_gpu_cotenant": {
+   "step_ms_p50": "5.11-5.25 vs [1.5, 6] HIT",
+   "step_ms_p99": "14.32-18.17 vs [10, 30] HIT",
+   "step_ms_max": "26.81 vs [15, 60] HIT",
+   "compute_misses_per_run": "[30, 31, 30] vs [0, 100] HIT",
+   "planner_model_ms_p50": "12.47-13.99 vs [10, 25] HIT",
+   "falls_0": "0 HIT",
+   "groot_rate_hz_during_sonic": "9.82-9.87 vs [8.5, 11.4] HIT (alone same session 11.36)"
+  }
+ },
+ "caveats": [
+  "sim2sim only: MuJoCo on the board CPU (a real robot moves physics off the board but adds real DDS over Ethernet); Dex3 hands simulated",
+  "one TensorRT engine build per board (build variance not sampled)",
+  "planner modes exercised: IDLE / SLOW_WALK / WALK / RUN only",
+  "the CPU-saturated arm also starves the Python MuJoCo simulator (sim overrun steps are reported); on a robot the physics is not on the computer, so that arm is pessimistic for the simulator side and realistic for the controller side",
+  "band-drop falls are a simulator-transient finding with no timing signature in the affected runs (every step < 2 ms around the drop); cause not determined, a controlled band-drop test is running",
+  "the Jetsons ran the deploy as root (SCHED_FIFO 99 busy-spin main thread active); the RTX 5090 ran it non-root (FIFO request failed); the Jetsons used SIM_POLL_CMDS=1, the 5090 the upstream DDS listener",
+  "RTX 5090 clocks were NOT pinned; both Jetsons pinned (nvpmodel MAXN + jetson_clocks)"
+ ],
+ "raw": "results/sonic/raw/orin/: per-tick timing (<run>__ticks.csv.gz), planner calls (<run>__planner.csv.gz) and the per-run simulator record (<run>__run.json); run names: cl_rN = unloaded, a4cpu_rN = CPU saturated, a4gpu_rN = GPU co-tenant, diag_nonroot_cpu = the n=1 diagnostic",
+ "upstream_tensorrt_requirement_SOURCED": "upstream docs @ b042411 require TensorRT 10.7 (JetPack 6) for \"Jetson / G1 onboard Orin\" and warn that other versions are \"known to produce incorrect inference results\"; this board has TensorRT 10.3. Measured consequence (A2): encoder/decoder match the RTX 5090 reference; the planner deviation is TF32, and a --noTF32 build on this same TensorRT 10.3 matches fp32 to < 1e-4 rad."
+}

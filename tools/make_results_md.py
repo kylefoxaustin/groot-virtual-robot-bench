@@ -3,7 +3,7 @@
 here, so the two cannot drift. It also refreshes the headline table in README.md (between the results markers).
 usage: python3 tools/make_results_md.py [OUT_DIR]   (default: rewrites RESULTS.md and README.md at the repo root;
        with OUT_DIR it writes both there instead and leaves the repo untouched -- tools/check_results.py uses that)"""
-import json, os, sys
+import json, os, re, sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 OUT = sys.argv[1] if len(sys.argv) > 1 else ROOT
@@ -26,7 +26,8 @@ w("**Hardware.** RTX 5090 desktop (x86); Jetson AGX Thor (JetPack 7.2.1, MAXN po
   "Whether clocks were pinned (`jetson_clocks`, `nvidia-smi -lgc`) differs per run; it is stated in §1-3 and their records, "
   "and was not recorded for §4, §6 and §7. "
   "**TensorRT versions:** §1-2 use TensorRT 11.2 (5090), 10.13 (Thor, NGC container) and 10.3 (Orin, JetPack); §3 and §4 use 10.16 on the 5090 "
-  "and Thor and 10.3 on Orin; §6 uses 10.16 on Thor and 10.3 on Orin (the 5090's version is not recorded there); §7 uses 11.2. Software versions are in each record and in `setup/`.\n")
+  "and Thor and 10.3 on Orin; §6 uses 10.16 on Thor and 10.3 on Orin (the 5090's version is not recorded there); §7 uses 11.2; "
+  "§8 (GEAR-SONIC) uses 10.13 on the 5090, 10.16 on Thor and 10.3 on Orin, with Jetson clocks pinned and 5090 clocks not. Software versions are in each record and in `setup/`.\n")
 w("**Different inputs.** §1-3 time the *base* GR00T N1.5 model on one recorded frame from NVIDIA's "
   "simulated GR1 PickNPlace demo (26 joints: arms + hands); §4 and §7 time single engines on synthetic zero/random inputs of the same shapes. The closed loop (§5) runs the RoboCasa *post-trained* model on the milk task "
   "(29 joints: arms + hands + waist). GR00T pads both to 32 action dimensions internally.\n")
@@ -215,6 +216,91 @@ for v, n in (("1", "256"), ("2", "512"), ("4", "1024")):
     w(f"| {v} | {e2['vit_ms_by_views'][v]} | {MR['part2_vit_ms_by_views'][v]} | {n} | {e2['llm_ms_by_vision_tokens'][n]} | {MR['part3_llm_ms_by_vision_tokens'][n]} |")
 w(f"\n{MR['vs_published_2026-10-10']['note']}\n")
 
+# ---------------------------------------------------------------- GEAR-SONIC whole-body controller
+ST_ = J("sonic/sonic_same_span_table_2026-10-14.json"); SG = ST_["groups"]
+SR = {"rtx5090": J("sonic/sonic_rtx5090_2026-10-13.json"), "thor": J("sonic/sonic_thor_2026-10-14.json"), "orin": J("sonic/sonic_orin_2026-10-14.json")}
+SB = {"rtx5090": "RTX 5090", "thor": "Jetson AGX Thor", "orin": "Jetson AGX Orin 64 GB"}
+SA = {"unloaded": "unloaded", "cpu_saturated": "CPU saturated", "gpu_cotenant": "GPU co-tenant"}
+def srng(r, nd=2):
+    a, b = (f"{x:.{nd}f}" for x in r)
+    return a if a == b else f"{a}–{b}"
+def srow(key, long=True):
+    g = SG[key]; b, arm = key.split("/")
+    cells = [SB[b], SA[arm], f"{g['runs']} ({g['ticks']:,} ticks)" if long else str(g["runs"]), srng(g["step_p50_ms_range"]), srng(g["step_p99_ms_range"])]
+    if long: cells.append(f"{g['step_max_ms']:.2f}")
+    cells += [str(g["compute_misses_step_gt20ms"]), str(g["slot_misses_gap_gt25ms"]), str(g["late_starts_gap_gt21ms"]), f"{g['max_start_gap_ms']:.2f}",
+              f"{g['falls_rule_window']}/{g['runs']} · {g['band_drop_falls']}/{g['runs']}"]
+    if long: cells.append(g["tracking_ok"])
+    return "| " + " | ".join(cells) + " |"
+SROWS = ["rtx5090/unloaded", "thor/unloaded", "orin/unloaded", "thor/cpu_saturated", "thor/gpu_cotenant", "orin/cpu_saturated", "orin/gpu_cotenant"]
+SNA = "n/a — not measured (the loaded arms ran on the Jetsons only)"
+w("## 8. GEAR-SONIC whole-body controller: the 50 Hz loop on each computer (MEASURED, 2026-10-13 / 2026-10-14)\n")
+w("NVIDIA's GEAR-SONIC ([NVlabs/GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl) @ `b042411`) keeps a simulated **Unitree G1** humanoid "
+  "on its feet in MuJoCo: an encoder + decoder run every 20 ms (50 Hz) and a motion planner runs at up to 10 Hz. All three networks are fp32 TensorRT engines built by "
+  "upstream code on each machine. Every machine ran the **same upstream program, the same measurement probe, the same step span, the same keyboard script** "
+  "(stand, band drop, walk, 90° turn, run, slow walk, a 27.5 s dance clip; 82 s per run) and the same scoring; the simulator runs on the same computer as the "
+  "controller. RTX 5090 = runs v1_r1–v1_r3; Jetsons = 10 unloaded runs each (r1–r3 pre-registered, r4–r10 a disclosed extension) and 3 per loaded arm. "
+  "Loaded arms: *CPU saturated* = one stress-ng matrix-multiply hog per core; *GPU co-tenant* = GR00T N1.5 on NVIDIA's full TensorRT path calling `get_action` back-to-back on the same GPU. "
+  "Methods, scripts and caveats: [sonic/README.md](sonic/README.md).\n")
+w("| Machine | Load | Runs | Step p50 ms | Step p99 ms | Step max ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop | Tracking in tolerance |")
+w("|---|---|---|---|---|---|---|---|---|---|---|---|")
+for k in SROWS: w(srow(k))
+w(f"| RTX 5090 | loaded | {SNA} | | | | | | | | | |")
+w("")
+w("*Step* = obs_start → after CurrentFrameAdvancement (observation build, encoder, decoder, hand commands, ZMQ publish), from the per-tick log. "
+  "*Gap* = tick start-to-start (50 Hz = 20 ms). *Rule-window fall* = pelvis below 0.30 m, tilt above 60° or a simulator fall-reset from 1 s after the band drop to the end. "
+  "*Band-drop fall* = a simulator fall-reset within 3 s of the band-off command. *Tracking* = per-phase joint error within ±30% of the RTX 5090 range, displacement ±15%, turn ±15° "
+  "(the 5090 runs define it). `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/`.\n")
+pl = {b: SG[f"{b}/unloaded"]["planner_model_ms_p50_range"] for b in ("rtx5090", "thor", "orin")}
+tail = lambda b: SR[b]["A3_closed_loop"]["step_tail_finding"].split(": ", 1)[1].split(" (MEASURED")[0]
+w(f"**Planner** (TensorRT model time per call, p50 per run, unloaded): RTX 5090 {srng(pl['rtx5090'])} ms, Thor {srng(pl['thor'])} ms, Orin {srng(pl['orin'])} ms. "
+  f"The step tail is the planner sharing the GPU with the 50 Hz networks: on Thor {tail('thor')}; on Orin {tail('orin')} "
+  "(MEASURED overlap; that the encoder/decoder queue behind the planner's GPU work is INFERRED, not traced). "
+  "The RTX 5090 shows the same shape at a smaller scale: " + re.sub(r" \(.*?\)", "", SR["rtx5090"]["finding_planner_gpu_contention"]["what"]).split(";")[0] + ".\n")
+fb = ST_["band_drop_vs_rtx5090_fisher_DERIVED"]
+bd1 = [ST_["runs"][b][n]["band_drop_reset_after_band_off_s"][0] for b in ("thor", "orin") for n in SG[f"{b}/unloaded"]["run_names"] if ST_["runs"][b][n]["band_drop_fall"]]
+w(f"**Falls at the band drop: an open item.** The script releases the robot from the simulator's elastic band 2 s into each run. "
+  f"Some runs fell right after: unloaded, Thor {SG['thor/unloaded']['band_drop_falls']}/10, Orin {SG['orin/unloaded']['band_drop_falls']}/10, RTX 5090 {SG['rtx5090/unloaded']['band_drop_falls']}/3 "
+  f"(first reset {min(bd1):.2f}–{max(bd1):.2f} s after the command in each of these runs; one Thor reset came after +1.0 s, so it also counts in the rule window). "
+  f"The affected runs show no timing signature (every step under 2 ms around the drop). Against the 5090's 0/3 neither count is significant "
+  f"(Fisher exact two-sided p = {fb['thor']['p_two_sided']} Thor, {fb['orin']['p_two_sided']} Orin; DERIVED). **We do not know the cause; a controlled band-drop test is running.**\n")
+w("**Engine correctness (A2).** Each board's upstream-built engines, run on the exact tensors the RTX 5090 consumed (encoder/decoder: 4,099 ticks of run v1_r1; planner: 86 calls), "
+  "against a gate written before the runs:\n")
+w("| Board | TensorRT | Encoder tokens identical to 5090 | Decoder rel_mae vs 5090 | Planner per-call max error p90 vs fp32 (upstream engine, TF32 allowed) | Same, `--noTF32` build | Gate (planner p90 ≤ 0.05 rad) |")
+w("|---|---|---|---|---|---|---|")
+for b in ("thor", "orin"):
+    a2 = SR[b]["A2_correctness"]; nt = a2["planner_diagnosis_TF32"]["noTF32_build"]["vs_ort_fp32"]
+    w(f"| {SB[b]} | {SR[b]['versions']['tensorrt'].split(' ')[0]} | {a2['encoder']['token_exact_frac']:.5f} ({a2['encoder']['n_token_flips']} one-level flips) "
+      f"| {a2['decoder']['rel_mae']:.1e} | {a2['planner']['vs_ort_fp32']['p90']:.3f} rad | {nt['p90']:.1e} rad | encoder/decoder pass, planner **fail** |")
+w("")
+w("The planner misses the gate on both Jetsons because upstream leaves TensorRT's TF32 permission on: the same ONNX built with `--noTF32` on the same board and TensorRT "
+  "matches fp32 to under 1e-4 rad. The RTX 5090's own upstream planner engine deviates from fp32 too, less (p90 0.0149 rad; the gate was set from that spread). "
+  "No closed-loop consequence was detected: every unloaded run uses the upstream (TF32-allowed) engines and tracks inside tolerance. "
+  "Upstream's docs require TensorRT 10.7 for Jetson Orin and warn that other versions can give wrong results (SOURCED); our Orin has 10.3, and on it the measurable cause is TF32, not the version.\n")
+oc, tc = SG["orin/cpu_saturated"], SG["thor/cpu_saturated"]; od, td = SG["orin/diag_cpu_saturated_no_fifo"], SG["thor/diag_cpu_saturated_no_fifo"]
+w(f"**CPU saturated.** The hogs also starve the simulator, which runs on the same CPU (sim overrun steps per run: Thor {tc['sim_overrun_steps_per_run']}, "
+  f"Orin {oc['sim_overrun_steps_per_run']}); on a robot the physics is not on the computer, so this arm is pessimistic for the simulator side. "
+  f"Orin fell in the rule window in {oc['falls_rule_window']}/3 runs and tracked outside tolerance in all 3. "
+  "The upstream main thread busy-spins at SCHED_FIFO 99 pinned to CPU0 when run as root (as on both Jetsons; on the 5090 it ran non-root, so that request failed). "
+  f"Diagnostic, **n = 1 per board**: the same load with that FIFO request disabled gave Orin {od['compute_misses_step_gt20ms']} compute / {od['slot_misses_gap_gt25ms']} slot misses "
+  f"(max gap {od['max_start_gap_ms']:.2f} ms), which fits the busy-spin explanation, and Thor {td['compute_misses_step_gt20ms']} compute / {td['slot_misses_gap_gt25ms']} slot misses "
+  f"(max gap {td['max_start_gap_ms']:.2f} ms), which fits only partly (the compute misses go, the late starts stay).\n")
+def gro(b):
+    wd = SR[b]["A4_loaded"]["a4gpu"]["groot"]["windows"]; cw = [v["rate_hz"] for k, v in wd.items() if k.endswith("control_window")]
+    return f"{wd['alone_before_first_run']['rate_hz']:.2f} → {min(cw):.2f}–{max(cw):.2f} Hz"
+w(f"**GPU co-tenant.** GR00T's own rate, alone in the same session → while SONIC runs: Thor {gro('thor')}, Orin {gro('orin')}; "
+  "its output stayed identical (every 25th call vs the first: max rel_mae 0.0).\n")
+w("Caveats:\n")
+for c in ["sim2sim only: MuJoCo on the same computer as the controller (a real robot moves the physics off the computer but adds real DDS over Ethernet); Dex3 hands simulated.",
+          "One TensorRT engine build per machine; build-to-build variance not sampled.",
+          "Harness settings differ in two places: the Jetsons ran the deploy as root (FIFO busy-spin main thread active) and polled the simulator's command readers once per physics step (`SIM_POLL_CMDS=1`); the RTX 5090 ran it non-root with the upstream DDS listener. RTX 5090 clocks were not pinned; Jetson clocks were (nvpmodel MAXN + jetson_clocks).",
+          "Our Orin is the AGX Orin 64 GB developer kit, not the Orin NX inside the G1 robot.",
+          "Planner modes exercised: idle, slow walk, walk, run. Encoder mode 0 (g1) only.",
+          "3 runs on the 5090 and 10 per Jetson bound a fall rate only loosely."]:
+    w(f"- {c}")
+w("\nReproduce: [sonic/README.md](sonic/README.md). Records: `results/sonic/sonic_{rtx5090,thor,orin}_*.json`; table: `results/sonic/sonic_same_span_table_2026-10-14.json`; "
+  "raw per-tick logs: `results/sonic/raw/`. `python3 sonic/make_sonic_table.py` rebuilds the table from the raw logs.\n")
+
 open(os.path.join(OUT, "RESULTS.md"), "w").write("\n".join(L))
 # ---------------------------------------------------------------- README headline (between the markers)
 H = []
@@ -238,6 +324,25 @@ rd = open(os.path.join(ROOT, "README.md")).read()
 a, b = "<!-- results:start -->", "<!-- results:end -->"
 if a in rd and b in rd:
     rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H) + "\n" + rd[rd.index(b):]
+# ---- README: GEAR-SONIC same-span table (between the sonic markers)
+H2 = ["| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop |",
+      "|---|---|---|---|---|---|---|---|---|"]
+for k in SROWS:
+    g = SG[k]; bb_, arm = k.split("/")
+    H2.append(f"| {SB[bb_]} | {SA[arm]} | {g['runs']} | {srng(g['step_p50_ms_range'])} / {srng(g['step_p99_ms_range'])} | {g['compute_misses_step_gt20ms']} "
+              f"| {g['slot_misses_gap_gt25ms']} | {g['late_starts_gap_gt21ms']} | {g['max_start_gap_ms']:.2f} | {g['falls_rule_window']}/{g['runs']} · {g['band_drop_falls']}/{g['runs']} |")
+H2.append(f"| RTX 5090 | loaded | {SNA} | | | | | | |")
+H2.append("")
+H2.append("MEASURED. Same upstream program, probe, step span, keyboard script and scoring on all three; ranges are across runs, counts are totals over all runs. "
+          "50 Hz = a new step every 20 ms. Unloaded, no computer missed a step deadline or a slot "
+          f"(worst step {max(SG[k]['step_max_ms'] for k in SROWS[:3]):.2f} ms; worst gap {max(SG[k]['max_start_gap_ms'] for k in SROWS[:3]):.2f} ms). "
+          "Under CPU saturation the Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. "
+          "The band-drop falls are an **open item**: cause unknown, a controlled test is running. "
+          "Planner engine accuracy, the TF32 finding, loaded-arm details and caveats: "
+          "[RESULTS.md §8](RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14).")
+a, b = "<!-- sonic:start -->", "<!-- sonic:end -->"
+if a in rd and b in rd:
+    rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H2) + "\n" + rd[rd.index(b):]
 open(os.path.join(OUT, "README.md"), "w").write(rd)
 
 print("wrote RESULTS.md", len(L), "lines")

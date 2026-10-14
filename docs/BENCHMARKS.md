@@ -53,6 +53,16 @@ One row per measurement behind our GR00T results. **Status** tells you what this
 | DDR bandwidth per stage | Thor, Orin | `profiling/ddr_bandwidth/` | `results/profiling/groot_ddr_bandwidth_2026-09-24.json` | regenerates (GB/s from the recorded actmon + calibration) |
 | Thor DiT anomaly: roofline + kernel scan | Thor (roofs on all GPUs) | `profiling/thor_dit_anomaly/`, `profiling/compute_vs_glue/roofline_prof.py` | `results/profiling/thor_dit_anomaly_CLOSED_2026-08-27.json` | published record |
 
+## GEAR-SONIC whole-body controller (Unitree G1, MuJoCo)
+
+| Measurement | Boards | Script | Result | Status |
+|---|---|---|---|---|
+| 50 Hz closed loop, unloaded: step time, compute / slot misses, late starts, max gap, falls (rule window + band drop), tracking | 5090, Thor, Orin | `sonic/harness/run_closed_loop_{x86,jetson}.py`, `sonic/scoring/`, `sonic/make_sonic_table.py` | `results/sonic/sonic_same_span_table_2026-10-14.json` (+ per-tick logs in `results/sonic/raw/`) | regenerates (timing and fall columns from the per-tick logs and per-run simulator records; per-phase joint errors are published per run as measured) |
+| Same, CPU saturated and GPU co-tenant (GR00T N1.5 full TensorRT) | Thor, Orin | `sonic/harness/jetson_runs.sh`, `sonic/harness/groot_cotenant.py`, `sonic/scoring/score_groot.py` | same table + `results/sonic/sonic_{thor,orin}_2026-10-14.json` (GR00T rates) | regenerates (table); published record (GR00T rates) |
+| Busy-spin diagnostic, CPU saturated with the deploy's FIFO request disabled (n = 1 per board) | Thor, Orin | `sonic/harness/jetson_runs.sh diag` | same table | regenerates |
+| Engine correctness vs the 5090 tensors (encoder, decoder, planner; TF32 diagnosis) | Thor, Orin | `sonic/gate/` | `results/sonic/sonic_{thor,orin}_2026-10-14.json` (`A2_correctness`) | published record (the reference sets are not published) |
+| Band-drop falls: Thor 3/10, Orin 1/10 vs 5090 0/3 (Fisher p) | all | `sonic/make_sonic_table.py` | same table | DERIVED (open item: cause unknown, controlled test running) |
+
 ## Not included
 
 - **Accelerators other than RTX 5090, Jetson AGX Thor, Jetson AGX Orin and Qualcomm IQ-9075** are not part of this repo.

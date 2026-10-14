@@ -5,7 +5,9 @@
   * accuracy: accuracy/finalize.py on results/accuracy/runs/*                        == the committed finalize_*.json numbers
               accuracy/make_summary.py on the finalize_*.json files                   == results/accuracy/closed_loop_summary_*.json
   * profiling: profiling/ddr_bandwidth/derive_gbps.py                               == results/profiling/groot_ddr_bandwidth_* GB/s
-  * docs:     tools/make_results_md.py output                                       == the committed RESULTS.md + README headline
+  * sonic:    sonic/make_sonic_table.py on results/sonic/raw/<board>/*              == results/sonic/sonic_same_span_table_2026-10-14.json
+              (and the per-board records' deadline / band-drop numbers must agree with that table)
+  * docs:     tools/make_results_md.py output                                       == the committed RESULTS.md + README headline and SONIC table
 Records marked "published record" in docs/BENCHMARKS.md have no raw data in this repo to rebuild from, so they are not checked.
 Everything is regenerated into a temporary directory: the check never modifies your checkout.
 Needs only python3 + numpy. Exit code 1 on any mismatch.   usage: python3 tools/check_results.py"""
@@ -75,9 +77,29 @@ with tempfile.TemporaryDirectory() as td:
         if f.startswith("closed_loop_summary_") and os.path.exists(f"{sd}/{f}"):
             if json.load(open(f"{RA}/{f}")) != json.load(open(f"{sd}/{f}")):
                 bad.append(f"{f} differs from a fresh accuracy/make_summary.py run")
+    # ---- GEAR-SONIC same-span table from the per-tick logs
+    RSN = os.path.join(ROOT, "results", "sonic"); stab = "sonic_same_span_table_2026-10-14.json"
+    run([f"{ROOT}/sonic/make_sonic_table.py", f"{td}/{stab}"])
+    if os.path.exists(f"{td}/{stab}"):
+        pub, new = json.load(open(f"{RSN}/{stab}")), json.load(open(f"{td}/{stab}"))
+        for k in sorted(set(pub) | set(new)):
+            if json.dumps(pub.get(k), sort_keys=True) != json.dumps(new.get(k), sort_keys=True):
+                bad.append(f"sonic table: '{k}' differs from a fresh sonic/make_sonic_table.py run")
+        # cross-check: numbers the per-board records state must match the rebuilt table
+        g = new["groups"]
+        r5 = json.load(open(f"{RSN}/sonic_rtx5090_2026-10-13.json"))["results"]["deadline"]
+        if (r5["compute_misses_gt20ms"], r5["slot_misses_gt25ms"], r5["worst_step_ms"], r5["worst_period_ms"]) != (
+                g["rtx5090/unloaded"]["compute_misses_step_gt20ms"], g["rtx5090/unloaded"]["slot_misses_gap_gt25ms"],
+                round(g["rtx5090/unloaded"]["step_max_ms"], 3), round(g["rtx5090/unloaded"]["max_start_gap_ms"], 3)):
+            bad.append("sonic: RTX 5090 record deadline block disagrees with the rebuilt table")
+        for b_ in ("thor", "orin"):
+            rec = json.load(open(f"{RSN}/sonic_{b_}_2026-10-14.json"))
+            n_bd = sum(1 for v in rec["A3_closed_loop"]["band_drop_resets_rel_s"].values() if any(0 <= x <= 3.0 for x in v["after_band_off_s"]))
+            if n_bd != g[f"{b_}/unloaded"]["band_drop_falls"]:
+                bad.append(f"sonic: {b_} record band-drop resets disagree with the rebuilt table")
     # ---- RESULTS.md + README headline, generated into the temp dir and compared
     run([f"{ROOT}/tools/make_results_md.py", td])
-    for f, what in (("RESULTS.md", "RESULTS.md"), ("README.md", "README.md headline table")):
+    for f, what in (("RESULTS.md", "RESULTS.md"), ("README.md", "README.md headline + SONIC tables")):
         if os.path.exists(f"{td}/{f}") and open(f"{td}/{f}").read() != open(f"{ROOT}/{f}").read():
             bad.append(f"{what} is stale -- run python3 tools/make_results_md.py and commit the result")
 

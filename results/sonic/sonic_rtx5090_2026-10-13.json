@@ -1,0 +1,351 @@
+{
+ "_schema": "groot-virtual-robot-bench/sonic-closed-loop/1",
+ "date": "2026-10-13",
+ "tag": "MEASURED",
+ "what": "NVIDIA GEAR-SONIC whole-body controller (Unitree G1) in closed loop, MuJoCo sim2sim on an RTX 5090 desktop, with the upstream C++/TensorRT deploy. Reference machine for the Jetson records (runs v1_r1..v1_r3).",
+ "board": "RTX 5090 desktop (x86, 32 cores)",
+ "what_ran": {
+  "upstream": "NVlabs/GR00T-WholeBodyControl @ b042411fae38ee4d1af9aac82a37a1f8d14d6dd0 (2026-09-23), gear_sonic_deploy g1_deploy_onnx_ref (C++ + TensorRT), unmodified except the measurement probe (per-tick timestamps + tensor copies into preallocated memory, written at exit; no I/O in the loop). These runs used the probe without the planner-I/O capture that sonic/harness/sonic_probe.hpp adds (SonicPlannerIO, a memcpy in the planner thread after inference returns); the per-tick record and span are identical.",
+  "models_sha256": {
+   "model_encoder.onnx": "013ab0287236aa2721e13f1e936d699db982302d0de0bfcdae76d5c3245362d3",
+   "model_decoder.onnx": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
+   "planner_sonic.onnx": "39b553e197f62f077975ba38512bc04781a3fc37c2af7c6756e04629f760edea",
+   "source": "huggingface nvidia/GEAR-SONIC (x-linked-etag match)",
+   "observation_config.yaml": "HF == repo policy/release/observation_config.yaml (identical)"
+  },
+  "trt_engines": {
+   "precision": "all three fp32 builds (upstream defaults: encoder use_fp16=false in obs config; --policy-precision/--planner-precision default 32); upstream builder does not clear TF32, so TRT's default TF32 permission applies",
+   "built_once": "engines built by upstream code on first (smoke) launch and reused unchanged by all 3 measured runs (same-build; TRT build variance across builds NOT sampled)",
+   "sha256": {
+    "encoder_model_encoder.trt": "2c32894b838707412a9741c55f57f6a6036b51ff9ae350fc6f702271f04d55cb",
+    "policy_model_decoder.trt": "3d675a37ac5b479a61737f72f69875c7be15c13c2fc3e001dbb6951cda2d1211",
+    "planner_planner_sonic.trt": "a898fbe925141d0102728d50b507faf8356aadbebd530e902850cc774e84ad23"
+   }
+  },
+  "stack": {
+   "gpu": "NVIDIA GeForce RTX 5090, driver 580.173.02",
+   "power_regime": "dynamic: default driver boost, GPU clocks NOT locked, host CPU governor default (the Jetsons were pinned)",
+   "container": "nvidia/cuda:12.9.1-devel-ubuntu22.04 + the upstream install_deps apt list (no ROS2), onnxruntime 1.16.3 (sonic/harness/Dockerfile); run with --user, so the deploy is non-root and its SCHED_FIFO request fails silently",
+   "tensorrt": "10.13.0.35 (TensorRT-10.13.0.35.Linux.x86_64-gnu.cuda-12.9 tar; the version upstream docs REQUIRE for x86)",
+   "deploy_flags": "lo policy/release/model_decoder.onnx reference/example/ --obs-config policy/release/observation_config.yaml --encoder-file policy/release/model_encoder.onnx --planner-file planner/target_vel/V2/planner_sonic.onnx --input-type keyboard --output-type zmq --zmq-host localhost --disable-crc-check (identical on all three machines)"
+  },
+  "sim": {
+   "what": "upstream gear_sonic MuJoCo BaseSimulator (scene_43dof.xml, 200 Hz, elastic band, unitree_sdk2py DDS bridge on lo), mujoco 3.15.0, headless (ENABLE_ONSCREEN False) via sonic/harness/sim_driver.py (SIM_POLL_CMDS unset: upstream DDS listener)",
+   "deviation_pacing": "upstream rate limiter sleep(dt - elapsed) accumulates sleep overshoot; an uncontrolled smoke check of it ran ~0.82x real time (821 steps in a 5 s window, 1 observation) while the C++ controller runs on wall clock. sim_driver.py paces to absolute deadlines instead: measured RTF 1.00000 in all 3 runs, 0 overrun steps.",
+   "band_drop": "upstream 'press 9 in viewer' replaced by a scripted band_off on the sim's stdin 2 s after control start"
+  },
+  "command_script": "fixed keyboard script on the deploy's stdin (sonic/harness/run_closed_loop_x86.py SCRIPTS['v1']): ']' start; +2 s drop; +7 ENTER planner; +10 walk(2)+W; +18..19 Q x3 (turn facing 3 x pi/6) + W; +25 run(3)+W; +31 R stop; +36 slow walk(1)+W; +41 R; +45 ENTER back to reference mode; +47 select macarena_001__A545 (n presses from load order); +49 T play clip (1375 frames, 27.5 s); +82 O exit. Identical across runs and reusable on other boards."
+ },
+ "preregistration": "predictions written before any measured run and before reading any latency output; two stand-only smoke runs (debugging motion files and the probe) were seen first (smoke step p50 186 us). Predictions were not edited after. Outcomes: prediction_vs_measured.",
+ "input_provenance": "real: observations generated in closed loop by the upstream controller acting on the upstream MuJoCo G1 simulator, driven by the fixed command script; reference motion = upstream sample clip macarena_001__A545 + planner-generated locomotion. No synthetic tensors.",
+ "reference_sets": {
+  "what": "the exact encoder/decoder tensors TensorRT consumed and produced in run v1_r1 (4099 ticks: enc_in [N,1762], enc_out [N,64], dec_in [N,994], dec_out [N,29], float32), and the planner inputs/outputs of 86 planner calls from a separate 5090 planner-logging run (used only as a correctness reference, never for timing). Used by the Jetson engine-correctness gate (A2). Not published (size).",
+  "sha256": {
+   "sonic_5090_v1_r1_refset.npz": "07c62321e733f8f21fb3c657cbba091ce455f5ab23acaaee4cfc576d81883f76"
+  },
+  "limitation": "encoder mode was 0 (g1) on every tick of this script; the teleop (1) and smpl (2) encoder branches were computed but never selected"
+ },
+ "host_census": "per run: load 0.5-1.6 on 32 cores, swap rate 0-1 pages/s, MemAvailable ~87 GB; two idle GPU processes resident (~9.4 GB, GPU util 0-3%)",
+ "metric_span": "same upstream program (NVlabs/GR00T-WholeBodyControl @ b042411fae38ee4d1af9aac82a37a1f8d14d6dd0 (2026-09-23), gear_sonic_deploy g1_deploy_onnx_ref (C++ + TensorRT)), same measurement probe (sonic/harness/sonic_probe.hpp + sonic_probe.patch), same span: step = obs_start -> after CurrentFrameAdvancement (robot-state gather, observation build, encoder, decoder, hand commands, ZMQ publish, frame advance); late starts / slot misses = raw tick start-to-start gaps > 21 / > 25 ms; compute miss = step > 20 ms; enc_us / dec_us = Encode() / Infer() walls (H2D + enqueue/CUDA graph + D2H + sync); planner_model_ms = upstream last_timing_.model_duration (TensorRT inference only), planner_total_ms = UpdatePlanning wall. The RTX 5090 reference = runs v1_r1..v1_r3.",
+ "deadline_rule": "compute miss = step > 20 ms; slot miss = start-to-start > 25 ms (late starts > 21 ms: sonic/make_sonic_table.py, from the per-tick log)",
+ "reps": "3 identical scripted runs (r1-r3), ~4100 control ticks each; per-run stats + pooled",
+ "results": {
+  "pooled": {
+   "ticks": 12300,
+   "enc_us": {
+    "n": 12300,
+    "p50": 106.0,
+    "p99": 282.91,
+    "max": 2907.87,
+    "mean": 114.22
+   },
+   "dec_us": {
+    "n": 12300,
+    "p50": 60.81,
+    "p99": 2377.71,
+    "max": 3173.41,
+    "mean": 95.36
+   },
+   "enc_plus_dec_us": {
+    "n": 12300,
+    "p50": 166.96,
+    "p99": 2487.02,
+    "max": 3314.91,
+    "mean": 209.58
+   },
+   "step_us": {
+    "n": 12300,
+    "p50": 225.55,
+    "p99": 2542.94,
+    "max": 3375.61,
+    "mean": 270.77
+   },
+   "planner_model_ms": {
+    "n": 258,
+    "p50": 2.42,
+    "p99": 3.11,
+    "max": 3.21,
+    "mean": 2.45
+   },
+   "planner_total_ms": {
+    "n": 258,
+    "p50": 2.45,
+    "p99": 3.13,
+    "max": 3.24,
+    "mean": 2.51
+   },
+   "planner_calls": 258
+  },
+  "spread_across_runs_pct": {
+   "enc_us": 15.6,
+   "dec_us": 1.2,
+   "step_us": 12.4
+  },
+  "deadline": {
+   "compute_misses_gt20ms": 0,
+   "slot_misses_gt25ms": 0,
+   "worst_step_ms": 3.376,
+   "worst_period_ms": 20.174,
+   "headroom": "worst step 3.38 ms = 17% of the 20 ms budget (DERIVED)"
+  },
+  "planner_call_rate_hz": {
+   "run_phase": 10.0,
+   "walk": 1.0,
+   "turn_walk": 1.29,
+   "slow_walk": 1.2,
+   "idle": "0.2-0.33 (event-driven)",
+   "source": "planner.bin timestamps, identical in all 3 runs (85 calls each)"
+  },
+  "behaviour_summary": {
+   "falls": "0 / 3 runs (no z<0.30 m, no tilt>60 deg, 0 sim auto-resets)",
+   "tilt_max_deg": [
+    18.08585791040654,
+    18.030167065625243,
+    18.03559697135995
+   ],
+   "pelvis_z_min_m": [
+    0.6564064267852137,
+    0.6564073662927096,
+    0.6563943387968038
+   ],
+   "turn": "yaw 1.6 -> 85.6 deg over the 3 x pi/6 turn command (r1 sim log)",
+   "joint_tracking_err_mean_rad": {
+    "stand_ref_frame0": [
+     0.06665574759244919,
+     0.08015169203281403,
+     0.08114075660705566
+    ],
+    "planner_idle": [
+     0.07359360158443451,
+     0.07257582247257233,
+     0.07281877100467682
+    ],
+    "walk": [
+     0.06561102718114853,
+     0.0655437707901001,
+     0.06499368697404861
+    ],
+    "turn_walk": [
+     0.06581983715295792,
+     0.0647730678319931,
+     0.06500517576932907
+    ],
+    "run": [
+     0.08765334635972977,
+     0.08682683110237122,
+     0.08722101897001266
+    ],
+    "idle_after_run": [
+     0.06434927880764008,
+     0.06097668036818504,
+     0.06458042562007904
+    ],
+    "slow_walk": [
+     0.06068757176399231,
+     0.060277413576841354,
+     0.06092983856797218
+    ],
+    "ref_clip_macarena": [
+     0.09103119373321533,
+     0.09055057913064957,
+     0.09048506617546082
+    ]
+   },
+   "speed_achieved_vs_reference_mps": {
+    "walk": [
+     [
+      0.896,
+      0.887
+     ],
+     [
+      0.901,
+      0.889
+     ],
+     [
+      0.895,
+      0.888
+     ]
+    ],
+    "turn_walk": [
+     [
+      0.886,
+      0.879
+     ],
+     [
+      0.886,
+      0.881
+     ],
+     [
+      0.884,
+      0.879
+     ]
+    ],
+    "run": [
+     [
+      1.732,
+      2.217
+     ],
+     [
+      1.75,
+      2.177
+     ],
+     [
+      1.73,
+      2.156
+     ]
+    ],
+    "slow_walk": [
+     [
+      0.722,
+      0.709
+     ],
+     [
+      0.729,
+      0.709
+     ],
+     [
+      0.723,
+      0.709
+     ]
+    ]
+   },
+   "reading": "upright through stand, walk, 90 deg turn, run, stop, slow walk and a 27.5 s macarena clip in all 3 runs; walk/slow-walk speed within 1-3% of the planner reference root speed; run reaches 1.73-1.75 m/s vs the planner's 2.16-2.22 m/s reference (-20 to -22%), the largest tracking gap (joint err max ~1.1 rad there)"
+  },
+  "per_run_note": "per-run step / enc / dec / gap statistics: results/sonic/sonic_same_span_table_2026-10-14.json (rebuilt from the tick logs); per-run phase tracking: results/sonic/raw/rtx5090/<run>__run.json"
+ },
+ "finding_planner_gpu_contention": {
+  "what": "214 of the 216 encoder/decoder calls slower than 1 ms across 3 runs (decoder 159/160, encoder 55/56; the 2 exceptions are both in r2) overlapped an in-flight planner inference on the same GPU; these make the decoder p99 ~2.4 ms and max 2.9-3.2 ms; outside planner overlap the decoder p99 is 165-180 us and the step p99 426-512 us",
+  "per_run": [
+   {
+    "ticks_overlapping_planner": 86,
+    "dec_gt_1ms": 42,
+    "dec_gt_1ms_overlapping_planner": 42,
+    "enc_gt_1ms": 30,
+    "enc_gt_1ms_overlapping_planner": 30,
+    "step_us_no_overlap": {
+     "n": 4013,
+     "p50": 208.5,
+     "p99": 425.79,
+     "max": 699.23,
+     "mean": 216.15
+    },
+    "step_us_overlap": {
+     "n": 86,
+     "p50": 2536.93,
+     "p99": 3057.45,
+     "max": 3063.02,
+     "mean": 2182.94
+    },
+    "dec_us_no_overlap": {
+     "n": 4013,
+     "p50": 60.37,
+     "p99": 164.51,
+     "max": 454.83,
+     "mean": 62.84
+    }
+   },
+   {
+    "ticks_overlapping_planner": 86,
+    "dec_gt_1ms": 54,
+    "dec_gt_1ms_overlapping_planner": 53,
+    "enc_gt_1ms": 23,
+    "enc_gt_1ms_overlapping_planner": 22,
+    "step_us_no_overlap": {
+     "n": 4014,
+     "p50": 226.52,
+     "p99": 469.37,
+     "max": 1370.47,
+     "mean": 230.53
+    },
+    "step_us_overlap": {
+     "n": 86,
+     "p50": 2525.96,
+     "p99": 3058.34,
+     "max": 3210.75,
+     "mean": 2269.17
+    },
+    "dec_us_no_overlap": {
+     "n": 4014,
+     "p50": 60.94,
+     "p99": 169.15,
+     "max": 1183.79,
+     "mean": 64.51
+    }
+   },
+   {
+    "ticks_overlapping_planner": 85,
+    "dec_gt_1ms": 64,
+    "dec_gt_1ms_overlapping_planner": 64,
+    "enc_gt_1ms": 3,
+    "enc_gt_1ms_overlapping_planner": 3,
+    "step_us_no_overlap": {
+     "n": 4016,
+     "p50": 237.01,
+     "p99": 512.33,
+     "max": 990.22,
+     "mean": 240.8
+    },
+    "step_us_overlap": {
+     "n": 85,
+     "p50": 2579.7,
+     "p99": 3370.69,
+     "max": 3375.61,
+     "mean": 2208.93
+    },
+    "dec_us_no_overlap": {
+     "n": 4016,
+     "p50": 61.06,
+     "p99": 179.63,
+     "max": 631.35,
+     "mean": 65.59
+    }
+   }
+  ],
+  "tag": "MEASURED",
+  "reading": "the 10 Hz planner (2.4 ms per call) and the 50 Hz policy share one GPU with no priority; in the run phase (10 Hz replans) about 1 in 5 control ticks waits for the planner. Harmless here (worst step 3.4 ms of 20 ms)."
+ },
+ "prediction_vs_measured": {
+  "enc_us": "p50 99-116 in [60,250] HIT; p99 271-321 <= 600 HIT; max 2.89-2.91 ms <= 3 ms HIT (barely)",
+  "dec_us": "p50 60-61 in [50,200] HIT; p99 2357-2387 vs <= 500 MISS (planner contention, not anticipated); max 2.88-3.17 ms vs <= 3 ms MISS in r3",
+  "step_us": "p50 210-238 in [200,1200] HIT; p99 2528-2585 <= 3000 HIT; max 3.06-3.38 ms <= 10 ms HIT",
+  "deadline_misses": "0 compute / 0 slot in all runs HIT",
+  "planner_model_ms": "p50 2.41-2.44 in [1,8] HIT",
+  "planner_rate": "10 Hz running, ~1 Hz walking HIT",
+  "behaviour": "0 falls HIT; joint err mean 0.060-0.091 rad < 0.10 HIT; speed within +/-30% HIT (run -22% is closest to the bound)"
+ },
+ "traps_found": [
+  "upstream deploy reference/example/*.csv are git-LFS objects; with a no-LFS clone the C++ loader accepts the 3-line LFS pointer text as a 2-timestep motion ('Loaded ... (2 timesteps)', no error) and control then fails at the first tick",
+  "the deploy binary in a container with --user needs /etc/passwd mounted (unitree SDK getpwuid throws)",
+  "upstream main() waits with sleep(0.02) on an unsigned-int sleep() = sleep(0): a busy-spin on one core for the whole run (not measured here; matters for a CPU-constrained board)",
+  "upstream sim rate limiter runs slower than real time (see sim.deviation_pacing)",
+  "3 runs are not bit-identical (dec_out differs r1 vs r2/r3): DDS/thread timing makes the closed loop nondeterministic, so cross-board comparisons must use the logged reference set, not a re-run"
+ ],
+ "caveats": [
+  "one host, one TensorRT build of each engine; build-to-build variance not sampled",
+  "simulator and controller on the same host (no network), so LowState age and DDS latency are loopback values",
+  "the RTX 5090 is not a robot computer; it is the reference for the Jetson AGX Orin and AGX Thor records",
+  "behaviour metrics are from the simulator's ground-truth state; 3 runs of one script, so 0/3 falls bounds the fall rate only loosely",
+  "planner reference speed is the finite difference of the planner motion's root over consecutive frames (DERIVED from the logged reference)"
+ ],
+ "raw": "results/sonic/raw/rtx5090/ (per-tick timing, planner calls, per-run simulator record); the same-span table is rebuilt from them by sonic/make_sonic_table.py"
+}
