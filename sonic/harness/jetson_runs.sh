@@ -4,6 +4,9 @@
 #   jetson_runs.sh cpu                       a4cpu_r1..r3: one stress-ng matrixprod hog per core, started 5 s before each run
 #   jetson_runs.sh gpu <orin|thor>           a4gpu_r1..r3: GR00T N1.5 full TensorRT back-to-back on the same GPU (60 s alone first)
 #   jetson_runs.sh diag                      diag_nonroot_cpu: the cpu arm once with the deploy's SCHED_FIFO request disabled (n=1)
+#   jetson_runs.sh banddrop <orin|thor>      bd_D<ms>_r<n>: controlled band drop, 18 unloaded runs in the order of banddrop_order.json
+#   jetson_runs.sh fix <orin|thor>           the late-start fix: stockref_cl_r1 (stock binary), then with $SONIC_FIX_BIN + SONIC_CTRL_FIFO=90,
+#                                            SONIC_MAIN_SLEEP=abs: fix_cl_r1-3 (unloaded), fix_a4cpu_r1-3 (CPU saturated), fix_a4gpu_r1-3 (GR00T)
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); R=$SONIC_RUNS; mkdir -p $R; N=$(nproc)
 run_cl() { $SONIC_SIM_PY $HERE/run_closed_loop_jetson.py --run_dir $R/$1 --script v1 "${@:2}" > $R/$1.orch 2>&1; }
@@ -27,13 +30,36 @@ gpu)
   for i in 1 2 3; do run_cl a4gpu_r$i; sleep 15; done
   sleep 30; touch $G.stop                    # graceful stop of the GR00T loop (never SIGKILL)
   until [ -f $G ]; do sleep 2; done ;;
+banddrop)
+  for r in $($SONIC_SIM_PY -c "import json,sys; print(' '.join(json.load(open(sys.argv[1]))[sys.argv[2]]))" $HERE/banddrop_order.json $2); do
+    D=$((10#$(echo $r | sed 's/^bd_D\([0-9]*\)_.*/\1/'))); run_cl $r --release_delay_ms $D; sleep 15
+  done ;;
+fix)
+  # SONIC_FIX_BIN: g1_deploy_onnx_ref built with latefix.patch (on top of sonic_probe.patch), kept beside the stock binary
+  FIX="--deploy_bin $SONIC_FIX_BIN --deploy_env SONIC_CTRL_FIFO=90,SONIC_MAIN_SLEEP=abs"
+  run_cl stockref_cl_r1; sleep 15
+  for i in 1 2 3; do run_cl fix_cl_r$i $FIX; sleep 15; done
+  for i in 1 2 3; do r=fix_a4cpu_r$i
+    stress-ng --cpu $N --cpu-method matrixprod --timeout 400s --metrics-brief > $R/$r.stress.log 2>&1 &
+    SP=$!; sleep 5; cat /proc/loadavg > $R/$r.loadavg_during
+    run_cl $r $FIX
+    kill -TERM $SP; wait $SP; sleep 15
+  done
+  G=$R/fix_a4gpu_groot.json; rm -f $G $G.ready $G.stop
+  if [ "$2" = thor ]; then nohup bash $HERE/groot_cotenant_thor.sh $G 1500 > $R/fix_a4gpu_groot.log 2>&1 &
+  else sudo -E -u "${SUDO_USER:-$USER}" nohup bash $HERE/groot_cotenant_orin.sh $G 1500 > $R/fix_a4gpu_groot.log 2>&1 & fi
+  until [ -f $G.ready ]; do sleep 2; done
+  sleep 60
+  for i in 1 2 3; do run_cl fix_a4gpu_r$i $FIX; sleep 15; done
+  sleep 30; touch $G.stop
+  until [ -f $G ]; do sleep 2; done ;;
 diag)
   r=diag_nonroot_cpu
   stress-ng --cpu $N --cpu-method matrixprod --timeout 400s --metrics-brief > $R/$r.stress.log 2>&1 &
   SP=$!; sleep 5
   run_cl $r --deploy_prefix 'setpriv --bounding-set=-sys_nice --inh-caps=-sys_nice --'
   kill -TERM $SP; wait $SP ;;
-*) echo "usage: $0 unloaded <first> <last> | cpu | gpu <orin|thor> | diag"; exit 1 ;;
+*) echo "usage: $0 unloaded <first> <last> | cpu | gpu <orin|thor> | diag | banddrop <orin|thor> | fix <orin|thor>"; exit 1 ;;
 esac
 [ -n "${SUDO_UID:-}" ] && chown -R $SUDO_UID:${SUDO_GID:-$SUDO_UID} $R
 date > $R/$1.alldone

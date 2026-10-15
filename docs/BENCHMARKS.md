@@ -61,7 +61,10 @@ One row per measurement behind our GR00T results. **Status** tells you what this
 | Same, CPU saturated and GPU co-tenant (GR00T N1.5 full TensorRT) | Thor, Orin | `sonic/harness/jetson_runs.sh`, `sonic/harness/groot_cotenant.py`, `sonic/scoring/score_groot.py` | same table + `results/sonic/sonic_{thor,orin}_2026-10-14.json` (GR00T rates) | regenerates (table); published record (GR00T rates) |
 | Busy-spin diagnostic, CPU saturated with the deploy's FIFO request disabled (n = 1 per board) | Thor, Orin | `sonic/harness/jetson_runs.sh diag` | same table | regenerates |
 | Engine correctness vs the 5090 tensors (encoder, decoder, planner; TF32 diagnosis) | Thor, Orin | `sonic/gate/` | `results/sonic/sonic_{thor,orin}_2026-10-14.json` (`A2_correctness`) | published record (the reference sets are not published) |
-| Band-drop falls: Thor 3/10, Orin 1/10 vs 5090 0/3 (Fisher p) | all | `sonic/make_sonic_table.py` | same table | DERIVED (open item: cause unknown, controlled test running) |
+| Band-drop falls: Thor 3/10, Orin 1/10 vs 5090 0/3 (Fisher p) | all | `sonic/make_sonic_table.py` | same table | DERIVED (answered by the controlled test below) |
+| First campaign re-scored under the D1 fall rule (any fall-reset from band-off to stop) | 5090, Thor, Orin | `sonic/make_sonic_table.py` | same table (`falls_d1*` per group) | regenerates |
+| Controlled band-drop test: release at D = 10-100 ms × 3 runs, falls per D, Clopper-Pearson, Fisher, bit-identical runs, body-state check | 5090, Thor, Orin | `sonic/harness/sim_driver.py` (`SIM_RELEASE_DELAY_MS`), `sonic/harness/banddrop_x86.sh`, `sonic/harness/jetson_runs.sh banddrop` | same table (`band_drop_controlled_DERIVED`) + `results/sonic/sonic_banddrop_controlled_2026-10-14.json` | regenerates (counts from the per-run simulator records; intervals and tests DERIVED) |
+| Late-start fix (control thread SCHED_FIFO 90 + sleeping main loop): unloaded, CPU saturated, GPU co-tenant vs stock | Thor, Orin | `sonic/harness/latefix.patch`, `sonic/harness/jetson_runs.sh fix` | same table (`<board>/fix_*`, `<board>/stock_sameday_unloaded`) + `results/sonic/sonic_jetson_latefix_2026-10-14.json` | regenerates (table); published record (/proc scheduling readbacks, GR00T rates) |
 
 ## Not included
 

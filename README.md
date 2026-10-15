@@ -33,18 +33,33 @@ apart from a timing probe) on a simulated **Unitree G1** in MuJoCo: the same 82 
 each machine, with the simulator on the same computer, idle and under load. Details: [sonic/README.md](sonic/README.md).
 
 <!-- sonic:start -->
-| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop |
+| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) |
 |---|---|---|---|---|---|---|---|---|
-| RTX 5090 | unloaded | 3 | 0.21–0.24 / 2.53–2.59 | 0 | 0 | 0 | 20.17 | 0/3 · 0/3 |
-| Jetson AGX Thor | unloaded | 10 | 0.72–0.74 / 4.76–4.83 | 0 | 0 | 1 | 21.06 | 1/10 · 3/10 |
-| Jetson AGX Orin 64 GB | unloaded | 10 | 1.05–1.07 / 7.64–7.68 | 0 | 0 | 0 | 20.15 | 0/10 · 1/10 |
-| Jetson AGX Thor | CPU saturated | 3 | 0.75–0.76 / 6.03–7.09 | 11 | 16 | 316 | 40.03 | 0/3 · 0/3 |
-| Jetson AGX Thor | GPU co-tenant | 3 | 3.79–3.86 / 11.47–11.76 | 0 | 0 | 6 | 21.88 | 0/3 · 0/3 |
-| Jetson AGX Orin 64 GB | CPU saturated | 3 | 1.14–1.26 / 132.53–153.73 | 571 | 567 | 686 | 341.78 | 3/3 · 1/3 |
-| Jetson AGX Orin 64 GB | GPU co-tenant | 3 | 5.11–5.25 / 14.32–18.17 | 91 | 6 | 82 | 26.81 | 0/3 · 1/3 |
+| RTX 5090 | unloaded | 3 | 0.21–0.24 / 2.53–2.59 | 0 | 0 | 0 | 20.17 | 0/3 (0 · 0) |
+| Jetson AGX Thor | unloaded | 10 | 0.72–0.74 / 4.76–4.83 | 0 | 0 | 1 | 21.06 | 3/10 (3 · 0) |
+| Jetson AGX Orin 64 GB | unloaded | 10 | 1.05–1.07 / 7.64–7.68 | 0 | 0 | 0 | 20.15 | 1/10 (1 · 0) |
+| Jetson AGX Thor | CPU saturated | 3 | 0.75–0.76 / 6.03–7.09 | 11 | 16 | 316 | 40.03 | 0/3 (0 · 0) |
+| Jetson AGX Thor | GPU co-tenant | 3 | 3.79–3.86 / 11.47–11.76 | 0 | 0 | 6 | 21.88 | 0/3 (0 · 0) |
+| Jetson AGX Orin 64 GB | CPU saturated | 3 | 1.14–1.26 / 132.53–153.73 | 571 | 567 | 686 | 341.78 | 3/3 (1 · 3) |
+| Jetson AGX Orin 64 GB | GPU co-tenant | 3 | 5.11–5.25 / 14.32–18.17 | 91 | 6 | 82 | 26.81 | 1/3 (1 · 0) |
 | RTX 5090 | loaded | n/a — not measured (the loaded arms ran on the Jetsons only) | | | | | | |
 
-MEASURED. Same upstream program, probe, step span, keyboard script and scoring on all three; ranges are across runs, counts are totals over all runs. 50 Hz = a new step every 20 ms. Unloaded, no computer missed a step deadline or a slot (worst step 11.10 ms; worst gap 21.06 ms). Under CPU saturation the Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. The band-drop falls are an **open item**: cause unknown, a controlled test is running. Planner engine accuracy, the TF32 finding, loaded-arm details and caveats: [RESULTS.md §8](RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14).
+MEASURED. Same upstream program, probe, step span, keyboard script and scoring on all three; ranges are across runs, counts are totals over all runs. 50 Hz = a new step every 20 ms. Unloaded, no computer missed a step deadline or a slot (worst step 11.10 ms; worst gap 21.06 ms). Under CPU saturation the stock Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. Falls are counted by the D1 rule: any simulator fall-reset from the band-off command to the stop (in brackets: runs with one within 3 s of the command · runs with one later). Planner engine accuracy, the TF32 finding, loaded-arm details and caveats: [RESULTS.md §8](RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14).
+
+**Band-drop falls (controlled test, MEASURED):** with the release from the simulator's elastic band controlled at D = 10–100 ms after the command (3 runs per D, stock deploy), every machine fell at some delay: RTX 5090 3/18, Thor 3/18, Orin 3/18 (2/17 counting a bit-identical pair once); 95% intervals 0.036–0.414 each (DERIVED). No dependence on D was shown, and control timing was clean in every run: the falls are a drop transient of this sim2sim harness, not a computer's timing. Runs can repeat bit for bit, so the intervals are optimistic. [RESULTS.md §8.1](RESULTS.md#81-controlled-band-drop-test-measured-2026-10-14)
+
+**Late-start fix on the Jetsons (MEASURED):** a deployment change, control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread (needs root or CAP_SYS_NICE):
+
+| Machine | Load | Compute misses, stock → fix | Slot misses, stock → fix | Falls (D1), stock → fix |
+|---|---|---|---|---|
+| Jetson AGX Orin 64 GB | unloaded | 0 → **0** | 0 → **0** | 1/10 → 1/3 |
+| Jetson AGX Orin 64 GB | CPU saturated | 571 → **0** | 567 → **0** | 3/3 → 1/3 |
+| Jetson AGX Orin 64 GB | GPU co-tenant (GR00T) | 91 → **46** | 6 → **10** | 1/3 → 1/3 |
+| Jetson AGX Thor | unloaded | 0 → **0** | 0 → **0** | 3/10 → 0/3 |
+| Jetson AGX Thor | CPU saturated | 11 → **0** | 16 → **0** | 0/3 → 0/3 |
+| Jetson AGX Thor | GPU co-tenant (GR00T) | 0 → **0** | 0 → **0** | 0/3 → 0/3 |
+
+Stock = the runs above (3 per loaded arm, 10 unloaded); fix = 3 runs per arm. On the Orin with GR00T on the same GPU the fix halves the compute misses but slot misses rise (6 → 10), attributed to GPU sharing (inferred, not traced). [RESULTS.md §8.2](RESULTS.md#82-late-start-fix-on-the-jetsons-measured-2026-10-14)
 <!-- sonic:end -->
 
 ## Meet the virtual robot

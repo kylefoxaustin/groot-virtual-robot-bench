@@ -3,7 +3,9 @@ headless MuJoCo (sim_driver.py, upstream DDS listener) + upstream C++/TensorRT g
 from sonic/harness/Dockerfile (tag sonic-deploy:trt1013), driven by a FIXED keyboard script on the deploy's stdin.
 All timestamps CLOCK_MONOTONIC (shared by host python and container C++ steady_clock).
 The container runs with --user, so the deploy is non-root and its SCHED_FIFO-99 request fails silently (as in our runs).
-usage: source sonic/env.sh; python3 sonic/harness/run_closed_loop_x86.py --run_dir $SONIC_RUNS/v1_r1 --script v1"""
+--release_delay_ms D (controlled band-drop test): the simulator releases the band D ms after the band-off command
+(SIM_RELEASE_DELAY_MS in sim_driver.py) and the band_off line carries this process's CLOCK_MONOTONIC write time.
+usage: source sonic/env.sh; python3 sonic/harness/run_closed_loop_x86.py --run_dir $SONIC_RUNS/v1_r1 --script v1 [--release_delay_ms D]"""
 import argparse, json, os, subprocess, sys, threading, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +34,7 @@ SCRIPTS = {
 ap = argparse.ArgumentParser()
 ap.add_argument('--run_dir', required=True)
 ap.add_argument('--script', default='v1')
+ap.add_argument('--release_delay_ms', default='')   # controlled band-drop test only
 ap.add_argument('--init_timeout', type=float, default=900)
 a = ap.parse_args()
 os.makedirs(a.run_dir, exist_ok=True)
@@ -43,7 +46,8 @@ def ev(kind, **kw):
 simlog = open(f'{a.run_dir}/sim_stdout.log', 'w')
 sim = subprocess.Popen([SIMPY, f'{HERE}/sim_driver.py', '--out', f'{os.path.abspath(a.run_dir)}/sim_state.npz', '--max_s', '1200'],
                        stdin=subprocess.PIPE, stdout=simlog, stderr=subprocess.STDOUT, text=True, cwd='/tmp',
-                       env=dict(os.environ, PYTHONPATH=REPO, MUJOCO_GL='disable'))
+                       env=dict(os.environ, PYTHONPATH=REPO, MUJOCO_GL='disable',
+                                **({'SIM_RELEASE_DELAY_MS': str(a.release_delay_ms)} if a.release_delay_ms else {})))
 ev('sim_started', pid=sim.pid)
 time.sleep(4)
 
@@ -83,7 +87,9 @@ if ok:
                 dep.stdin.write('n'); dep.stdin.flush(); time.sleep(0.15)
             ev('action', t_sched=t, act=act, n_presses=k)
             continue
-        if act.startswith('sim:'):
+        if act == 'sim:band_off' and a.release_delay_ms:
+            t_cmd = time.monotonic_ns(); sim.stdin.write(f'band_off {t_cmd}\n'); sim.stdin.flush(); ev('band_off_cmd', t_cmd_ns=t_cmd)
+        elif act.startswith('sim:'):
             sim.stdin.write(act[4:] + '\n'); sim.stdin.flush()
         else:
             dep.stdin.write(act); dep.stdin.flush()

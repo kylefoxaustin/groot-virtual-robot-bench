@@ -224,13 +224,14 @@ SA = {"unloaded": "unloaded", "cpu_saturated": "CPU saturated", "gpu_cotenant": 
 def srng(r, nd=2):
     a, b = (f"{x:.{nd}f}" for x in r)
     return a if a == b else f"{a}–{b}"
+def sd1(g):   # D1 falls: runs that fell / runs (runs with a reset <= 3 s after the band-off command · runs with one later)
+    return f"{g['falls_d1']}/{g['runs']} ({g['falls_d1_drop_window']} · {g['falls_d1_later']})"
 def srow(key, long=True):
     g = SG[key]; b, arm = key.split("/")
     cells = [SB[b], SA[arm], f"{g['runs']} ({g['ticks']:,} ticks)" if long else str(g["runs"]), srng(g["step_p50_ms_range"]), srng(g["step_p99_ms_range"])]
     if long: cells.append(f"{g['step_max_ms']:.2f}")
-    cells += [str(g["compute_misses_step_gt20ms"]), str(g["slot_misses_gap_gt25ms"]), str(g["late_starts_gap_gt21ms"]), f"{g['max_start_gap_ms']:.2f}",
-              f"{g['falls_rule_window']}/{g['runs']} · {g['band_drop_falls']}/{g['runs']}"]
-    if long: cells.append(g["tracking_ok"])
+    cells += [str(g["compute_misses_step_gt20ms"]), str(g["slot_misses_gap_gt25ms"]), str(g["late_starts_gap_gt21ms"]), f"{g['max_start_gap_ms']:.2f}", sd1(g)]
+    if long: cells += [f"{g['falls_rule_window']}/{g['runs']}", g["tracking_ok"]]
     return "| " + " | ".join(cells) + " |"
 SROWS = ["rtx5090/unloaded", "thor/unloaded", "orin/unloaded", "thor/cpu_saturated", "thor/gpu_cotenant", "orin/cpu_saturated", "orin/gpu_cotenant"]
 SNA = "n/a — not measured (the loaded arms ran on the Jetsons only)"
@@ -242,14 +243,16 @@ w("NVIDIA's GEAR-SONIC ([NVlabs/GR00T-WholeBodyControl](https://github.com/NVlab
   "controller. RTX 5090 = runs v1_r1–v1_r3; Jetsons = 10 unloaded runs each (r1–r3 pre-registered, r4–r10 a disclosed extension) and 3 per loaded arm. "
   "Loaded arms: *CPU saturated* = one stress-ng matrix-multiply hog per core; *GPU co-tenant* = GR00T N1.5 on NVIDIA's full TensorRT path calling `get_action` back-to-back on the same GPU. "
   "Methods, scripts and caveats: [sonic/README.md](sonic/README.md).\n")
-w("| Machine | Load | Runs | Step p50 ms | Step p99 ms | Step max ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop | Tracking in tolerance |")
-w("|---|---|---|---|---|---|---|---|---|---|---|---|")
+w("| Machine | Load | Runs | Step p50 ms | Step p99 ms | Step max ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) | Falls, first-campaign rule window | Tracking in tolerance |")
+w("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 for k in SROWS: w(srow(k))
-w(f"| RTX 5090 | loaded | {SNA} | | | | | | | | | |")
+w(f"| RTX 5090 | loaded | {SNA} | | | | | | | | | | |")
 w("")
 w("*Step* = obs_start → after CurrentFrameAdvancement (observation build, encoder, decoder, hand commands, ZMQ publish), from the per-tick log. "
-  "*Gap* = tick start-to-start (50 Hz = 20 ms). *Rule-window fall* = pelvis below 0.30 m, tilt above 60° or a simulator fall-reset from 1 s after the band drop to the end. "
-  "*Band-drop fall* = a simulator fall-reset within 3 s of the band-off command. *Tracking* = per-phase joint error within ±30% of the RTX 5090 range, displacement ±15%, turn ±15° "
+  "*Gap* = tick start-to-start (50 Hz = 20 ms). *D1 fall* = any simulator fall-reset from the band-off command to the stop command; in brackets, how many of "
+  "those runs had a reset within 3 s of the command and how many had one later (a run can have both). D1 was written before the controlled band-drop test (§8.1) "
+  "and replaces the first campaign's *rule window* (pelvis below 0.30 m, tilt above 60° or a simulator fall-reset from 1 s after the band drop to the end), which "
+  "excluded the first second after the drop; those resets were reported in a separate band-drop column (a reset within 3 s of the command). *Tracking* = per-phase joint error within ±30% of the RTX 5090 range, displacement ±15%, turn ±15° "
   "(the 5090 runs define it). `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/`.\n")
 pl = {b: SG[f"{b}/unloaded"]["planner_model_ms_p50_range"] for b in ("rtx5090", "thor", "orin")}
 tail = lambda b: SR[b]["A3_closed_loop"]["step_tail_finding"].split(": ", 1)[1].split(" (MEASURED")[0]
@@ -259,11 +262,12 @@ w(f"**Planner** (TensorRT model time per call, p50 per run, unloaded): RTX 5090 
   "The RTX 5090 shows the same shape at a smaller scale: " + re.sub(r" \(.*?\)", "", SR["rtx5090"]["finding_planner_gpu_contention"]["what"]).split(";")[0] + ".\n")
 fb = ST_["band_drop_vs_rtx5090_fisher_DERIVED"]
 bd1 = [ST_["runs"][b][n]["band_drop_reset_after_band_off_s"][0] for b in ("thor", "orin") for n in SG[f"{b}/unloaded"]["run_names"] if ST_["runs"][b][n]["band_drop_fall"]]
-w(f"**Falls at the band drop: an open item.** The script releases the robot from the simulator's elastic band 2 s into each run. "
+w(f"**Falls at the band drop.** The script releases the robot from the simulator's elastic band 2 s into each run. "
   f"Some runs fell right after: unloaded, Thor {SG['thor/unloaded']['band_drop_falls']}/10, Orin {SG['orin/unloaded']['band_drop_falls']}/10, RTX 5090 {SG['rtx5090/unloaded']['band_drop_falls']}/3 "
-  f"(first reset {min(bd1):.2f}–{max(bd1):.2f} s after the command in each of these runs; one Thor reset came after +1.0 s, so it also counts in the rule window). "
+  f"(first reset {min(bd1):.2f}–{max(bd1):.2f} s after the command in each of these runs). "
   f"The affected runs show no timing signature (every step under 2 ms around the drop). Against the 5090's 0/3 neither count is significant "
-  f"(Fisher exact two-sided p = {fb['thor']['p_two_sided']} Thor, {fb['orin']['p_two_sided']} Orin; DERIVED). **We do not know the cause; a controlled band-drop test is running.**\n")
+  f"(Fisher exact two-sided p = {fb['thor']['p_two_sided']} Thor, {fb['orin']['p_two_sided']} Orin; DERIVED). "
+  "The controlled band-drop test (§8.1) answers it: with the release time controlled, the RTX 5090 falls too, at the same rate as the Jetsons, with on-time control.\n")
 w("**Engine correctness (A2).** Each board's upstream-built engines, run on the exact tensors the RTX 5090 consumed (encoder/decoder: 4,099 ticks of run v1_r1; planner: 86 calls), "
   "against a gate written before the runs:\n")
 w("| Board | TensorRT | Encoder tokens identical to 5090 | Decoder rel_mae vs 5090 | Planner per-call max error p90 vs fp32 (upstream engine, TF32 allowed) | Same, `--noTF32` build | Gate (planner p90 ≤ 0.05 rad) |")
@@ -301,6 +305,102 @@ for c in ["sim2sim only: MuJoCo on the same computer as the controller (a real r
 w("\nReproduce: [sonic/README.md](sonic/README.md). Records: `results/sonic/sonic_{rtx5090,thor,orin}_*.json`; table: `results/sonic/sonic_same_span_table_2026-10-14.json`; "
   "raw per-tick logs: `results/sonic/raw/`. `python3 sonic/make_sonic_table.py` rebuilds the table from the raw logs.\n")
 
+
+# ---- 8.1 controlled band-drop test
+BDC = ST_["band_drop_controlled_DERIVED"]; BDR = J("sonic/sonic_banddrop_controlled_2026-10-14.json")
+SB3 = [("rtx5090", "RTX 5090"), ("thor", "Jetson AGX Thor"), ("orin", "Jetson AGX Orin 64 GB")]
+ci = lambda c: f"{c[0]:.3f}–{c[1]:.3f}"
+w("### 8.1 Controlled band-drop test (MEASURED, 2026-10-14)\n")
+w("The first campaign's simulator read its stdin every 100 ms, so the robot left the elastic band 0–100 ms after the band-off command, uncontrolled. "
+  "Here the simulator polls every 5 ms physics step and releases the band at the first step at or after command + D, and logs the actual delay, the pelvis tilt "
+  "and the horizontal pelvis speed at that step (`SIM_RELEASE_DELAY_MS` in [sonic/harness/sim_driver.py](sonic/harness/sim_driver.py)). "
+  "**D ∈ {10, 25, 40, 60, 80, 100} ms × 3 runs per machine** = 18 unloaded runs each, in a seeded shuffled order "
+  "([sonic/harness/banddrop_order.json](sonic/harness/banddrop_order.json)), with NVIDIA's **stock** deploy on all three machines (same binaries, engines, script and probe "
+  "as above). Falls are counted by the D1 rule. Every release landed within about one 5 ms physics step of its target (actual delay minus D: "
+  + ", ".join(f"{n} {BDC[b]['release_minus_D_ms']['min']:.2f}–{BDC[b]['release_minus_D_ms']['max']:.2f} ms" for b, n in SB3) + "); no run was excluded.\n")
+w("| D (ms) | " + " | ".join(n for _, n in SB3) + " |")
+w("|---|---|---|---|")
+for D in ("10", "25", "40", "60", "80", "100"):
+    w(f"| {D} | " + " | ".join(f"{BDC[b]['per_D_ms'][D]['falls']}/{BDC[b]['per_D_ms'][D]['runs']}" for b, _ in SB3) + " |")
+w("| **all 18 runs** | " + " | ".join(f"**{BDC[b]['falls']}/{BDC[b]['runs']}**" for b, _ in SB3) + " |")
+w("| Clopper-Pearson 95% interval (DERIVED) | " + " | ".join(ci(BDC[b]['clopper_pearson_95']) for b, _ in SB3) + " |")
+w("| D ≤ 40 vs D ≥ 60 ms, Fisher exact two-sided p (DERIVED) | " + " | ".join(
+    f"{BDC[b]['D_le_40_vs_D_ge_60']['D_le_40']} vs {BDC[b]['D_le_40_vs_D_ge_60']['D_ge_60']}, p = {BDC[b]['D_le_40_vs_D_ge_60']['fisher_two_sided_p']:.2f}" for b, _ in SB3) + " |")
+w("| Compute misses · slot misses · max gap ms | " + " | ".join(
+    f"{BDC[b]['timing']['compute_misses_step_gt20ms']} · {BDC[b]['timing']['slot_misses_gap_gt25ms']} · {BDC[b]['timing']['max_start_gap_ms']:.2f}" for b, _ in SB3) + " |")
+w("")
+w(f"Falls per D (MEASURED): runs that fell / runs. Orin counts one trajectory twice at D = 25 ms: runs bd_D025_r1 and bd_D025_r3 are bit-identical for 80 s from the release "
+  f"(below); counting that pair once, Orin is **{BDC['orin']['falls_counting_identical_whole_runs_once']}**. `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/<board>/bd_*`.\n")
+w("**What it shows.** Every machine falls at some release delay, the fp32 RTX 5090 reference included, at rates that 18 runs cannot tell apart "
+  "(3/18 on each; the 95% intervals overlap almost completely). A dependence on D is not shown: the RTX 5090 fell once at D = 80 ms and Thor once at D = 100 ms, "
+  "and no machine's D ≤ 40 vs D ≥ 60 split is significant. Control timing was clean in every run (0 compute misses, 0 slot misses on all three). "
+  "So the band-drop falls are a property of the drop transient in this sim2sim harness, not of one computer's speed or timing (INFERRED from the MEASURED counts).\n")
+pairs = [(BSN, p_) for BSN, _ in SB3 for p_ in BDC[BSN]["repeated_runs_bit_identical_before_the_drop"]]
+w("**Caveats.**\n")
+w("- Closed-loop runs can repeat bit for bit: the controller and simulator are deterministic given identical event timing. Comparing simulator-state fingerprints "
+  "(per-sample sha256 of the joint state, stored in each run file), " + "; ".join(
+      f"{dict(SB3)[b]} {p_['runs'][0]} / {p_['runs'][1]}" + (" are identical for 80 s from the release (both fell)" if p_['identical_80s_from_release'] else " share the 2 s before the drop, then diverge")
+      for b, p_ in pairs) + ". The runs are therefore not independent trials, and the Clopper-Pearson intervals and Fisher tests, which assume they are, are optimistic.")
+bdn = [BDC[b]['body_first_down_s_in_fall_runs'] for b, _ in SB3]
+w("- Falls are counted by the D1 reset rule. The simulator resets only when the pelvis drops below 0.2 m, so a robot that falls at the drop and lies with its pelvis "
+  "just above that is reset seconds later and D1 files it as *later* (Thor bd_D040_r3, Orin bd_D010_r1). A body-state check (tilt above 60° or pelvis below 0.30 m "
+  f"after the command; added after the first such run) agrees with D1 on every run ({', '.join(BDC[b]['body_state_agrees_with_D1'] for b, _ in SB3)}), and puts every fall "
+  f"run down {min(min(x) for x in bdn):.2f}–{max(max(x) for x in bdn):.2f} s after the command.")
+w("- 3 runs per D: a strong D dependence would have shown, a weak one cannot be excluded. A controlled delay does not control the robot's sway phase at release.")
+w("- Stock deploy only; the simulators keep their first-campaign command intake (RTX 5090: upstream DDS listener; Jetsons: polled readers).\n")
+ex = {b: BDC[b]["exploratory_release_state"] for b, _ in SB3}
+w(f"**Exploratory, not pre-registered:** on Thor the three fall runs left the band moving faster sideways (horizontal pelvis speed at release "
+  f"{', '.join(f'{v:.3f}' for v in ex['thor']['vxy_at_release_mps_fall_runs'])} m/s vs a median of {ex['thor']['vxy_at_release_mps_median_no_fall']:.3f} m/s in the other 15; "
+  f"exact permutation p = {ex['thor']['vxy_exact_p']:.3f}, DERIVED). The same test does not separate the falls on Orin (p = {ex['orin']['vxy_exact_p']:.3f}) or on the "
+  f"RTX 5090 (p = {ex['rtx5090']['vxy_exact_p']:.3f}). A hypothesis for a future pre-registered test, not a result.\n")
+w("Record: `results/sonic/sonic_banddrop_controlled_2026-10-14.json` (method, release check, predictions vs outcomes, caveats); numbers: "
+  "`band_drop_controlled_DERIVED` in `results/sonic/sonic_same_span_table_2026-10-14.json`. Reproduce: [sonic/README.md](sonic/README.md#controlled-band-drop-test).\n")
+# ---- 8.2 late-start fix
+LF = J("sonic/sonic_jetson_latefix_2026-10-14.json")
+w("### 8.2 Late-start fix on the Jetsons (MEASURED, 2026-10-14)\n")
+w("A deployment change: **control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread.** Upstream's main loop calls "
+  "`sleep(0.02)` on an integer `sleep()`, so it spins, at SCHED_FIFO 99 pinned to CPU0 when run as root, while the 50 Hz control thread runs at normal priority. "
+  "The fix ([sonic/harness/latefix.patch](sonic/harness/latefix.patch), on top of the probe patch; inert unless `SONIC_CTRL_FIFO=90` and `SONIC_MAIN_SLEEP=abs` are set) "
+  "makes the control thread SCHED_FIFO 90 and lets the main loop sleep to 20 ms deadlines. **It needs root or CAP_SYS_NICE.** "
+  "Each of the first campaign's arms was repeated with it, 3 runs per arm per Jetson, same binaries otherwise, clocks pinned as before; the stock rows are the "
+  "first campaign's runs from earlier the same day (not interleaved), plus one same-session stock run per board.\n")
+w("| Machine | Load | Deploy | Runs | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) | Tracking in tolerance |")
+w("|---|---|---|---|---|---|---|---|---|---|")
+for b in ("orin", "thor"):
+    for arm, lab in (("unloaded", "unloaded"), ("cpu_saturated", "CPU saturated"), ("gpu_cotenant", "GPU co-tenant (GR00T)")):
+        for dep, key in (("stock", f"{b}/{arm}"), ("**fix**", f"{b}/fix_{arm}")):
+            g = SG[key]
+            w(f"| {SB[b]} | {lab} | {dep} | {g['runs']} | {g['compute_misses_step_gt20ms']} | {g['slot_misses_gap_gt25ms']} | {g['late_starts_gap_gt21ms']} "
+              f"| {g['max_start_gap_ms']:.2f} | {sd1(g)} | {g['tracking_ok']} |")
+    g = SG[f"{b}/stock_sameday_unloaded"]
+    w(f"| {SB[b]} | unloaded | stock, same session | {g['runs']} | {g['compute_misses_step_gt20ms']} | {g['slot_misses_gap_gt25ms']} | {g['late_starts_gap_gt21ms']} "
+      f"| {g['max_start_gap_ms']:.2f} | {sd1(g)} | {g['tracking_ok']} |")
+w("")
+SR_FIXDOWN = ST_["runs"]["orin"]["fix_a4cpu_r3"]["body_first_down_s_after_band_off"]; SR_FIXRESET = ST_["runs"]["orin"]["fix_a4cpu_r3"]["d1_resets_s_after_band_off"][0]
+oc, of = SG["orin/cpu_saturated"], SG["orin/fix_cpu_saturated"]; tc, tf = SG["thor/cpu_saturated"], SG["thor/fix_cpu_saturated"]
+og, ofg = SG["orin/gpu_cotenant"], SG["orin/fix_gpu_cotenant"]
+vm = LF["variable_moved"]; gq = LF["gr00t_cotenant"]
+w(f"MEASURED; `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/<board>/{{stockref_cl_r1,fix_*}}` and the first-campaign runs.\n")
+w(f"- **CPU saturated:** Orin goes from {oc['compute_misses_step_gt20ms']} to {of['compute_misses_step_gt20ms']} compute misses ({oc['slot_misses_gap_gt25ms']} → "
+  f"{of['slot_misses_gap_gt25ms']} slot misses, max gap {oc['max_start_gap_ms']:.2f} → {of['max_start_gap_ms']:.2f} ms); Thor from {tc['compute_misses_step_gt20ms']} to "
+  f"{tf['compute_misses_step_gt20ms']} compute and {tc['slot_misses_gap_gt25ms']} to {tf['slot_misses_gap_gt25ms']} slot misses. The first campaign's non-root diagnostic "
+  "(no FIFO-99 spin) had already removed Orin's misses but left Thor 8 slot misses; the control thread's FIFO priority removes those too (mechanism INFERRED, no scheduler trace). "
+  f"The fixed Orin still fell in 1 of 3 CPU-saturated runs (down {SR_FIXDOWN:.2f} s after the band-off command by body state; D1 files it as later, reset "
+  f"{SR_FIXRESET:.2f} s after) and tracked out of tolerance in that run "
+  f"({of['tracking_ok']} in tolerance); the hogs still starve the simulator on the same CPU (sim overrun steps per run: Thor {tf['sim_overrun_steps_per_run']}, Orin {of['sim_overrun_steps_per_run']}).")
+w(f"- **GPU co-tenant, Orin:** compute misses {og['compute_misses_step_gt20ms']} → {ofg['compute_misses_step_gt20ms']} (per run {og['compute_misses_per_run']} → "
+  f"{ofg['compute_misses_per_run']}), but slot misses {og['slot_misses_gap_gt25ms']} → {ofg['slot_misses_gap_gt25ms']}. The remaining steps over 20 ms are attributed to GPU time "
+  "shared with GR00T, which a CPU priority cannot fix (INFERRED, not traced). Thor had no misses with or without the fix. GR00T itself slowed less beside the fixed "
+  f"controller (Orin {gq['orin']['fix_slowdown_pct']}% vs {gq['orin']['stock_slowdown_pct']}%, Thor {gq['thor']['fix_slowdown_pct']}% vs {gq['thor']['stock_slowdown_pct']}%; "
+  "DERIVED from MEASURED rates; outputs unchanged).")
+w(f"- **Unloaded:** no misses either way. The band-drop falls stay (Orin {SG['orin/fix_unloaded']['falls_d1']}/3 with the fix): they occur with on-time control (§8.1).")
+w(f"- **The variable moved** (MEASURED from /proc after init, at t + 20 s and at stop): control thread SCHED_FIFO 90 in every fix run "
+  f"(Orin {vm['orin']['control_thread_FIFO90_at_all_3_readbacks']}, Thor {vm['thor']['control_thread_FIFO90_at_all_3_readbacks']}; stock {vm['orin']['control_thread_stock']}); "
+  f"main-thread CPU {vm['orin']['main_thread_cpu_pct_of_one_core']['stock_same_session']}% → ≤ {max(vm['orin']['main_thread_cpu_pct_of_one_core']['fix'])}% of a core on Orin, "
+  f"{vm['thor']['main_thread_cpu_pct_of_one_core']['stock_same_session']}% → ≤ {max(vm['thor']['main_thread_cpu_pct_of_one_core']['fix'])}% on Thor.")
+w("- 3 runs per arm; sim2sim only; the AGX Orin 64 GB developer kit, not the G1's Orin NX.\n")
+w("Record: `results/sonic/sonic_jetson_latefix_2026-10-14.json` (the change, binaries, scheduling readbacks per run, GR00T rates, caveats). "
+  "Reproduce: [sonic/README.md](sonic/README.md#late-start-fix-jetsons).\n")
 open(os.path.join(OUT, "RESULTS.md"), "w").write("\n".join(L))
 # ---------------------------------------------------------------- README headline (between the markers)
 H = []
@@ -325,21 +425,40 @@ a, b = "<!-- results:start -->", "<!-- results:end -->"
 if a in rd and b in rd:
     rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H) + "\n" + rd[rd.index(b):]
 # ---- README: GEAR-SONIC same-span table (between the sonic markers)
-H2 = ["| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop |",
+H2 = ["| Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) |",
       "|---|---|---|---|---|---|---|---|---|"]
 for k in SROWS:
     g = SG[k]; bb_, arm = k.split("/")
     H2.append(f"| {SB[bb_]} | {SA[arm]} | {g['runs']} | {srng(g['step_p50_ms_range'])} / {srng(g['step_p99_ms_range'])} | {g['compute_misses_step_gt20ms']} "
-              f"| {g['slot_misses_gap_gt25ms']} | {g['late_starts_gap_gt21ms']} | {g['max_start_gap_ms']:.2f} | {g['falls_rule_window']}/{g['runs']} · {g['band_drop_falls']}/{g['runs']} |")
+              f"| {g['slot_misses_gap_gt25ms']} | {g['late_starts_gap_gt21ms']} | {g['max_start_gap_ms']:.2f} | {sd1(g)} |")
 H2.append(f"| RTX 5090 | loaded | {SNA} | | | | | | |")
 H2.append("")
 H2.append("MEASURED. Same upstream program, probe, step span, keyboard script and scoring on all three; ranges are across runs, counts are totals over all runs. "
           "50 Hz = a new step every 20 ms. Unloaded, no computer missed a step deadline or a slot "
           f"(worst step {max(SG[k]['step_max_ms'] for k in SROWS[:3]):.2f} ms; worst gap {max(SG[k]['max_start_gap_ms'] for k in SROWS[:3]):.2f} ms). "
-          "Under CPU saturation the Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. "
-          "The band-drop falls are an **open item**: cause unknown, a controlled test is running. "
+          "Under CPU saturation the stock Orin misses deadlines and falls, and the hogs also starve the simulator on the same CPU. "
+          "Falls are counted by the D1 rule: any simulator fall-reset from the band-off command to the stop (in brackets: runs with one within 3 s of the command · runs with one later). "
           "Planner engine accuracy, the TF32 finding, loaded-arm details and caveats: "
           "[RESULTS.md §8](RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14).")
+H2.append("")
+H2.append(f"**Band-drop falls (controlled test, MEASURED):** with the release from the simulator's elastic band controlled at D = 10–100 ms after the command "
+          f"(3 runs per D, stock deploy), every machine fell at some delay: RTX 5090 {BDC['rtx5090']['falls']}/18, Thor {BDC['thor']['falls']}/18, Orin {BDC['orin']['falls']}/18 "
+          f"({BDC['orin']['falls_counting_identical_whole_runs_once']} counting a bit-identical pair once); 95% intervals {ci(BDC['rtx5090']['clopper_pearson_95'])} each (DERIVED). "
+          "No dependence on D was shown, and control timing was clean in every run: the falls are a drop transient of this sim2sim harness, not a computer's timing. "
+          "Runs can repeat bit for bit, so the intervals are optimistic. [RESULTS.md §8.1](RESULTS.md#81-controlled-band-drop-test-measured-2026-10-14)")
+H2.append("")
+H2.append("**Late-start fix on the Jetsons (MEASURED):** a deployment change, control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread (needs root or CAP_SYS_NICE):")
+H2.append("")
+H2.append("| Machine | Load | Compute misses, stock → fix | Slot misses, stock → fix | Falls (D1), stock → fix |")
+H2.append("|---|---|---|---|---|")
+for b in ("orin", "thor"):
+    for arm, lab in (("unloaded", "unloaded"), ("cpu_saturated", "CPU saturated"), ("gpu_cotenant", "GPU co-tenant (GR00T)")):
+        s_, f_ = SG[f"{b}/{arm}"], SG[f"{b}/fix_{arm}"]
+        H2.append(f"| {SB[b]} | {lab} | {s_['compute_misses_step_gt20ms']} → **{f_['compute_misses_step_gt20ms']}** | {s_['slot_misses_gap_gt25ms']} → **{f_['slot_misses_gap_gt25ms']}** "
+                  f"| {s_['falls_d1']}/{s_['runs']} → {f_['falls_d1']}/{f_['runs']} |")
+H2.append("")
+H2.append("Stock = the runs above (3 per loaded arm, 10 unloaded); fix = 3 runs per arm. On the Orin with GR00T on the same GPU the fix halves the compute misses but slot misses "
+          "rise (6 → 10), attributed to GPU sharing (inferred, not traced). [RESULTS.md §8.2](RESULTS.md#82-late-start-fix-on-the-jetsons-measured-2026-10-14)")
 a, b = "<!-- sonic:start -->", "<!-- sonic:end -->"
 if a in rd and b in rd:
     rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H2) + "\n" + rd[rd.index(b):]

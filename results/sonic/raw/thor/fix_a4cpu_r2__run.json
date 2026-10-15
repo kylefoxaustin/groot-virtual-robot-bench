@@ -1,0 +1,335 @@
+{
+ "board": "thor",
+ "run": "fix_a4cpu_r2",
+ "arm": "fix_cpu_saturated",
+ "tag": "MEASURED",
+ "script": "v1",
+ "schedule": [
+  [
+   0.0,
+   "]"
+  ],
+  [
+   2.0,
+   "sim:band_off"
+  ],
+  [
+   7.0,
+   "\n"
+  ],
+  [
+   10.0,
+   "2"
+  ],
+  [
+   10.1,
+   "w"
+  ],
+  [
+   18.0,
+   "q"
+  ],
+  [
+   18.5,
+   "q"
+  ],
+  [
+   19.0,
+   "q"
+  ],
+  [
+   19.1,
+   "w"
+  ],
+  [
+   25.0,
+   "3"
+  ],
+  [
+   25.1,
+   "w"
+  ],
+  [
+   31.0,
+   "r"
+  ],
+  [
+   36.0,
+   "1"
+  ],
+  [
+   36.1,
+   "w"
+  ],
+  [
+   41.0,
+   "r"
+  ],
+  [
+   45.0,
+   "\n"
+  ],
+  [
+   47.0,
+   "select:macarena_001__A545"
+  ],
+  [
+   49.0,
+   "t"
+  ],
+  [
+   82.0,
+   "o"
+  ]
+ ],
+ "band_off_rel_s": 1.987914,
+ "stop_rel_s": 81.991661,
+ "sim": {
+  "resets_rel_s": [],
+  "resets_total": 0,
+  "overrun_steps": 105,
+  "rtf_control_window": 1.0000046411896477,
+  "rtf_note": "a sim fall-reset rewinds sim time, so the real-time factor is not meaningful in a run with a reset"
+ },
+ "fall_flags_in_rule_window": {
+  "pelvis_z_lt_0p30": false,
+  "tilt_gt60": false,
+  "pelvis_z_min_m": 0.6559555845326333,
+  "tilt_max_deg": 18.19258365034533
+ },
+ "tracking": {
+  "phase_joint_err_mean_rad": {
+   "stand_ref_frame0": 0.0816117525100708,
+   "planner_idle": 0.08246345818042755,
+   "walk": 0.06653611361980438,
+   "turn_walk": 0.06454769521951675,
+   "run": 0.08687262237071991,
+   "idle_after_run": 0.061480019241571426,
+   "slow_walk": 0.061255767941474915,
+   "ref_clip_macarena": 0.09201745688915253
+  },
+  "phases": {
+   "stand_ref_frame0": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.0816117525100708,
+    "joint_err_p95_rad": 0.24675752222537994,
+    "joint_err_max_rad": 0.2873506546020508,
+    "achieved_speed_mps": 0.002346684860483027,
+    "ref_root_speed_mps": null,
+    "pelvis_z_mean": 0.7836842286807129,
+    "planner_active_frac": 0.0,
+    "enc_mode": 0
+   },
+   "planner_idle": {
+    "ticks": 100,
+    "joint_err_mean_rad": 0.08246345818042755,
+    "joint_err_p95_rad": 0.21919037401676178,
+    "joint_err_max_rad": 0.2881377637386322,
+    "achieved_speed_mps": 0.006063836517272273,
+    "ref_root_speed_mps": 0.003746351459994912,
+    "pelvis_z_mean": 0.7843053778806083,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "walk": {
+    "ticks": 300,
+    "joint_err_mean_rad": 0.06653611361980438,
+    "joint_err_p95_rad": 0.19882041215896606,
+    "joint_err_max_rad": 0.3672119975090027,
+    "achieved_speed_mps": 0.9039235054353132,
+    "ref_root_speed_mps": 0.8890799283981323,
+    "pelvis_z_mean": 0.7640126404550199,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "turn_walk": {
+    "ticks": 225,
+    "joint_err_mean_rad": 0.06454769521951675,
+    "joint_err_p95_rad": 0.20008863508701324,
+    "joint_err_max_rad": 0.3902739882469177,
+    "achieved_speed_mps": 0.893538609292004,
+    "ref_root_speed_mps": 0.8795267343521118,
+    "pelvis_z_mean": 0.764739919686476,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "run": {
+    "ticks": 200,
+    "joint_err_mean_rad": 0.08687262237071991,
+    "joint_err_p95_rad": 0.24090023338794708,
+    "joint_err_max_rad": 1.1257269382476807,
+    "achieved_speed_mps": 1.75945963574157,
+    "ref_root_speed_mps": 2.1738219261169434,
+    "pelvis_z_mean": 0.7219006745019669,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "idle_after_run": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.061480019241571426,
+    "joint_err_p95_rad": 0.22575350105762482,
+    "joint_err_max_rad": 0.264305055141449,
+    "achieved_speed_mps": 0.010010024514279424,
+    "ref_root_speed_mps": null,
+    "pelvis_z_mean": 0.7870157726133181,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "slow_walk": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.061255767941474915,
+    "joint_err_p95_rad": 0.17490307986736298,
+    "joint_err_max_rad": 0.29497456550598145,
+    "achieved_speed_mps": 0.7259907287596928,
+    "ref_root_speed_mps": 0.7092356085777283,
+    "pelvis_z_mean": 0.7692774583323319,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "ref_clip_macarena": {
+    "ticks": 1350,
+    "joint_err_mean_rad": 0.09201745688915253,
+    "joint_err_p95_rad": 0.2895016670227051,
+    "joint_err_max_rad": 1.0300370454788208,
+    "achieved_speed_mps": 0.10898856748006973,
+    "ref_root_speed_mps": 0.15437597036361694,
+    "pelvis_z_mean": 0.767428916075519,
+    "planner_active_frac": 0.0,
+    "enc_mode": 0
+   }
+  },
+  "planar_displacement_m": {
+   "walk": 6.786456900118611,
+   "turn_walk": 4.959603394774596,
+   "run": 10.019678731744852,
+   "slow_walk": 3.2738250802043267,
+   "macarena": 0.2527414617792125
+  },
+  "turn_yaw_deg": 85.08949646926212
+ },
+ "load_order": [
+  "dance_in_da_party_001__A464",
+  "macarena_001__A545_M",
+  "tired_one_leg_jumping_R_001__A359_M",
+  "dance_in_da_party_001__A464_M",
+  "squat_001__A359",
+  "macarena_001__A545",
+  "tired_one_leg_jumping_R_001__A359",
+  "walking_quip_360_R_002__A428",
+  "neutral_kick_R_001__A543",
+  "forward_lunge_R_001__A359_M",
+  "tired_forward_lunge_R_001__A359_M",
+  "neutral_kick_R_001__A543_M",
+  "walking_quip_360_R_002__A428_M"
+ ],
+ "body_state": {
+  "rule": "tilt > 60 deg OR pelvis z < 0.30 m, from the band-off command to the stop command",
+  "down": false,
+  "first_down_s_after_band_off": null
+ },
+ "sim_fingerprint": {
+  "pre_band_off_2s": {
+   "38.665": "bac2d3f74036",
+   "38.685": "f0297bc57247",
+   "38.705": "57cc754162e7",
+   "38.725": "db7d15c643d3",
+   "38.745": "263cd024c7ca",
+   "38.765": "b5d0010c6947",
+   "38.785": "8bc3a6600807",
+   "38.805": "433588f1adec",
+   "38.825": "1ec08070c329",
+   "38.845": "9231b8234953",
+   "38.865": "b895a7b32a98",
+   "38.885": "5b5fe959b17a",
+   "38.905": "ddeec7f77dab",
+   "38.925": "6b65c75aca4e",
+   "38.945": "5d291fafe367",
+   "38.965": "6893f63043c9",
+   "38.985": "7d0124ac5699",
+   "39.005": "5869e1602885",
+   "39.025": "e45e48cb9493",
+   "39.045": "d5fe6f6215cf",
+   "39.065": "b0cb4c5ca6d7",
+   "39.085": "08985d976523",
+   "39.105": "f4c3e3ba5973",
+   "39.125": "2c2e39aafec0",
+   "39.145": "696f79c32509",
+   "39.165": "a7db957b91c7",
+   "39.185": "2cfa38b7a0d2",
+   "39.205": "8aaa613079b7",
+   "39.225": "9ec594ce65ac",
+   "39.245": "2ae633267cee",
+   "39.265": "aecfc670287a",
+   "39.285": "5a235db9999d",
+   "39.305": "30025ba52d28",
+   "39.325": "66e2d12fcf5b",
+   "39.345": "87c2a0dd9507",
+   "39.365": "81621dcf9539",
+   "39.385": "5696c0578e8a",
+   "39.405": "66ef75c1f3f3",
+   "39.425": "900764f4e46c",
+   "39.445": "430af1f49e1b",
+   "39.465": "e2f36231d2e5",
+   "39.485": "04b4b8aa748b",
+   "39.505": "1a7fee3c90cd",
+   "39.525": "ed7371bbe505",
+   "39.545": "8f8dbd5e29d2",
+   "39.565": "7ddcc9b8a02d",
+   "39.585": "eb29aabe32c1",
+   "39.605": "91103c9bbfe9",
+   "39.625": "f82a5951119f",
+   "39.645": "ececdb0aa005",
+   "39.665": "d33f4e20e75a",
+   "39.685": "e0a9f930b60b",
+   "39.705": "e47b9f9dfe1f",
+   "39.725": "6d08248c9915",
+   "39.745": "1ca5d128a593",
+   "39.765": "487d118ba040",
+   "39.785": "5406f6ab3f37",
+   "39.805": "e6c6577c07bd",
+   "39.825": "00de66b208d3",
+   "39.845": "ddab34cc45e4",
+   "39.865": "7fa43bf3513f",
+   "39.885": "943389d978d2",
+   "39.905": "97a47e87f6e3",
+   "39.925": "7742dd5b5081",
+   "39.945": "be297e2c0f58",
+   "39.965": "4dcbf7e588a9",
+   "39.985": "39270df0c217",
+   "40.005": "879a041e019a",
+   "40.025": "895188104d56",
+   "40.045": "83c3a72740cf",
+   "40.065": "bb2ab3d75c22",
+   "40.085": "cc47f6d13424",
+   "40.105": "3713d114e0b2",
+   "40.125": "2796cd52f34c",
+   "40.145": "5b9b9a852003",
+   "40.165": "989f488c45c3",
+   "40.185": "de833476d9ba",
+   "40.205": "83a0317fc5a4",
+   "40.225": "00401dc7f243",
+   "40.245": "94e26a694f15",
+   "40.265": "d0a497e7309f",
+   "40.285": "e0651410641c",
+   "40.305": "28d01dfff274",
+   "40.325": "eab3c2f6e1d0",
+   "40.345": "132c2a1127b9",
+   "40.365": "76399e10903c",
+   "40.385": "258a2b53cee3",
+   "40.405": "b3897b4cb2c8",
+   "40.425": "aeb1a1b38a5d",
+   "40.445": "58b9a5d11b4b",
+   "40.465": "a6777b0769c5",
+   "40.485": "97faa114795d",
+   "40.505": "fe072f1f0a8d",
+   "40.525": "063c306f355d",
+   "40.545": "aac56c518357",
+   "40.565": "a24a8a0f9ff0",
+   "40.585": "efea9fef886d",
+   "40.605": "97ed1a0e25cb",
+   "40.625": "d7204e5965c3",
+   "40.645": "769a46715612"
+  }
+ },
+ "load_order_matches_rtx5090": true
+}

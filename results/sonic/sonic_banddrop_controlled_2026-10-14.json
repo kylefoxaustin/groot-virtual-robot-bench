@@ -1,0 +1,206 @@
+{
+ "_schema": "groot-virtual-robot-bench/sonic-banddrop/1",
+ "date": "2026-10-14",
+ "tag": "MEASURED",
+ "tag_note": "per-run counts, release readbacks and timings MEASURED; rates, Clopper-Pearson intervals, Fisher and permutation p-values DERIVED. Every number in the results block is rebuilt by sonic/make_sonic_table.py from results/sonic/raw/ (key band_drop_controlled_DERIVED of the table).",
+ "what": "Controlled band-drop test for NVIDIA GEAR-SONIC (Unitree G1, MuJoCo sim2sim): the robot is released from the simulator's elastic band at a controlled delay D after the band-off command, D in {10, 25, 40, 60, 80, 100} ms x 3 runs per machine, on the RTX 5090, the Jetson AGX Thor and the Jetson AGX Orin 64 GB, all with NVIDIA's stock deploy (no scheduling change), unloaded.",
+ "why": "In the first closed-loop campaign some unloaded runs fell right after the band drop (Thor 3/10, Orin 1/10, RTX 5090 0/3) with no timing signature. The simulator polled stdin every 100 ms, so the actual release came 0-100 ms after the command, uncontrolled. This test fixes the release delay to ask whether it drives the falls, and whether the falls are specific to a computer.",
+ "boards": {
+  "rtx5090": "RTX 5090 desktop (x86)",
+  "thor": "Jetson AGX Thor Developer Kit",
+  "orin": "Jetson AGX Orin 64 GB Developer Kit (not the Orin NX inside the G1 robot)"
+ },
+ "versions": "as in results/sonic/sonic_rtx5090_2026-10-13.json, sonic_thor_2026-10-14.json and sonic_orin_2026-10-14.json (same binaries, engines, TensorRT, simulator Python; the RTX 5090 deploy runs in the sonic-deploy:trt1013 container with TensorRT 10.13.0.35)",
+ "clocks": {
+  "rtx5090": "default boost, not locked (as in the first campaign)",
+  "thor": "PINNED: nvpmodel MAXN + jetson_clocks (run again at session start; read back identical to the pre-existing lock): CPU 14x governor performance min=max=cur 2601000 kHz, gpu-gpc-0 min=max=cur 1575 MHz, gpu-nvd-0 1692 MHz, EMC min=max=cur 4266 MHz.",
+  "orin": "PINNED: nvpmodel MAXN + jetson_clocks (run again at session start; read back identical to the pre-existing lock): CPU 12x min=max=cur 2201600 kHz (governor schedutil, floored), GPU min=max=cur 1300.5 MHz, EMC 3199 MHz FreqOverride=1. Read back while stress-ng ran: all 12 cores at 2201600 kHz."
+ },
+ "what_ran": {
+  "deploy": "NVIDIA's stock upstream g1_deploy_onnx_ref @ b042411 + the measurement probe, the same binaries as the first campaign. Jetsons as root (upstream FIFO-99 main thread active), RTX 5090 non-root in its container (that request fails), as before",
+  "release_mechanism": "sonic/harness/sim_driver.py with SIM_RELEASE_DELAY_MS=D: stdin is polled every physics step (5 ms) instead of every 20 steps; the orchestrator writes \"band_off <its CLOCK_MONOTONIC ns>\" and the simulator releases the band at the first physics step that starts at or after command + D, then logs the actual delay, the pelvis tilt and the horizontal pelvis speed at that step. Same change on every machine (the RTX 5090 simulator keeps the upstream DDS listener, the Jetsons poll the command readers once per physics step, SIM_POLL_CMDS=1, as in the first campaign)",
+  "orchestrator": "run_closed_loop_x86.py / run_closed_loop_jetson.py with --release_delay_ms D; otherwise unchanged (same v1 keyboard script, probe, reference-motion load order, checked per run)",
+  "design": "D in {10, 25, 40, 60, 80, 100} ms x 3 runs per machine, unloaded, in a seeded shuffled order per machine (sonic/harness/banddrop_order.json), 15 s between runs; a simulator-only release self-test at D = 10 and 25 ms before the runs",
+  "scoring": "sonic/scoring/analyze_cl.py + export_run.py per run; sonic/make_sonic_table.py for the counts, intervals and tests"
+ },
+ "release_check": {
+  "tag": "MEASURED (simulator readback per run)",
+  "release_minus_D_ms": {
+   "rtx5090": {
+    "min": 0.39,
+    "max": 5.02
+   },
+   "thor": {
+    "min": 0.43,
+    "max": 4.97
+   },
+   "orin": {
+    "min": 0.32,
+    "max": 4.8
+   }
+  },
+  "note": "every release came within one 5 ms physics step of the target (the RTX 5090 maximum exceeds 5.00 ms by 0.02 ms of sleep wake-up jitter); no run was excluded",
+  "selftest_sim_alone": {
+   "rtx5090": "D = 10 -> 13.43 ms, D = 25 -> 25.66 ms",
+   "thor": [
+    "npz release_delay_ms 11.928512 D 10.0",
+    "npz release_delay_ms 25.079915 D 25.0"
+   ],
+   "orin": [
+    "npz release_delay_ms 12.6483 D 10.0",
+    "npz release_delay_ms 28.235987 D 25.0"
+   ]
+  }
+ },
+ "fall_rule": {
+  "primary": "D1 (written before the test): a fall is any simulator fall-reset from the band-off command to the stop command, split into the drop window (<= 3 s after the command) and later. The first campaign's rule-window rule excluded the first second after the drop.",
+  "trap": "the simulator resets only when the pelvis drops below 0.2 m; a robot that falls at the drop but lies with its pelvis at 0.22-0.29 m is reset seconds later (when the next command moves it), so D1 files that fall as \"later\". The fall/no-fall verdict is unaffected.",
+  "body_state_check": "tilt > 60 deg or pelvis below 0.30 m from the command to the stop (added after the first such run, not pre-registered); it agrees with D1 on every run of this test (see results)"
+ },
+ "preregistration": "predictions and the decision rules were written before the first run on each machine (per D, totals, pooled D <= 40 vs D >= 60, timing). The body-state check and the bit-identical-run analysis were added afterwards and are labelled as such.",
+ "results": {
+  "tag": "MEASURED counts / DERIVED intervals and tests; rebuilt in results/sonic/sonic_same_span_table_2026-10-14.json (band_drop_controlled_DERIVED)",
+  "falls_total": {
+   "rtx5090": "3/18",
+   "thor": "3/18",
+   "orin": "3/18"
+  },
+  "clopper_pearson_95": {
+   "rtx5090": [
+    0.036,
+    0.414
+   ],
+   "thor": [
+    0.036,
+    0.414
+   ],
+   "orin": [
+    0.036,
+    0.414
+   ]
+  },
+  "falls_per_D_ms": {
+   "rtx5090": {
+    "10": "1/3",
+    "25": "1/3",
+    "40": "0/3",
+    "60": "0/3",
+    "80": "1/3",
+    "100": "0/3"
+   },
+   "thor": {
+    "10": "1/3",
+    "25": "0/3",
+    "40": "1/3",
+    "60": "0/3",
+    "80": "0/3",
+    "100": "1/3"
+   },
+   "orin": {
+    "10": "1/3",
+    "25": "2/3",
+    "40": "0/3",
+    "60": "0/3",
+    "80": "0/3",
+    "100": "0/3"
+   }
+  },
+  "D_le_40_vs_D_ge_60": {
+   "rtx5090": {
+    "D_le_40": "2/9",
+    "D_ge_60": "1/9",
+    "fisher_two_sided_p": 1.0
+   },
+   "thor": {
+    "D_le_40": "2/9",
+    "D_ge_60": "1/9",
+    "fisher_two_sided_p": 1.0
+   },
+   "orin": {
+    "D_le_40": "3/9",
+    "D_ge_60": "0/9",
+    "fisher_two_sided_p": 0.2059
+   }
+  },
+  "orin_counting_the_identical_pair_once": "2/17",
+  "timing": {
+   "rtx5090": {
+    "ticks": 73807,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 19,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 23.022041000000172
+   },
+   "thor": {
+    "ticks": 73782,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 2,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.07543200001237
+   },
+   "orin": {
+    "ticks": 73782,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.171110999996017
+   }
+  }
+ },
+ "prediction_vs_measured": {
+  "tag": "DERIVED (measured vs the predictions written before the runs)",
+  "thor": {
+   "D10": "1/3 (pred 0-1/3 (point 0)) HIT",
+   "D25": "0/3 (pred 0-2/3 (point 1)) HIT",
+   "D40": "1/3 (pred 0-3/3 (point 1)) HIT",
+   "D60": "0/3 (pred 0-1/3 (point 0)) HIT",
+   "D80": "0/3 (pred 0-1/3 (point 0)) HIT",
+   "D100": "1/3 (pred 0-1/3 (point 0)) HIT",
+   "total": "3/18 (pred point 2/18, range 0-7) HIT",
+   "pool_D<=40": "2/9 (pred point 2/9)",
+   "pool_D>=60": "1/9 (pred point 0/9, range 0-2)",
+   "all_falls_in_drop_window": "D1 split: MISS (1 fall(s) filed later by D1); physically (supplement): every fall run was down within 3 s of the command",
+   "deadlines": "compute misses 0, gaps > 25 ms 0, gaps > 21 ms 2, max gap 22.075 ms (pred 0 / 0 / 0-2) HIT",
+   "decision": "release_delay_matters_on_this_board: NOT SHOWN (Fisher D<=40 vs D>=60 p = 1.0); timing_not_the_variable (>= 2/9 falls at D >= 60): not triggered (1/9)"
+  },
+  "orin": {
+   "D10": "1/3 (pred 0/3) MISS",
+   "D25": "2/3 (pred 0-1/3) MISS",
+   "D40": "0/3 (pred 0-1/3) HIT",
+   "D60": "0/3 (pred 0-1/3) HIT",
+   "D80": "0/3 (pred 0/3) HIT",
+   "D100": "0/3 (pred 0/3) HIT",
+   "total": "3/18 (pred point 1/18, range 0-4) HIT",
+   "pool_D<=40": "3/9 (pred point 1/9)",
+   "pool_D>=60": "0/9 (pred point 0/9, range 0-1)",
+   "all_falls_in_drop_window": "D1 split: MISS (1 fall(s) filed later by D1); physically (supplement): every fall run was down within 3 s of the command",
+   "deadlines": "compute misses 0, gaps > 25 ms 0, gaps > 21 ms 0, max gap 20.171 ms (pred 0 / 0 / 0-2) HIT",
+   "decision": "release_delay_matters_on_this_board: NOT SHOWN (Fisher D<=40 vs D>=60 p = 0.2059); timing_not_the_variable (>= 2/9 falls at D >= 60): not triggered (0/9)"
+  },
+  "rtx5090": {
+   "total": "3/18 (pred >= 2/18, point 3/18) HIT",
+   "pool_D_le_25": "2/6 (pred >= 1/6, point 2/6) HIT",
+   "pool_D_ge_60": "1/9 (pred 0-1/9) HIT",
+   "falls_absent_on_the_reference": "pred 0/18 under the alternative hypothesis that the RTX 5090 does not fall -> 3/18: REFUTED",
+   "deadlines": "pred 0 compute misses, 0 gaps > 25 ms -> 0 / 0 in 73,807 ticks HIT (19 gaps > 21 ms, max 23.02 ms, in 7 runs; not predicted either way; the first campaign saw the same kind of host-side jitter)"
+  }
+ },
+ "findings": [
+  "Every machine falls at some release delay, at rates that cannot be told apart with 18 runs each: RTX 5090 3/18, Jetson AGX Thor 3/18, Jetson AGX Orin 3/18 (2/17 counting the bit-identical D = 25 ms pair once). Clopper-Pearson 95% intervals 0.036-0.414 for each. MEASURED counts, DERIVED intervals.",
+  "A dependence on the release delay is not shown: D <= 40 ms vs D >= 60 ms gives 2/9 vs 1/9 on the RTX 5090 and on Thor (Fisher p = 1.0) and 3/9 vs 0/9 on Orin (p = 0.21); the RTX 5090 fell once at D = 80 ms and Thor once at D = 100 ms. DERIVED.",
+  "Timing was clean in every run: 0 compute misses and 0 slot misses on all three machines (max start-to-start gap RTX 5090 23.02 ms, Thor 22.08 ms, Orin 20.17 ms). The falls happen with on-time control, on the fp32 reference machine too, so they are a property of the drop transient in this sim2sim harness, not of one computer. MEASURED (timing), INFERRED (reading).",
+  "Exploratory, not pre-registered: on Thor the 3 fall runs had a higher horizontal pelvis speed at the moment of release (0.263, 0.141, 0.190 m/s vs a median of 0.070 m/s in the 15 others; exact permutation p = 0.027). Not on Orin (p = 0.158) and not on the RTX 5090 (p = 0.724); not every fast release fell. A hypothesis for a pre-registered test, not a result. DERIVED.",
+  "Runs are not guaranteed independent trials: the closed loop is deterministic given identical event timing. Orin D025_r1 and D025_r3 are bit-identical for 80 s from the release (same release physics step; both fell), so Orin's D = 25 ms 2/3 is one falling trajectory counted twice. Four more pairs share a bit-identical simulator state over the 2 s before the drop and then diverge (none fell): RTX 5090 D025_r1/D025_r3, Thor D025_r1/D080_r2, Orin D040_r1/D080_r1 and D040_r2/D100_r3. MEASURED (simulator-state fingerprints in each run file).",
+  "D1 files two fall runs as \"later\" (Thor D040_r3 reset 5.36 s and Orin D010_r1 reset 5.67 s after the command): the robot was already down, with its pelvis just above the reset height. By body state every fall run of this test was down 0.68-1.16 s after the command; D1 and the body-state check flag the same runs on every machine (18/18 each). MEASURED."
+ ],
+ "caveats": [
+  "sim2sim only; the band release is an artifact of the simulator's elastic support, not a robot behaviour",
+  "runs can repeat bit for bit, so they are not independent trials; Clopper-Pearson and Fisher treat them as independent, so the intervals are optimistic",
+  "3 runs per D per machine: a strong D dependence would show, a weak one cannot be excluded (stated before the runs)",
+  "a controlled delay does not control the robot's sway phase at release; tilt and pelvis speed at release are recorded instead",
+  "the simulators differ in command intake as in the first campaign (RTX 5090: upstream DDS listener; Jetsons: polled readers)",
+  "stock deploy only; the late-start fix (results/sonic/sonic_jetson_latefix_2026-10-14.json) was not combined with this test",
+  "AGX Orin 64 GB developer kit, not the G1's Orin NX"
+ ],
+ "raw": "results/sonic/raw/<board>/bd_D<ms>_r<n>__{ticks.csv.gz,planner.csv.gz,run.json}; run.json carries the release readback (release), the body-state check (body_state) and the simulator-state fingerprints (sim_fingerprint). Not published: per-tick tensors, simulator state logs, deploy logs."
+}

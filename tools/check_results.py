@@ -6,7 +6,8 @@
               accuracy/make_summary.py on the finalize_*.json files                   == results/accuracy/closed_loop_summary_*.json
   * profiling: profiling/ddr_bandwidth/derive_gbps.py                               == results/profiling/groot_ddr_bandwidth_* GB/s
   * sonic:    sonic/make_sonic_table.py on results/sonic/raw/<board>/*              == results/sonic/sonic_same_span_table_2026-10-14.json
-              (and the per-board records' deadline / band-drop numbers must agree with that table)
+              (and the per-board records' deadline / band-drop numbers, the controlled band-drop record and the late-start-fix
+              record must agree with that table)
   * docs:     tools/make_results_md.py output                                       == the committed RESULTS.md + README headline and SONIC table
 Records marked "published record" in docs/BENCHMARKS.md have no raw data in this repo to rebuild from, so they are not checked.
 Everything is regenerated into a temporary directory: the check never modifies your checkout.
@@ -97,6 +98,29 @@ with tempfile.TemporaryDirectory() as td:
             n_bd = sum(1 for v in rec["A3_closed_loop"]["band_drop_resets_rel_s"].values() if any(0 <= x <= 3.0 for x in v["after_band_off_s"]))
             if n_bd != g[f"{b_}/unloaded"]["band_drop_falls"]:
                 bad.append(f"sonic: {b_} record band-drop resets disagree with the rebuilt table")
+        # controlled band-drop record vs the rebuilt table
+        bd = new["band_drop_controlled_DERIVED"]; rb = json.load(open(f"{RSN}/sonic_banddrop_controlled_2026-10-14.json"))
+        B3 = ("rtx5090", "thor", "orin")
+        expect = dict(falls_total={b: f"{bd[b]['falls']}/{bd[b]['runs']}" for b in B3},
+                      clopper_pearson_95={b: bd[b]["clopper_pearson_95"] for b in B3},
+                      falls_per_D_ms={b: {D: f"{v['falls']}/{v['runs']}" for D, v in bd[b]["per_D_ms"].items()} for b in B3},
+                      D_le_40_vs_D_ge_60={b: bd[b]["D_le_40_vs_D_ge_60"] for b in B3},
+                      orin_counting_the_identical_pair_once=bd["orin"]["falls_counting_identical_whole_runs_once"],
+                      timing={b: bd[b]["timing"] for b in B3})
+        for k, v in expect.items():
+            if json.dumps(rb["results"].get(k), sort_keys=True) != json.dumps(v, sort_keys=True):
+                bad.append(f"sonic: banddrop record results.{k} disagrees with the rebuilt table")
+        if rb["release_check"]["release_minus_D_ms"] != {b: bd[b]["release_minus_D_ms"] for b in B3}:
+            bad.append("sonic: banddrop record release check disagrees with the rebuilt table")
+        # late-start-fix record vs the rebuilt table
+        rl = json.load(open(f"{RSN}/sonic_jetson_latefix_2026-10-14.json"))
+        KEYS = ("runs", "compute_misses_step_gt20ms", "slot_misses_gap_gt25ms", "late_starts_gap_gt21ms", "falls_d1", "tracking_ok", "sim_overrun_steps_per_run")
+        for b_, arms in rl["comparison_vs_stock"].items():
+            for arm_, v in arms.items():
+                for side in ([v] if "group" in v else [v["stock"], v["fix"]]):
+                    gg = g[side["group"]]
+                    if any(side[k] != gg[k] for k in KEYS) or side["max_start_gap_ms"] != round(gg["max_start_gap_ms"], 2):
+                        bad.append(f"sonic: latefix record {b_}/{arm_} ({side['group']}) disagrees with the rebuilt table")
     # ---- RESULTS.md + README headline, generated into the temp dir and compared
     run([f"{ROOT}/tools/make_results_md.py", td])
     for f, what in (("RESULTS.md", "RESULTS.md"), ("README.md", "README.md headline + SONIC tables")):

@@ -1,0 +1,105 @@
+Late-start fix for upstream gear_sonic_deploy g1_deploy_onnx_ref (NVlabs/GR00T-WholeBodyControl @ b042411), applied ON TOP of sonic_probe.patch.
+A change to upstream's deployment: the control thread sets SCHED_FIFO $SONIC_CTRL_FIFO on itself, and with SONIC_MAIN_SLEEP=abs the
+main loop sleeps to absolute 20 ms deadlines instead of busy-spinning. Inert when both variables are unset. Needs root or CAP_SYS_NICE.
+Apache License 2.0 (a modification of NVIDIA's g1_deploy_onnx_ref.cpp; see NOTICE). Code identical to the build we measured; comments
+and the header's file name were edited for publication.
+  patch -d $SONIC_REPO -p1 < sonic/harness/latefix.patch
+
+--- a/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp
++++ b/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp
+@@ -127,6 +127,7 @@
+ #include <cuda_runtime.h>
+ #include "../include/state_logger.hpp"
+ #include "sonic_probe.hpp"
++#include "sonic_rtctl.hpp"  // late-start fix: env scheduling knobs (inert when unset)
+ 
+ // Encoder
+ #include "../include/encoder.hpp"
+@@ -3849,6 +3850,7 @@
+      *    10. Periodic timing log every 50 ticks (~1 s).
+      */
+     void Control() {
++      { static thread_local bool sonic_once = false; if (!sonic_once && rtctl::tid() != getpid()) { sonic_once = true; rtctl::apply("SONIC_CTRL"); } }  // late-start fix
+       if (operator_state.stop) { return; }
+ 
+       switch (program_state_) {
+@@ -4555,7 +4557,19 @@
+     while (!custom.operator_state.stop) { sleep(0.02); }
+   }
+ #else
+-  while (!custom.operator_state.stop) { sleep(0.02); }
++  if (const char* sonic_ms = std::getenv("SONIC_MAIN_SLEEP"); sonic_ms && std::string(sonic_ms) == "abs") {
++    // late-start fix (a change to upstream's deployment): upstream's sleep(0.02) truncates to sleep(0), so this FIFO-99 main thread
++    // (pinned to CPU0 by SetThreadPriority when run as root) busy-spins its core. Sleep to absolute 20 ms deadlines instead.
++    struct timespec sonic_next; clock_gettime(CLOCK_MONOTONIC, &sonic_next);
++    std::fprintf(stderr, "[rtctl] main loop: clock_nanosleep(TIMER_ABSTIME) 20 ms (upstream busy-spin replaced)\n");
++    while (!custom.operator_state.stop) {
++      sonic_next.tv_nsec += 20000000L;
++      if (sonic_next.tv_nsec >= 1000000000L) { sonic_next.tv_nsec -= 1000000000L; sonic_next.tv_sec += 1; }
++      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &sonic_next, nullptr);
++    }
++  } else {
++    while (!custom.operator_state.stop) { sleep(0.02); }
++  }
+ #endif
+   
+   std::cout << "[DEBUG] Stopping G1Deploy..." << std::endl;
+--- /dev/null
++++ b/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/sonic_rtctl.hpp
+@@ -0,0 +1,56 @@
++// sonic_rtctl.hpp -- late-start fix for g1_deploy_onnx_ref (groot-virtual-robot-bench; not part of upstream).
++// Per-thread scheduling knobs read from the environment and applied by the calling thread ITSELF (inert when unset):
++//   <P>_CPUS  e.g. "1" or "4-6"  -> sched_setaffinity(calling thread)
++//   <P>_FIFO  e.g. "90"          -> SCHED_FIFO at that priority (calling thread; needs root or CAP_SYS_NICE)
++//   <P>_NICE  e.g. "10"          -> setpriority(PRIO_PROCESS, tid) (calling thread, SCHED_OTHER only)
++// Our Jetson runs set only SONIC_CTRL_FIFO=90 (the control thread). Upstream's unitree RecurrentThread already names the
++// threads "control"/"planner"/..., so no renaming is done here.
++// Every application is logged to stderr with its return codes ("[rtctl] ...") so the run log carries the proof.
++#pragma once
++#include <pthread.h>
++#include <sched.h>
++#include <sys/resource.h>
++#include <sys/syscall.h>
++#include <unistd.h>
++#include <cerrno>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++
++namespace rtctl {
++inline pid_t tid() { return (pid_t)syscall(SYS_gettid); }
++inline bool parse_cpus(const char* s, cpu_set_t& cs) {
++  CPU_ZERO(&cs); bool any = false;
++  std::string str(s); size_t p = 0;
++  while (p < str.size()) {
++    size_t q = str.find(',', p); if (q == std::string::npos) q = str.size();
++    std::string tok = str.substr(p, q - p); size_t d = tok.find('-');
++    int a = std::atoi(tok.c_str()), b = (d == std::string::npos) ? a : std::atoi(tok.c_str() + d + 1);
++    for (int c = a; c <= b; ++c) { CPU_SET(c, &cs); any = true; }
++    p = q + 1;
++  }
++  return any;
++}
++inline void apply(const char* prefix) {
++  char k[96]; std::string log;
++  std::snprintf(k, sizeof(k), "%s_CPUS", prefix);
++  if (const char* v = std::getenv(k)) if (*v) {
++    cpu_set_t cs; int rc = -99;
++    if (parse_cpus(v, cs)) rc = sched_setaffinity(0, sizeof(cs), &cs);
++    log += std::string(" cpus=") + v + " rc=" + std::to_string(rc) + (rc ? std::string("/") + std::strerror(errno) : "");
++  }
++  std::snprintf(k, sizeof(k), "%s_FIFO", prefix);
++  if (const char* v = std::getenv(k)) if (*v) {
++    sched_param sp{}; sp.sched_priority = std::atoi(v);
++    int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
++    log += std::string(" fifo=") + v + " rc=" + std::to_string(rc);
++  }
++  std::snprintf(k, sizeof(k), "%s_NICE", prefix);
++  if (const char* v = std::getenv(k)) if (*v) {
++    int rc = setpriority(PRIO_PROCESS, tid(), std::atoi(v));
++    log += std::string(" nice=") + v + " rc=" + std::to_string(rc);
++  }
++  std::fprintf(stderr, "[rtctl] %s tid=%d%s\n", prefix, (int)tid(), log.empty() ? " (no knobs set)" : log.c_str());
++}
++}  // namespace rtctl

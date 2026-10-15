@@ -1,0 +1,348 @@
+{
+ "board": "orin",
+ "run": "bd_D060_r2",
+ "arm": "banddrop_controlled",
+ "tag": "MEASURED",
+ "script": "v1",
+ "schedule": [
+  [
+   0.0,
+   "]"
+  ],
+  [
+   2.0,
+   "sim:band_off"
+  ],
+  [
+   7.0,
+   "\n"
+  ],
+  [
+   10.0,
+   "2"
+  ],
+  [
+   10.1,
+   "w"
+  ],
+  [
+   18.0,
+   "q"
+  ],
+  [
+   18.5,
+   "q"
+  ],
+  [
+   19.0,
+   "q"
+  ],
+  [
+   19.1,
+   "w"
+  ],
+  [
+   25.0,
+   "3"
+  ],
+  [
+   25.1,
+   "w"
+  ],
+  [
+   31.0,
+   "r"
+  ],
+  [
+   36.0,
+   "1"
+  ],
+  [
+   36.1,
+   "w"
+  ],
+  [
+   41.0,
+   "r"
+  ],
+  [
+   45.0,
+   "\n"
+  ],
+  [
+   47.0,
+   "select:macarena_001__A545"
+  ],
+  [
+   49.0,
+   "t"
+  ],
+  [
+   82.0,
+   "o"
+  ]
+ ],
+ "band_off_rel_s": 1.999041,
+ "stop_rel_s": 82.007824,
+ "sim": {
+  "resets_rel_s": [],
+  "resets_total": 0,
+  "overrun_steps": 0,
+  "rtf_control_window": 1.0000001006946575,
+  "rtf_note": "a sim fall-reset rewinds sim time, so the real-time factor is not meaningful in a run with a reset"
+ },
+ "fall_flags_in_rule_window": {
+  "pelvis_z_lt_0p30": false,
+  "tilt_gt60": false,
+  "pelvis_z_min_m": 0.6559239231524268,
+  "tilt_max_deg": 17.664633496130026
+ },
+ "tracking": {
+  "phase_joint_err_mean_rad": {
+   "stand_ref_frame0": 0.06769312173128128,
+   "planner_idle": 0.07176180183887482,
+   "walk": 0.06620635837316513,
+   "turn_walk": 0.06522957980632782,
+   "run": 0.08882956951856613,
+   "idle_after_run": 0.06060751900076866,
+   "slow_walk": 0.06140570342540741,
+   "ref_clip_macarena": 0.09098030626773834
+  },
+  "phases": {
+   "stand_ref_frame0": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.06769312173128128,
+    "joint_err_p95_rad": 0.1873055398464203,
+    "joint_err_max_rad": 0.28752774000167847,
+    "achieved_speed_mps": 0.012369028155259358,
+    "ref_root_speed_mps": null,
+    "pelvis_z_mean": 0.7868742512879553,
+    "planner_active_frac": 0.0,
+    "enc_mode": 0
+   },
+   "planner_idle": {
+    "ticks": 100,
+    "joint_err_mean_rad": 0.07176180183887482,
+    "joint_err_p95_rad": 0.2229570746421814,
+    "joint_err_max_rad": 0.29854637384414673,
+    "achieved_speed_mps": 0.005388142286334207,
+    "ref_root_speed_mps": 0.0039214035496115685,
+    "pelvis_z_mean": 0.7867048393619278,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "walk": {
+    "ticks": 300,
+    "joint_err_mean_rad": 0.06620635837316513,
+    "joint_err_p95_rad": 0.20320317149162292,
+    "joint_err_max_rad": 0.35857531428337097,
+    "achieved_speed_mps": 0.906057061451114,
+    "ref_root_speed_mps": 0.8870995044708252,
+    "pelvis_z_mean": 0.7649434711227606,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "turn_walk": {
+    "ticks": 225,
+    "joint_err_mean_rad": 0.06522957980632782,
+    "joint_err_p95_rad": 0.2032311111688614,
+    "joint_err_max_rad": 0.43123552203178406,
+    "achieved_speed_mps": 0.8971778941178504,
+    "ref_root_speed_mps": 0.8788053393363953,
+    "pelvis_z_mean": 0.7661123988040731,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "run": {
+    "ticks": 200,
+    "joint_err_mean_rad": 0.08882956951856613,
+    "joint_err_p95_rad": 0.2550947368144989,
+    "joint_err_max_rad": 1.1464680433273315,
+    "achieved_speed_mps": 1.752186939057098,
+    "ref_root_speed_mps": 2.1281027793884277,
+    "pelvis_z_mean": 0.7268243340444016,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "idle_after_run": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.06060751900076866,
+    "joint_err_p95_rad": 0.20331430435180664,
+    "joint_err_max_rad": 0.24281640350818634,
+    "achieved_speed_mps": 0.013388588259988425,
+    "ref_root_speed_mps": null,
+    "pelvis_z_mean": 0.7870235500850754,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "slow_walk": {
+    "ticks": 150,
+    "joint_err_mean_rad": 0.06140570342540741,
+    "joint_err_p95_rad": 0.17806921899318695,
+    "joint_err_max_rad": 0.3558785319328308,
+    "achieved_speed_mps": 0.7393695348885226,
+    "ref_root_speed_mps": 0.7095990777015686,
+    "pelvis_z_mean": 0.7705852663994813,
+    "planner_active_frac": 1.0,
+    "enc_mode": 0
+   },
+   "ref_clip_macarena": {
+    "ticks": 1350,
+    "joint_err_mean_rad": 0.09098030626773834,
+    "joint_err_p95_rad": 0.2888732850551605,
+    "joint_err_max_rad": 1.0318886041641235,
+    "achieved_speed_mps": 0.11073169092526743,
+    "ref_root_speed_mps": 0.15437597036361694,
+    "pelvis_z_mean": 0.7677995742667099,
+    "planner_active_frac": 0.0,
+    "enc_mode": 0
+   }
+  },
+  "planar_displacement_m": {
+   "walk": 6.797210855020625,
+   "turn_walk": 5.041815888467374,
+   "run": 10.056809262127123,
+   "slow_walk": 3.3437836522014104,
+   "macarena": 0.251229260902274
+  },
+  "turn_yaw_deg": 89.11809986419317
+ },
+ "load_order": [
+  "dance_in_da_party_001__A464",
+  "macarena_001__A545_M",
+  "tired_one_leg_jumping_R_001__A359_M",
+  "dance_in_da_party_001__A464_M",
+  "squat_001__A359",
+  "macarena_001__A545",
+  "tired_one_leg_jumping_R_001__A359",
+  "walking_quip_360_R_002__A428",
+  "neutral_kick_R_001__A543",
+  "forward_lunge_R_001__A359_M",
+  "tired_forward_lunge_R_001__A359_M",
+  "neutral_kick_R_001__A543_M",
+  "walking_quip_360_R_002__A428_M"
+ ],
+ "release": {
+  "D_ms": 60.0,
+  "release_delay_ms": 60.322,
+  "rx_latency_ms": 4.823,
+  "steps_rx_to_release": 11,
+  "release_rel_s": 2.059324,
+  "step_release": 8191,
+  "tilt_at_release_deg": 6.684934234073569,
+  "vxy_at_release_mps": 0.12700297996547952,
+  "resets_at_release": 0,
+  "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+ },
+ "body_state": {
+  "rule": "tilt > 60 deg OR pelvis z < 0.30 m, from the band-off command to the stop command",
+  "down": false,
+  "first_down_s_after_band_off": null
+ },
+ "sim_fingerprint": {
+  "pre_band_off_2s": {
+   "38.905": "2308a78e5090",
+   "38.925": "7cc1bce24f0a",
+   "38.945": "3615a60c14a0",
+   "38.965": "297f2f1565f4",
+   "38.985": "41e318773570",
+   "39.005": "3915ecee7b66",
+   "39.025": "14fe0dc28baa",
+   "39.045": "a466663ab075",
+   "39.065": "26b600f43691",
+   "39.085": "6864dbdbb8bf",
+   "39.105": "bf01bf5bcd2e",
+   "39.125": "cafd784eacb2",
+   "39.145": "8b58c76d17a5",
+   "39.165": "c4e1c34bfccc",
+   "39.185": "251cc6e7c590",
+   "39.205": "d29f6a78601f",
+   "39.225": "fe6fe5706f8d",
+   "39.245": "6defb6c549d3",
+   "39.265": "9cf27ceee43e",
+   "39.285": "5d61a2d86ea1",
+   "39.305": "0eb67a81c0b1",
+   "39.325": "123c5cdbfe64",
+   "39.345": "1f8cf018142f",
+   "39.365": "afd49aa1809f",
+   "39.385": "72ed3c44b892",
+   "39.405": "6abd1ac41186",
+   "39.425": "e6bcc48d1094",
+   "39.445": "8daa17262f19",
+   "39.465": "55efedaab79f",
+   "39.485": "d7d80d056e2e",
+   "39.505": "357c8c96a1ec",
+   "39.525": "cf5b1dfefafc",
+   "39.545": "288b6d2c2d3b",
+   "39.565": "de6bda7dff89",
+   "39.585": "bf6e0ae97410",
+   "39.605": "9a7f022ce711",
+   "39.625": "6b9e2d0fd0dd",
+   "39.645": "c76faa62771e",
+   "39.665": "e9357a97c940",
+   "39.685": "37450508338e",
+   "39.705": "af157a6d2500",
+   "39.725": "889b81364a01",
+   "39.745": "e8bdbaf6b821",
+   "39.765": "94dca73f0471",
+   "39.785": "e4c33d395dd5",
+   "39.805": "bdd43858944d",
+   "39.825": "368c9e378117",
+   "39.845": "8dcb191790ae",
+   "39.865": "28fb0cdb1775",
+   "39.885": "cdc3aae90a8c",
+   "39.905": "503f3984b9d8",
+   "39.925": "9320bad08d5c",
+   "39.945": "27e392a6258e",
+   "39.965": "9dfb78100c93",
+   "39.985": "e722eddd2325",
+   "40.005": "25b3b301cc7f",
+   "40.025": "627230ff850a",
+   "40.045": "5d21861a9a33",
+   "40.065": "947b4fd3f224",
+   "40.085": "1b99bc43699a",
+   "40.105": "e48690497578",
+   "40.125": "9d1b0862fed8",
+   "40.145": "4d2486554e11",
+   "40.165": "2bd6e561fbe6",
+   "40.185": "61e82ba23cd7",
+   "40.205": "2b885f065976",
+   "40.225": "45c9b42d1ac4",
+   "40.245": "dbda88948d7d",
+   "40.265": "12cee6329633",
+   "40.285": "b8a82e714829",
+   "40.305": "92c2346406da",
+   "40.325": "a4d1e1cf81f2",
+   "40.345": "8e5149caf73a",
+   "40.365": "c12081ef8f51",
+   "40.385": "81a5695b595a",
+   "40.405": "b1d14f5f1f1a",
+   "40.425": "60b8bcd872f1",
+   "40.445": "780745137f9a",
+   "40.465": "6565f889b4ac",
+   "40.485": "9677b6c95373",
+   "40.505": "cdd343f209b9",
+   "40.525": "960a6965df94",
+   "40.545": "8ffb81e7d9d4",
+   "40.565": "fde72df9610c",
+   "40.585": "b934f897b255",
+   "40.605": "621067511d10",
+   "40.625": "2699e3bd4ff0",
+   "40.645": "976721fafd0e",
+   "40.665": "e6182451479d",
+   "40.685": "90e4116b8a64",
+   "40.705": "8a2bf36faddb",
+   "40.725": "d3719cc1e252",
+   "40.745": "5c7376e0dae4",
+   "40.765": "7590729a9b10",
+   "40.785": "ce7d234a34a1",
+   "40.805": "e0386a9fbe66",
+   "40.825": "75efa2ee3f10",
+   "40.845": "effcdff40a92",
+   "40.865": "defee6b52bdd",
+   "40.885": "9a160ca9b353"
+  },
+  "from_release_4000_samples": "9112892cfa6d1089"
+ },
+ "load_order_matches_rtx5090": true
+}

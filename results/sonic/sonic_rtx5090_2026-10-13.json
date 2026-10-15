@@ -347,5 +347,6 @@
   "behaviour metrics are from the simulator's ground-truth state; 3 runs of one script, so 0/3 falls bounds the fall rate only loosely",
   "planner reference speed is the finite difference of the planner motion's root over consecutive frames (DERIVED from the logged reference)"
  ],
- "raw": "results/sonic/raw/rtx5090/ (per-tick timing, planner calls, per-run simulator record); the same-span table is rebuilt from them by sonic/make_sonic_table.py"
+ "raw": "results/sonic/raw/rtx5090/ (per-tick timing, planner calls, per-run simulator record); the same-span table is rebuilt from them by sonic/make_sonic_table.py",
+ "follow_up_2026-10-14": "2026-10-14: the band-drop open item was tested with the release delay controlled (results/sonic/sonic_banddrop_controlled_2026-10-14.json, RESULTS.md 8.1): this machine fell too, in 3/18 runs (as did Thor and Orin), with on-time control. Falls are now counted by the D1 rule (any sim fall-reset from the band-off command to the stop); re-scored in the table (falls_d1)."
 }

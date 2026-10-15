@@ -188,22 +188,22 @@ The 2026-10-10 numbers came from an earlier, unpreserved version of this measure
 
 NVIDIA's GEAR-SONIC ([NVlabs/GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl) @ `b042411`) keeps a simulated **Unitree G1** humanoid on its feet in MuJoCo: an encoder + decoder run every 20 ms (50 Hz) and a motion planner runs at up to 10 Hz. All three networks are fp32 TensorRT engines built by upstream code on each machine. Every machine ran the **same upstream program, the same measurement probe, the same step span, the same keyboard script** (stand, band drop, walk, 90° turn, run, slow walk, a 27.5 s dance clip; 82 s per run) and the same scoring; the simulator runs on the same computer as the controller. RTX 5090 = runs v1_r1–v1_r3; Jetsons = 10 unloaded runs each (r1–r3 pre-registered, r4–r10 a disclosed extension) and 3 per loaded arm. Loaded arms: *CPU saturated* = one stress-ng matrix-multiply hog per core; *GPU co-tenant* = GR00T N1.5 on NVIDIA's full TensorRT path calling `get_action` back-to-back on the same GPU. Methods, scripts and caveats: [sonic/README.md](sonic/README.md).
 
-| Machine | Load | Runs | Step p50 ms | Step p99 ms | Step max ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls: rule window · band drop | Tracking in tolerance |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| RTX 5090 | unloaded | 3 (12,300 ticks) | 0.21–0.24 | 2.53–2.59 | 3.38 | 0 | 0 | 0 | 20.17 | 0/3 · 0/3 | reference |
-| Jetson AGX Thor | unloaded | 10 (40,990 ticks) | 0.72–0.74 | 4.76–4.83 | 5.65 | 0 | 0 | 1 | 21.06 | 1/10 · 3/10 | 10/10 runs |
-| Jetson AGX Orin 64 GB | unloaded | 10 (40,990 ticks) | 1.05–1.07 | 7.64–7.68 | 11.10 | 0 | 0 | 0 | 20.15 | 0/10 · 1/10 | 10/10 runs |
-| Jetson AGX Thor | CPU saturated | 3 (12,295 ticks) | 0.75–0.76 | 6.03–7.09 | 39.98 | 11 | 16 | 316 | 40.03 | 0/3 · 0/3 | 3/3 runs |
-| Jetson AGX Thor | GPU co-tenant | 3 (12,297 ticks) | 3.79–3.86 | 11.47–11.76 | 17.26 | 0 | 0 | 6 | 21.88 | 0/3 · 0/3 | 3/3 runs |
-| Jetson AGX Orin 64 GB | CPU saturated | 3 (10,524 ticks) | 1.14–1.26 | 132.53–153.73 | 341.77 | 571 | 567 | 686 | 341.78 | 3/3 · 1/3 | 0/3 runs |
-| Jetson AGX Orin 64 GB | GPU co-tenant | 3 (12,297 ticks) | 5.11–5.25 | 14.32–18.17 | 26.81 | 91 | 6 | 82 | 26.81 | 0/3 · 1/3 | 3/3 runs |
-| RTX 5090 | loaded | n/a — not measured (the loaded arms ran on the Jetsons only) | | | | | | | | | |
+| Machine | Load | Runs | Step p50 ms | Step p99 ms | Step max ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) | Falls, first-campaign rule window | Tracking in tolerance |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| RTX 5090 | unloaded | 3 (12,300 ticks) | 0.21–0.24 | 2.53–2.59 | 3.38 | 0 | 0 | 0 | 20.17 | 0/3 (0 · 0) | 0/3 | reference |
+| Jetson AGX Thor | unloaded | 10 (40,990 ticks) | 0.72–0.74 | 4.76–4.83 | 5.65 | 0 | 0 | 1 | 21.06 | 3/10 (3 · 0) | 1/10 | 10/10 runs |
+| Jetson AGX Orin 64 GB | unloaded | 10 (40,990 ticks) | 1.05–1.07 | 7.64–7.68 | 11.10 | 0 | 0 | 0 | 20.15 | 1/10 (1 · 0) | 0/10 | 10/10 runs |
+| Jetson AGX Thor | CPU saturated | 3 (12,295 ticks) | 0.75–0.76 | 6.03–7.09 | 39.98 | 11 | 16 | 316 | 40.03 | 0/3 (0 · 0) | 0/3 | 3/3 runs |
+| Jetson AGX Thor | GPU co-tenant | 3 (12,297 ticks) | 3.79–3.86 | 11.47–11.76 | 17.26 | 0 | 0 | 6 | 21.88 | 0/3 (0 · 0) | 0/3 | 3/3 runs |
+| Jetson AGX Orin 64 GB | CPU saturated | 3 (10,524 ticks) | 1.14–1.26 | 132.53–153.73 | 341.77 | 571 | 567 | 686 | 341.78 | 3/3 (1 · 3) | 3/3 | 0/3 runs |
+| Jetson AGX Orin 64 GB | GPU co-tenant | 3 (12,297 ticks) | 5.11–5.25 | 14.32–18.17 | 26.81 | 91 | 6 | 82 | 26.81 | 1/3 (1 · 0) | 0/3 | 3/3 runs |
+| RTX 5090 | loaded | n/a — not measured (the loaded arms ran on the Jetsons only) | | | | | | | | | | |
 
-*Step* = obs_start → after CurrentFrameAdvancement (observation build, encoder, decoder, hand commands, ZMQ publish), from the per-tick log. *Gap* = tick start-to-start (50 Hz = 20 ms). *Rule-window fall* = pelvis below 0.30 m, tilt above 60° or a simulator fall-reset from 1 s after the band drop to the end. *Band-drop fall* = a simulator fall-reset within 3 s of the band-off command. *Tracking* = per-phase joint error within ±30% of the RTX 5090 range, displacement ±15%, turn ±15° (the 5090 runs define it). `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/`.
+*Step* = obs_start → after CurrentFrameAdvancement (observation build, encoder, decoder, hand commands, ZMQ publish), from the per-tick log. *Gap* = tick start-to-start (50 Hz = 20 ms). *D1 fall* = any simulator fall-reset from the band-off command to the stop command; in brackets, how many of those runs had a reset within 3 s of the command and how many had one later (a run can have both). D1 was written before the controlled band-drop test (§8.1) and replaces the first campaign's *rule window* (pelvis below 0.30 m, tilt above 60° or a simulator fall-reset from 1 s after the band drop to the end), which excluded the first second after the drop; those resets were reported in a separate band-drop column (a reset within 3 s of the command). *Tracking* = per-phase joint error within ±30% of the RTX 5090 range, displacement ±15%, turn ±15° (the 5090 runs define it). `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/`.
 
 **Planner** (TensorRT model time per call, p50 per run, unloaded): RTX 5090 2.41–2.44 ms, Thor 4.37–4.48 ms, Orin 7.18–7.28 ms. The step tail is the planner sharing the GPU with the 50 Hz networks: on Thor 860 of the 860 ticks with step > 3 ms (10 runs) overlap a planner call; on Orin 860 of the 870 ticks with step > 3 ms (10 runs) overlap a planner call (MEASURED overlap; that the encoder/decoder queue behind the planner's GPU work is INFERRED, not traced). The RTX 5090 shows the same shape at a smaller scale: 214 of the 216 encoder/decoder calls slower than 1 ms across 3 runs overlapped an in-flight planner inference on the same GPU.
 
-**Falls at the band drop: an open item.** The script releases the robot from the simulator's elastic band 2 s into each run. Some runs fell right after: unloaded, Thor 3/10, Orin 1/10, RTX 5090 0/3 (first reset 0.75–1.22 s after the command in each of these runs; one Thor reset came after +1.0 s, so it also counts in the rule window). The affected runs show no timing signature (every step under 2 ms around the drop). Against the 5090's 0/3 neither count is significant (Fisher exact two-sided p = 0.528 Thor, 1.0 Orin; DERIVED). **We do not know the cause; a controlled band-drop test is running.**
+**Falls at the band drop.** The script releases the robot from the simulator's elastic band 2 s into each run. Some runs fell right after: unloaded, Thor 3/10, Orin 1/10, RTX 5090 0/3 (first reset 0.75–1.22 s after the command in each of these runs). The affected runs show no timing signature (every step under 2 ms around the drop). Against the 5090's 0/3 neither count is significant (Fisher exact two-sided p = 0.528 Thor, 1.0 Orin; DERIVED). The controlled band-drop test (§8.1) answers it: with the release time controlled, the RTX 5090 falls too, at the same rate as the Jetsons, with on-time control.
 
 **Engine correctness (A2).** Each board's upstream-built engines, run on the exact tensors the RTX 5090 consumed (encoder/decoder: 4,099 ticks of run v1_r1; planner: 86 calls), against a gate written before the runs:
 
@@ -228,3 +228,66 @@ Caveats:
 - 3 runs on the 5090 and 10 per Jetson bound a fall rate only loosely.
 
 Reproduce: [sonic/README.md](sonic/README.md). Records: `results/sonic/sonic_{rtx5090,thor,orin}_*.json`; table: `results/sonic/sonic_same_span_table_2026-10-14.json`; raw per-tick logs: `results/sonic/raw/`. `python3 sonic/make_sonic_table.py` rebuilds the table from the raw logs.
+
+### 8.1 Controlled band-drop test (MEASURED, 2026-10-14)
+
+The first campaign's simulator read its stdin every 100 ms, so the robot left the elastic band 0–100 ms after the band-off command, uncontrolled. Here the simulator polls every 5 ms physics step and releases the band at the first step at or after command + D, and logs the actual delay, the pelvis tilt and the horizontal pelvis speed at that step (`SIM_RELEASE_DELAY_MS` in [sonic/harness/sim_driver.py](sonic/harness/sim_driver.py)). **D ∈ {10, 25, 40, 60, 80, 100} ms × 3 runs per machine** = 18 unloaded runs each, in a seeded shuffled order ([sonic/harness/banddrop_order.json](sonic/harness/banddrop_order.json)), with NVIDIA's **stock** deploy on all three machines (same binaries, engines, script and probe as above). Falls are counted by the D1 rule. Every release landed within about one 5 ms physics step of its target (actual delay minus D: RTX 5090 0.39–5.02 ms, Jetson AGX Thor 0.43–4.97 ms, Jetson AGX Orin 64 GB 0.32–4.80 ms); no run was excluded.
+
+| D (ms) | RTX 5090 | Jetson AGX Thor | Jetson AGX Orin 64 GB |
+|---|---|---|---|
+| 10 | 1/3 | 1/3 | 1/3 |
+| 25 | 1/3 | 0/3 | 2/3 |
+| 40 | 0/3 | 1/3 | 0/3 |
+| 60 | 0/3 | 0/3 | 0/3 |
+| 80 | 1/3 | 0/3 | 0/3 |
+| 100 | 0/3 | 1/3 | 0/3 |
+| **all 18 runs** | **3/18** | **3/18** | **3/18** |
+| Clopper-Pearson 95% interval (DERIVED) | 0.036–0.414 | 0.036–0.414 | 0.036–0.414 |
+| D ≤ 40 vs D ≥ 60 ms, Fisher exact two-sided p (DERIVED) | 2/9 vs 1/9, p = 1.00 | 2/9 vs 1/9, p = 1.00 | 3/9 vs 0/9, p = 0.21 |
+| Compute misses · slot misses · max gap ms | 0 · 0 · 23.02 | 0 · 0 · 22.08 | 0 · 0 · 20.17 |
+
+Falls per D (MEASURED): runs that fell / runs. Orin counts one trajectory twice at D = 25 ms: runs bd_D025_r1 and bd_D025_r3 are bit-identical for 80 s from the release (below); counting that pair once, Orin is **2/17**. `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/<board>/bd_*`.
+
+**What it shows.** Every machine falls at some release delay, the fp32 RTX 5090 reference included, at rates that 18 runs cannot tell apart (3/18 on each; the 95% intervals overlap almost completely). A dependence on D is not shown: the RTX 5090 fell once at D = 80 ms and Thor once at D = 100 ms, and no machine's D ≤ 40 vs D ≥ 60 split is significant. Control timing was clean in every run (0 compute misses, 0 slot misses on all three). So the band-drop falls are a property of the drop transient in this sim2sim harness, not of one computer's speed or timing (INFERRED from the MEASURED counts).
+
+**Caveats.**
+
+- Closed-loop runs can repeat bit for bit: the controller and simulator are deterministic given identical event timing. Comparing simulator-state fingerprints (per-sample sha256 of the joint state, stored in each run file), RTX 5090 bd_D025_r1 / bd_D025_r3 share the 2 s before the drop, then diverge; Jetson AGX Thor bd_D025_r1 / bd_D080_r2 share the 2 s before the drop, then diverge; Jetson AGX Orin 64 GB bd_D025_r1 / bd_D025_r3 are identical for 80 s from the release (both fell); Jetson AGX Orin 64 GB bd_D040_r1 / bd_D080_r1 share the 2 s before the drop, then diverge; Jetson AGX Orin 64 GB bd_D040_r2 / bd_D100_r3 share the 2 s before the drop, then diverge. The runs are therefore not independent trials, and the Clopper-Pearson intervals and Fisher tests, which assume they are, are optimistic.
+- Falls are counted by the D1 reset rule. The simulator resets only when the pelvis drops below 0.2 m, so a robot that falls at the drop and lies with its pelvis just above that is reset seconds later and D1 files it as *later* (Thor bd_D040_r3, Orin bd_D010_r1). A body-state check (tilt above 60° or pelvis below 0.30 m after the command; added after the first such run) agrees with D1 on every run (18/18, 18/18, 18/18), and puts every fall run down 0.68–1.16 s after the command.
+- 3 runs per D: a strong D dependence would have shown, a weak one cannot be excluded. A controlled delay does not control the robot's sway phase at release.
+- Stock deploy only; the simulators keep their first-campaign command intake (RTX 5090: upstream DDS listener; Jetsons: polled readers).
+
+**Exploratory, not pre-registered:** on Thor the three fall runs left the band moving faster sideways (horizontal pelvis speed at release 0.263, 0.141, 0.190 m/s vs a median of 0.070 m/s in the other 15; exact permutation p = 0.027, DERIVED). The same test does not separate the falls on Orin (p = 0.158) or on the RTX 5090 (p = 0.724). A hypothesis for a future pre-registered test, not a result.
+
+Record: `results/sonic/sonic_banddrop_controlled_2026-10-14.json` (method, release check, predictions vs outcomes, caveats); numbers: `band_drop_controlled_DERIVED` in `results/sonic/sonic_same_span_table_2026-10-14.json`. Reproduce: [sonic/README.md](sonic/README.md#controlled-band-drop-test).
+
+### 8.2 Late-start fix on the Jetsons (MEASURED, 2026-10-14)
+
+A deployment change: **control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread.** Upstream's main loop calls `sleep(0.02)` on an integer `sleep()`, so it spins, at SCHED_FIFO 99 pinned to CPU0 when run as root, while the 50 Hz control thread runs at normal priority. The fix ([sonic/harness/latefix.patch](sonic/harness/latefix.patch), on top of the probe patch; inert unless `SONIC_CTRL_FIFO=90` and `SONIC_MAIN_SLEEP=abs` are set) makes the control thread SCHED_FIFO 90 and lets the main loop sleep to 20 ms deadlines. **It needs root or CAP_SYS_NICE.** Each of the first campaign's arms was repeated with it, 3 runs per arm per Jetson, same binaries otherwise, clocks pinned as before; the stock rows are the first campaign's runs from earlier the same day (not interleaved), plus one same-session stock run per board.
+
+| Machine | Load | Deploy | Runs | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) | Tracking in tolerance |
+|---|---|---|---|---|---|---|---|---|---|
+| Jetson AGX Orin 64 GB | unloaded | stock | 10 | 0 | 0 | 0 | 20.15 | 1/10 (1 · 0) | 10/10 runs |
+| Jetson AGX Orin 64 GB | unloaded | **fix** | 3 | 0 | 0 | 0 | 20.02 | 1/3 (1 · 0) | 3/3 runs |
+| Jetson AGX Orin 64 GB | CPU saturated | stock | 3 | 571 | 567 | 686 | 341.78 | 3/3 (1 · 3) | 0/3 runs |
+| Jetson AGX Orin 64 GB | CPU saturated | **fix** | 3 | 0 | 0 | 0 | 20.20 | 1/3 (0 · 1) | 2/3 runs |
+| Jetson AGX Orin 64 GB | GPU co-tenant (GR00T) | stock | 3 | 91 | 6 | 82 | 26.81 | 1/3 (1 · 0) | 3/3 runs |
+| Jetson AGX Orin 64 GB | GPU co-tenant (GR00T) | **fix** | 3 | 46 | 10 | 44 | 26.69 | 1/3 (1 · 0) | 3/3 runs |
+| Jetson AGX Orin 64 GB | unloaded | stock, same session | 1 | 0 | 0 | 0 | 20.02 | 0/1 (0 · 0) | 1/1 runs |
+| Jetson AGX Thor | unloaded | stock | 10 | 0 | 0 | 1 | 21.06 | 3/10 (3 · 0) | 10/10 runs |
+| Jetson AGX Thor | unloaded | **fix** | 3 | 0 | 0 | 0 | 20.01 | 0/3 (0 · 0) | 3/3 runs |
+| Jetson AGX Thor | CPU saturated | stock | 3 | 11 | 16 | 316 | 40.03 | 0/3 (0 · 0) | 3/3 runs |
+| Jetson AGX Thor | CPU saturated | **fix** | 3 | 0 | 0 | 0 | 20.02 | 0/3 (0 · 0) | 3/3 runs |
+| Jetson AGX Thor | GPU co-tenant (GR00T) | stock | 3 | 0 | 0 | 6 | 21.88 | 0/3 (0 · 0) | 3/3 runs |
+| Jetson AGX Thor | GPU co-tenant (GR00T) | **fix** | 3 | 0 | 0 | 0 | 20.02 | 0/3 (0 · 0) | 3/3 runs |
+| Jetson AGX Thor | unloaded | stock, same session | 1 | 0 | 0 | 0 | 20.08 | 0/1 (0 · 0) | 1/1 runs |
+
+MEASURED; `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/raw/<board>/{stockref_cl_r1,fix_*}` and the first-campaign runs.
+
+- **CPU saturated:** Orin goes from 571 to 0 compute misses (567 → 0 slot misses, max gap 341.78 → 20.20 ms); Thor from 11 to 0 compute and 16 to 0 slot misses. The first campaign's non-root diagnostic (no FIFO-99 spin) had already removed Orin's misses but left Thor 8 slot misses; the control thread's FIFO priority removes those too (mechanism INFERRED, no scheduler trace). The fixed Orin still fell in 1 of 3 CPU-saturated runs (down 0.69 s after the band-off command by body state; D1 files it as later, reset 6.87 s after) and tracked out of tolerance in that run (2/3 runs in tolerance); the hogs still starve the simulator on the same CPU (sim overrun steps per run: Thor [248, 105, 139], Orin [2, 8, 0]).
+- **GPU co-tenant, Orin:** compute misses 91 → 46 (per run [30, 31, 30] → [14, 16, 16]), but slot misses 6 → 10. The remaining steps over 20 ms are attributed to GPU time shared with GR00T, which a CPU priority cannot fix (INFERRED, not traced). Thor had no misses with or without the fix. GR00T itself slowed less beside the fixed controller (Orin 9.5% vs 13.4%, Thor 5.8% vs 6.5%; DERIVED from MEASURED rates; outputs unchanged).
+- **Unloaded:** no misses either way. The band-drop falls stay (Orin 1/3 with the fix): they occur with on-time control (§8.1).
+- **The variable moved** (MEASURED from /proc after init, at t + 20 s and at stop): control thread SCHED_FIFO 90 in every fix run (Orin 9/9, Thor 9/9; stock SCHED_OTHER/0); main-thread CPU 25.02% → ≤ 0.03% of a core on Orin, 13.68% → ≤ 0.02% on Thor.
+- 3 runs per arm; sim2sim only; the AGX Orin 64 GB developer kit, not the G1's Orin NX.
+
+Record: `results/sonic/sonic_jetson_latefix_2026-10-14.json` (the change, binaries, scheduling readbacks per run, GR00T rates, caveats). Reproduce: [sonic/README.md](sonic/README.md#late-start-fix-jetsons).

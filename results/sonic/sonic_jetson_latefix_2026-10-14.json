@@ -1,0 +1,1150 @@
+{
+ "_schema": "groot-virtual-robot-bench/sonic-latefix/1",
+ "date": "2026-10-14",
+ "tag": "MEASURED",
+ "tag_note": "counts and timings MEASURED, rebuilt by sonic/make_sonic_table.py from results/sonic/raw/ (groups <board>/fix_*, <board>/stock_sameday_unloaded and the first-campaign groups); scheduling readbacks and GR00T rates are a published record (MEASURED, raw not published); sums and slowdowns DERIVED",
+ "what": "A deployment change to NVIDIA's GEAR-SONIC deploy on the Jetson AGX Orin 64 GB and the Jetson AGX Thor: the control thread runs at SCHED_FIFO 90 and the main loop sleeps, instead of upstream's busy-spinning FIFO-99 main thread. The first campaign's unloaded, CPU-saturated and GPU co-tenant arms were repeated with it (3 runs each) and compared with the stock runs.",
+ "change": {
+  "summary": "control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread",
+  "detail": "(1) the control thread sets SCHED_FIFO at the priority in SONIC_CTRL_FIFO on itself at its first Control() call; (2) with SONIC_MAIN_SLEEP=abs, upstream main()'s sleep(0.02) (an unsigned sleep(), so sleep(0): a spin of the SCHED_FIFO-99, CPU0-pinned main thread when run as root) is replaced by clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME) on a 20 ms grid. Both are inert when the variables are unset. Patch: sonic/harness/latefix.patch (applies on top of sonic_probe.patch).",
+  "env": "SONIC_CTRL_FIFO=90, SONIC_MAIN_SLEEP=abs",
+  "privileges": "needs root or CAP_SYS_NICE (SCHED_FIFO); the Jetson runs ran as root, as in the first campaign",
+  "clocks": "unchanged: nvpmodel MAXN + jetson_clocks on both Jetsons, read back in every run",
+  "binaries_sha256": {
+   "orin_fix": "cdd1e4b3384e0e7db236a37366753d7f4f98d8cddc18c8461bad724ff0719329",
+   "thor_fix": "827a13f22e290f9c9b8d15b0e2c7921eddf04770c9230c622fbf10ad70a0435f",
+   "orin_stock": "082aaa6a425daf0c327939613669808c3e8924449002cee9af7a9f41b88c86f3",
+   "thor_stock": "b8558951dcff0c5b99c525afa77399ffacac203e7d25718523cc8b1baa344caf"
+  },
+  "not_applicable": "the deploy constructs no onnxruntime session on the Jetsons (planner, encoder and decoder are TensorRT engines), so there is no CPU inference thread pool to restrict"
+ },
+ "versions": "as in results/sonic/sonic_thor_2026-10-14.json and sonic_orin_2026-10-14.json (same board software, engines, simulator)",
+ "clocks": {
+  "orin": "PINNED: nvpmodel MAXN + jetson_clocks (run again at session start; read back identical to the pre-existing lock): CPU 12x min=max=cur 2201600 kHz (governor schedutil, floored), GPU min=max=cur 1300.5 MHz, EMC 3199 MHz FreqOverride=1. Read back while stress-ng ran: all 12 cores at 2201600 kHz.",
+  "thor": "PINNED: nvpmodel MAXN + jetson_clocks (run again at session start; read back identical to the pre-existing lock): CPU 14x governor performance min=max=cur 2601000 kHz, gpu-gpc-0 min=max=cur 1575 MHz, gpu-nvd-0 1692 MHz, EMC min=max=cur 4266 MHz."
+ },
+ "design": "per board, in this order, 15 s apart: one same-session stock unloaded run (stockref_cl_r1, the readback reference), then with the fix: unloaded x3 (fix_cl_r1-3), CPU saturated x3 (fix_a4cpu_r1-3: stress-ng --cpu $(nproc) --cpu-method matrixprod), GPU co-tenant x3 (fix_a4gpu_r1-3: GR00T N1.5 full TensorRT back-to-back on the same GPU, 60 s alone first). Stock rows are the first campaign's runs from earlier the same day (same binaries, engines, clocks, script, harness; not interleaved). Batch: sonic/harness/jetson_runs.sh fix <orin|thor>.",
+ "preregistration": "predictions written before the first measured run of the fix (after one 8 s function-only smoke run per board whose run dir was deleted)",
+ "variable_moved": {
+  "tag": "MEASURED (/proc/<pid>/task/<tid>/stat and status, read by the orchestrator after init, at script t+20 s and at the stop command)",
+  "orin": {
+   "control_thread_FIFO90_at_all_3_readbacks": "9/9",
+   "control_thread_stock": "SCHED_OTHER/0",
+   "main_thread_cpu_pct_of_one_core": {
+    "stock_same_session": 25.02,
+    "fix": [
+     0.0,
+     0.03
+    ]
+   },
+   "whole_deploy_cpu_pct_of_one_core": {
+    "stock_same_session": 33.42,
+    "fix_unloaded": [
+     7.79,
+     8.27
+    ]
+   },
+   "per_run": {
+    "stockref_cl_r1": {
+     "control_thread": [
+      "SCHED_OTHER/0",
+      "SCHED_OTHER/0",
+      "SCHED_OTHER/0"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 25.02,
+      "control": 1.97,
+      "planner": 0.03,
+      "command_writer": 3.63,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 33.42,
+      "sim": 38.45
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "stock"
+    },
+    "fix_cl_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.95,
+      "planner": 0.05,
+      "command_writer": 3.53,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 8.02,
+      "sim": 37.53
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_cl_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.0,
+      "control": 1.89,
+      "planner": 0.03,
+      "command_writer": 3.68,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 8.27,
+      "sim": 37.9
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_cl_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.85,
+      "planner": 0.05,
+      "command_writer": 3.48,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 7.79,
+      "sim": 37.94
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 61.99,
+      "main": 0.02,
+      "control": 2.37,
+      "planner": 0.05,
+      "command_writer": 5.02,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 11.36,
+      "sim": 41.67
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 61.99,
+      "main": 0.02,
+      "control": 2.29,
+      "planner": 0.05,
+      "command_writer": 4.55,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 10.84,
+      "sim": 40.86
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 61.99,
+      "main": 0.03,
+      "control": 2.37,
+      "planner": 0.05,
+      "command_writer": 5.39,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 12.53,
+      "sim": 41.31
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 2.63,
+      "planner": 0.06,
+      "command_writer": 4.11,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 9.81,
+      "sim": 40.27
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 2.69,
+      "planner": 0.05,
+      "command_writer": 4.1,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 9.82,
+      "sim": 40.1
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.03,
+      "control": 2.77,
+      "planner": 0.06,
+      "command_writer": 4.06,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 9.89,
+      "sim": 39.6
+     },
+     "unnamed_threads_besides_main": 1,
+     "cpufreq_t20": [
+      [
+       "schedutil",
+       "2201600",
+       "2201600",
+       "2201600"
+      ]
+     ],
+     "binary": "fix"
+    }
+   }
+  },
+  "thor": {
+   "control_thread_FIFO90_at_all_3_readbacks": "9/9",
+   "control_thread_stock": "SCHED_OTHER/0",
+   "main_thread_cpu_pct_of_one_core": {
+    "stock_same_session": 13.68,
+    "fix": [
+     0.0,
+     0.02
+    ]
+   },
+   "whole_deploy_cpu_pct_of_one_core": {
+    "stock_same_session": 18.56,
+    "fix_unloaded": [
+     4.56,
+     4.89
+    ]
+   },
+   "per_run": {
+    "stockref_cl_r1": {
+     "control_thread": [
+      "SCHED_OTHER/0",
+      "SCHED_OTHER/0",
+      "SCHED_OTHER/0"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 13.68,
+      "control": 0.77,
+      "planner": 0.02,
+      "command_writer": 2.03,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 18.56,
+      "sim": 21.92
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "stock"
+    },
+    "fix_cl_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 0.69,
+      "planner": 0.02,
+      "command_writer": 2.0,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.61,
+      "sim": 20.97
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_cl_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 0.69,
+      "planner": 0.02,
+      "command_writer": 2.03,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.56,
+      "sim": 20.73
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_cl_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 0.73,
+      "planner": 0.02,
+      "command_writer": 2.08,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.89,
+      "sim": 21.84
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 0.9,
+      "planner": 0.02,
+      "command_writer": 2.0,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.53,
+      "sim": 21.57
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.0,
+      "planner": 0.02,
+      "command_writer": 2.05,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.66,
+      "sim": 21.81
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4cpu_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.0,
+      "planner": 0.02,
+      "command_writer": 2.05,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.68,
+      "sim": 22.13
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r1": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.13,
+      "planner": 0.02,
+      "command_writer": 2.16,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 5.11,
+      "sim": 21.66
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r2": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.0,
+      "control": 0.82,
+      "planner": 0.02,
+      "command_writer": 2.23,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 4.87,
+      "sim": 22.02
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    },
+    "fix_a4gpu_r3": {
+     "control_thread": [
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90",
+      "SCHED_FIFO/90"
+     ],
+     "main_thread": [
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0",
+      "SCHED_FIFO/99 cpus 0"
+     ],
+     "planner_thread": "SCHED_OTHER/nice 0",
+     "command_writer_thread": "SCHED_OTHER/nice 0",
+     "readback_tags": [
+      "after_init",
+      "script_t+20s",
+      "at_o"
+     ],
+     "cpu_pct_of_one_core_t20_to_o": {
+      "window_s": 62.0,
+      "main": 0.02,
+      "control": 1.1,
+      "planner": 0.02,
+      "command_writer": 2.19,
+      "unnamed_besides_main": 0.0,
+      "whole_deploy": 5.18,
+      "sim": 22.16
+     },
+     "unnamed_threads_besides_main": 2,
+     "cpufreq_t20": [
+      [
+       "performance",
+       "2601000",
+       "2601000",
+       "2601000"
+      ]
+     ],
+     "binary": "fix"
+    }
+   }
+  }
+ },
+ "comparison_vs_stock": {
+  "orin": {
+   "unloaded": {
+    "stock": {
+     "group": "orin/unloaded",
+     "runs": 10,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.15,
+     "falls_d1": 1,
+     "tracking_ok": "10/10 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      32,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "fix": {
+     "group": "orin/fix_unloaded",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.02,
+     "falls_d1": 1,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cpu_saturated": {
+    "stock": {
+     "group": "orin/cpu_saturated",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 571,
+     "slot_misses_gap_gt25ms": 567,
+     "late_starts_gap_gt21ms": 686,
+     "max_start_gap_ms": 341.78,
+     "falls_d1": 3,
+     "tracking_ok": "0/3 runs",
+     "sim_overrun_steps_per_run": [
+      297,
+      36,
+      92
+     ]
+    },
+    "fix": {
+     "group": "orin/fix_cpu_saturated",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.2,
+     "falls_d1": 1,
+     "tracking_ok": "2/3 runs",
+     "sim_overrun_steps_per_run": [
+      2,
+      8,
+      0
+     ]
+    }
+   },
+   "gpu_cotenant": {
+    "stock": {
+     "group": "orin/gpu_cotenant",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 91,
+     "slot_misses_gap_gt25ms": 6,
+     "late_starts_gap_gt21ms": 82,
+     "max_start_gap_ms": 26.81,
+     "falls_d1": 1,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      7,
+      0,
+      5
+     ]
+    },
+    "fix": {
+     "group": "orin/fix_gpu_cotenant",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 46,
+     "slot_misses_gap_gt25ms": 10,
+     "late_starts_gap_gt21ms": 44,
+     "max_start_gap_ms": 26.69,
+     "falls_d1": 1,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "same_session_stock_unloaded": {
+    "group": "orin/stock_sameday_unloaded",
+    "runs": 1,
+    "compute_misses_step_gt20ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "max_start_gap_ms": 20.02,
+    "falls_d1": 0,
+    "tracking_ok": "1/1 runs",
+    "sim_overrun_steps_per_run": [
+     0
+    ]
+   }
+  },
+  "thor": {
+   "unloaded": {
+    "stock": {
+     "group": "thor/unloaded",
+     "runs": 10,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 1,
+     "max_start_gap_ms": 21.06,
+     "falls_d1": 3,
+     "tracking_ok": "10/10 runs",
+     "sim_overrun_steps_per_run": [
+      94,
+      0,
+      0,
+      0,
+      0,
+      0,
+      194,
+      0,
+      0,
+      0
+     ]
+    },
+    "fix": {
+     "group": "thor/fix_unloaded",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.01,
+     "falls_d1": 0,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cpu_saturated": {
+    "stock": {
+     "group": "thor/cpu_saturated",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 11,
+     "slot_misses_gap_gt25ms": 16,
+     "late_starts_gap_gt21ms": 316,
+     "max_start_gap_ms": 40.03,
+     "falls_d1": 0,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      332,
+      205,
+      379
+     ]
+    },
+    "fix": {
+     "group": "thor/fix_cpu_saturated",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.02,
+     "falls_d1": 0,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      248,
+      105,
+      139
+     ]
+    }
+   },
+   "gpu_cotenant": {
+    "stock": {
+     "group": "thor/gpu_cotenant",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 6,
+     "max_start_gap_ms": 21.88,
+     "falls_d1": 0,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fix": {
+     "group": "thor/fix_gpu_cotenant",
+     "runs": 3,
+     "compute_misses_step_gt20ms": 0,
+     "slot_misses_gap_gt25ms": 0,
+     "late_starts_gap_gt21ms": 0,
+     "max_start_gap_ms": 20.02,
+     "falls_d1": 0,
+     "tracking_ok": "3/3 runs",
+     "sim_overrun_steps_per_run": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "same_session_stock_unloaded": {
+    "group": "thor/stock_sameday_unloaded",
+    "runs": 1,
+    "compute_misses_step_gt20ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "max_start_gap_ms": 20.08,
+    "falls_d1": 0,
+    "tracking_ok": "1/1 runs",
+    "sim_overrun_steps_per_run": [
+     0
+    ]
+   }
+  }
+ },
+ "gr00t_cotenant": {
+  "orin": {
+   "tag": "MEASURED (rates) / DERIVED (slowdown)",
+   "fix_alone_hz": 11.36,
+   "fix_while_sonic_hz": [
+    10.28,
+    10.29
+   ],
+   "fix_slowdown_pct": 9.5,
+   "stock_alone_hz": 11.36,
+   "stock_while_sonic_hz": [
+    9.82,
+    9.87
+   ],
+   "stock_slowdown_pct": 13.4,
+   "output_every_25th_call_vs_first_max_rel_mae": {
+    "n": 226,
+    "max": 0.0
+   },
+   "tensorrt": "10.3.0",
+   "note": "slowdown % DERIVED = 1 - mean(rate in the 3 SONIC control windows) / rate alone in the same session"
+  },
+  "thor": {
+   "tag": "MEASURED (rates) / DERIVED (slowdown)",
+   "fix_alone_hz": 20.66,
+   "fix_while_sonic_hz": [
+    19.39,
+    19.56
+   ],
+   "fix_slowdown_pct": 5.8,
+   "stock_alone_hz": 20.75,
+   "stock_while_sonic_hz": [
+    19.32,
+    19.46
+   ],
+   "stock_slowdown_pct": 6.5,
+   "output_every_25th_call_vs_first_max_rel_mae": {
+    "n": 413,
+    "max": 0.0
+   },
+   "tensorrt": "10.13.2.6",
+   "note": "slowdown % DERIVED = 1 - mean(rate in the 3 SONIC control windows) / rate alone in the same session"
+  }
+ },
+ "findings": [
+  "CPU saturated, AGX Orin: 571 compute misses / 567 slot misses / 686 late starts (stock, 3 runs) -> 0 / 0 / 0 with the fix (max start-to-start gap 20.20 ms, step max 8.85 ms). MEASURED.",
+  "CPU saturated, AGX Thor: 11 compute / 16 slot / 316 late starts (stock) -> 0 / 0 / 0 (max gap 20.02 ms). The first campaign's non-root diagnostic (no FIFO-99 spin, control thread SCHED_OTHER) still had 8 slot misses and 273 late starts on Thor, so the busy-spin was not the whole story there: the rest fits the control thread queuing behind the CPU hogs, which FIFO 90 removes. MEASURED; the mechanism is INFERRED (no scheduler trace).",
+  "Unloaded: 0 compute / 0 slot misses on both boards with the fix, as stock. MEASURED.",
+  "GPU co-tenant (GR00T N1.5 full TensorRT), AGX Orin: compute misses 91 -> 46 (per run 30/31/30 -> 14/16/16), late starts 82 -> 44, but slot misses 6 -> 10 (n = 3 each, not interleaved). The remaining > 20 ms steps are attributed to GPU time shared with GR00T, which a CPU priority cannot fix (INFERRED, not traced). Thor: 0 compute / 0 slot misses with or without the fix; late starts 6 -> 0. GR00T itself slowed less beside the fixed controller (Orin 9.5% vs 13.4%; Thor 5.8% vs 6.5%), output unchanged. MEASURED (slowdown DERIVED).",
+  "Falls (D1 rule): with the fix Orin 3/9 (unloaded 1/3, CPU 1/3, GPU 1/3; each went down 0.5-0.7 s after the band-off command), Thor 0/9. The fix removes the Orin CPU-arm collapse (stock 3/3, falling throughout the run) but not the band-drop falls, which occur with clean timing on both binaries (see the controlled band-drop test). With the fix, Orin tracking failed in 1 of 3 CPU-saturated runs (the run that fell). MEASURED.",
+  "Variable moved: the control thread was SCHED_FIFO 90 at all three readbacks in 18/18 fix runs (stock: SCHED_OTHER); main-thread CPU over the control window 25.02% -> <= 0.03% of a core on Orin and 13.68% -> <= 0.02% on Thor. MEASURED.",
+  "Simulator starvation, reported separately (the hogs also starve the Python simulator on the same CPU): Thor sim overrun steps 332/205/379 (stock) -> 248/105/139 (fix); Orin 297/36/92 -> 2/8/0. The Orin drop was not predicted and its cause is not verified. MEASURED counts."
+ ],
+ "caveats": [
+  "sim2sim only: MuJoCo on the same board, DDS over loopback, no real G1",
+  "3 runs per arm; the CPU-arm eliminations (571 -> 0, 11 -> 0) are far outside run-to-run spread; the Orin GPU-arm halving is consistent across runs but not interleaved with the stock runs (earlier the same day)",
+  "the fix changes upstream's deployment and needs root or CAP_SYS_NICE on the robot computer",
+  "AGX Orin 64 GB developer kit, not the G1's Orin NX (fewer cores, smaller GPU): not measured",
+  "no scheduler trace on the Jetsons: mechanisms are inferred from the arms and /proc readbacks"
+ ],
+ "raw": "results/sonic/raw/<board>/{stockref_cl_r1,fix_cl_rN,fix_a4cpu_rN,fix_a4gpu_rN}__{ticks.csv.gz,planner.csv.gz,run.json}"
+}

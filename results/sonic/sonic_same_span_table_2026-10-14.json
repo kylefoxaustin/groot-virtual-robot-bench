@@ -1,7 +1,7 @@
 {
  "_schema": "groot-virtual-robot-bench/sonic-same-span/1",
  "tag": "MEASURED",
- "tag_note": "every count and percentile is computed by sonic/make_sonic_table.py from the per-tick logs in results/sonic/raw/; falls from each run's simulator record (resets and fall flags); the Fisher p-values are DERIVED",
+ "tag_note": "every count and percentile is computed by sonic/make_sonic_table.py from the per-tick logs in results/sonic/raw/; falls from each run's simulator record (resets and fall flags); the Fisher p-values, Clopper-Pearson intervals and permutation p-values are DERIVED",
  "generated_by": "sonic/make_sonic_table.py",
  "same_span": "same upstream program (gear_sonic_deploy g1_deploy_onnx_ref @ b042411), same measurement probe, same step span, same fixed keyboard script and the same scoring code on every machine; only the computer (and its TensorRT build) differs",
  "rules": {
@@ -11,6 +11,8 @@
   "slot_miss": "tick start-to-start gap > 25 ms",
   "fall_rule_window": "pelvis z < 0.30 m OR tilt > 60 deg OR a sim fall-reset, inside [band_off + 1 s, stop)",
   "band_drop_fall": "a sim fall-reset within 3 s after the band-off command (a reset later than +1.0 s is counted in both columns)",
+  "fall_d1": "any sim fall-reset from the band-off command to the stop command; drop window <= 3 s after the command / later",
+  "body_state": "tilt > 60 deg or pelvis z < 0.30 m from the band-off command to the stop command",
   "tracking": "per-phase mean joint error within +/-30% of the RTX 5090 v1_r1-r3 range, displacement +/-15%, turn yaw +/-15 deg"
  },
  "tracking_reference_rtx5090": {
@@ -96,6 +98,15 @@
    "max_start_gap_ms": 20.1735660000013,
    "falls_rule_window": 0,
    "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 0,
    "band_drop_fall_runs": [],
    "planner_model_ms_p50_range": [
@@ -108,6 +119,105 @@
     0
    ],
    "tracking_ok": "reference"
+  },
+  "rtx5090/banddrop_controlled": {
+   "board": "RTX 5090",
+   "runs": 18,
+   "run_names": [
+    "bd_D010_r1",
+    "bd_D010_r2",
+    "bd_D010_r3",
+    "bd_D025_r1",
+    "bd_D025_r2",
+    "bd_D025_r3",
+    "bd_D040_r1",
+    "bd_D040_r2",
+    "bd_D040_r3",
+    "bd_D060_r1",
+    "bd_D060_r2",
+    "bd_D060_r3",
+    "bd_D080_r1",
+    "bd_D080_r2",
+    "bd_D080_r3",
+    "bd_D100_r1",
+    "bd_D100_r2",
+    "bd_D100_r3"
+   ],
+   "ticks": 73807,
+   "step_p50_ms_range": [
+    0.257681,
+    0.2899205
+   ],
+   "step_p99_ms_range": [
+    0.973916,
+    3.3413137899999983
+   ],
+   "step_max_ms": 5.068723,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 19,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 23.022041000000172,
+   "falls_rule_window": 1,
+   "band_drop_falls": 3,
+   "falls_d1": 3,
+   "falls_d1_drop_window": 3,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "bd_D010_r2",
+    "bd_D025_r2",
+    "bd_D080_r3"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 3,
+   "band_drop_fall_runs": [
+    "bd_D010_r2",
+    "bd_D025_r2",
+    "bd_D080_r3"
+   ],
+   "planner_model_ms_p50_range": [
+    2.4175,
+    2.963
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0,
+    0,
+    3,
+    0,
+    5,
+    0,
+    0,
+    0,
+    7,
+    0,
+    6,
+    0,
+    0,
+    8,
+    0,
+    0
+   ],
+   "tracking_ok": "18/18 runs"
   },
   "thor/unloaded": {
    "board": "Jetson AGX Thor",
@@ -140,6 +250,26 @@
    "max_start_gap_ms": 21.06166900000244,
    "falls_rule_window": 1,
    "band_drop_falls": 3,
+   "falls_d1": 3,
+   "falls_d1_drop_window": 3,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "cl_r3",
+    "cl_r4",
+    "cl_r10"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 3,
    "band_drop_fall_runs": [
     "cl_r3",
@@ -188,6 +318,15 @@
    "max_start_gap_ms": 40.03137900000729,
    "falls_rule_window": 0,
    "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    5,
+    2,
+    4
+   ],
    "band_drop_falls_le1p5s": 0,
    "band_drop_fall_runs": [],
    "planner_model_ms_p50_range": [
@@ -225,6 +364,15 @@
    "max_start_gap_ms": 21.883588000004238,
    "falls_rule_window": 0,
    "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 0,
    "band_drop_fall_runs": [],
    "planner_model_ms_p50_range": [
@@ -260,6 +408,15 @@
    "max_start_gap_ms": 43.379933000000165,
    "falls_rule_window": 0,
    "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "diag_nonroot_cpu"
+   ],
+   "compute_misses_per_run": [
+    0
+   ],
    "band_drop_falls_le1p5s": 1,
    "band_drop_fall_runs": [
     "diag_nonroot_cpu"
@@ -272,6 +429,282 @@
     69
    ],
    "tracking_ok": "1/1 runs"
+  },
+  "thor/banddrop_controlled": {
+   "board": "Jetson AGX Thor",
+   "runs": 18,
+   "run_names": [
+    "bd_D010_r1",
+    "bd_D010_r2",
+    "bd_D010_r3",
+    "bd_D025_r1",
+    "bd_D025_r2",
+    "bd_D025_r3",
+    "bd_D040_r1",
+    "bd_D040_r2",
+    "bd_D040_r3",
+    "bd_D060_r1",
+    "bd_D060_r2",
+    "bd_D060_r3",
+    "bd_D080_r1",
+    "bd_D080_r2",
+    "bd_D080_r3",
+    "bd_D100_r1",
+    "bd_D100_r2",
+    "bd_D100_r3"
+   ],
+   "ticks": 73782,
+   "step_p50_ms_range": [
+    0.714333,
+    0.811269
+   ],
+   "step_p99_ms_range": [
+    4.71759766,
+    4.83514974
+   ],
+   "step_max_ms": 5.527974,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 2,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 22.07543200001237,
+   "falls_rule_window": 2,
+   "band_drop_falls": 2,
+   "falls_d1": 3,
+   "falls_d1_drop_window": 2,
+   "falls_d1_later": 1,
+   "fall_d1_runs": [
+    "bd_D010_r1",
+    "bd_D040_r3",
+    "bd_D100_r2"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 2,
+   "band_drop_fall_runs": [
+    "bd_D010_r1",
+    "bd_D100_r2"
+   ],
+   "planner_model_ms_p50_range": [
+    4.3725000000000005,
+    4.4935
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0,
+    0,
+    97,
+    0,
+    0,
+    98,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "17/18 runs"
+  },
+  "thor/stock_sameday_unloaded": {
+   "board": "Jetson AGX Thor",
+   "runs": 1,
+   "run_names": [
+    "stockref_cl_r1"
+   ],
+   "ticks": 4099,
+   "step_p50_ms_range": [
+    0.735981,
+    0.735981
+   ],
+   "step_p99_ms_range": [
+    4.8192565400000005,
+    4.8192565400000005
+   ],
+   "step_max_ms": 5.3078829999999995,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.083763000002364,
+   "falls_rule_window": 0,
+   "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    4.491,
+    4.491
+   ],
+   "sim_overrun_steps_per_run": [
+    0
+   ],
+   "tracking_ok": "1/1 runs"
+  },
+  "thor/fix_unloaded": {
+   "board": "Jetson AGX Thor",
+   "runs": 3,
+   "run_names": [
+    "fix_cl_r1",
+    "fix_cl_r2",
+    "fix_cl_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    0.7214640000000001,
+    0.7305750000000001
+   ],
+   "step_p99_ms_range": [
+    4.76207084,
+    4.77563576
+   ],
+   "step_max_ms": 5.339549,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.012212000001455,
+   "falls_rule_window": 0,
+   "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    4.426,
+    4.453
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "3/3 runs"
+  },
+  "thor/fix_cpu_saturated": {
+   "board": "Jetson AGX Thor",
+   "runs": 3,
+   "run_names": [
+    "fix_a4cpu_r1",
+    "fix_a4cpu_r2",
+    "fix_a4cpu_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    0.757814,
+    0.769463
+   ],
+   "step_p99_ms_range": [
+    0.8729585000000001,
+    4.79086148
+   ],
+   "step_max_ms": 8.606003000000001,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.016338999994332,
+   "falls_rule_window": 0,
+   "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    4.3309999999999995,
+    4.442
+   ],
+   "sim_overrun_steps_per_run": [
+    248,
+    105,
+    139
+   ],
+   "tracking_ok": "3/3 runs"
+  },
+  "thor/fix_gpu_cotenant": {
+   "board": "Jetson AGX Thor",
+   "runs": 3,
+   "run_names": [
+    "fix_a4gpu_r1",
+    "fix_a4gpu_r2",
+    "fix_a4gpu_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    3.697196,
+    3.825316
+   ],
+   "step_p99_ms_range": [
+    11.4100776,
+    11.83707742
+   ],
+   "step_max_ms": 17.05106,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.020988000000216,
+   "falls_rule_window": 0,
+   "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    7.997,
+    8.4255
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "3/3 runs"
   },
   "orin/unloaded": {
    "board": "Jetson AGX Orin 64 GB",
@@ -304,6 +737,24 @@
    "max_start_gap_ms": 20.152690999999322,
    "falls_rule_window": 0,
    "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "cl_r8"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 1,
    "band_drop_fall_runs": [
     "cl_r8"
@@ -350,6 +801,19 @@
    "max_start_gap_ms": 341.7765319999962,
    "falls_rule_window": 3,
    "band_drop_falls": 1,
+   "falls_d1": 3,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 3,
+   "fall_d1_runs": [
+    "a4cpu_r1",
+    "a4cpu_r2",
+    "a4cpu_r3"
+   ],
+   "compute_misses_per_run": [
+    187,
+    197,
+    187
+   ],
    "band_drop_falls_le1p5s": 1,
    "band_drop_fall_runs": [
     "a4cpu_r3"
@@ -389,6 +853,17 @@
    "max_start_gap_ms": 26.81324500000119,
    "falls_rule_window": 0,
    "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "a4gpu_r2"
+   ],
+   "compute_misses_per_run": [
+    30,
+    31,
+    30
+   ],
    "band_drop_falls_le1p5s": 1,
    "band_drop_fall_runs": [
     "a4gpu_r2"
@@ -426,6 +901,13 @@
    "max_start_gap_ms": 20.948456999998598,
    "falls_rule_window": 0,
    "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0
+   ],
    "band_drop_falls_le1p5s": 0,
    "band_drop_fall_runs": [],
    "planner_model_ms_p50_range": [
@@ -436,6 +918,292 @@
     180
    ],
    "tracking_ok": "1/1 runs"
+  },
+  "orin/banddrop_controlled": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 18,
+   "run_names": [
+    "bd_D010_r1",
+    "bd_D010_r2",
+    "bd_D010_r3",
+    "bd_D025_r1",
+    "bd_D025_r2",
+    "bd_D025_r3",
+    "bd_D040_r1",
+    "bd_D040_r2",
+    "bd_D040_r3",
+    "bd_D060_r1",
+    "bd_D060_r2",
+    "bd_D060_r3",
+    "bd_D080_r1",
+    "bd_D080_r2",
+    "bd_D080_r3",
+    "bd_D100_r1",
+    "bd_D100_r2",
+    "bd_D100_r3"
+   ],
+   "ticks": 73782,
+   "step_p50_ms_range": [
+    1.0458859999999999,
+    1.0953920000000001
+   ],
+   "step_p99_ms_range": [
+    7.6300361,
+    7.70419426
+   ],
+   "step_max_ms": 8.953022,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.171110999996017,
+   "falls_rule_window": 1,
+   "band_drop_falls": 2,
+   "falls_d1": 3,
+   "falls_d1_drop_window": 2,
+   "falls_d1_later": 1,
+   "fall_d1_runs": [
+    "bd_D010_r1",
+    "bd_D025_r1",
+    "bd_D025_r3"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 2,
+   "band_drop_fall_runs": [
+    "bd_D025_r1",
+    "bd_D025_r3"
+   ],
+   "planner_model_ms_p50_range": [
+    7.008,
+    7.2855
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "17/18 runs"
+  },
+  "orin/stock_sameday_unloaded": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 1,
+   "run_names": [
+    "stockref_cl_r1"
+   ],
+   "ticks": 4099,
+   "step_p50_ms_range": [
+    1.059276,
+    1.059276
+   ],
+   "step_p99_ms_range": [
+    7.6752469,
+    7.6752469
+   ],
+   "step_max_ms": 12.551223,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.02070300000196,
+   "falls_rule_window": 0,
+   "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    7.216,
+    7.216
+   ],
+   "sim_overrun_steps_per_run": [
+    0
+   ],
+   "tracking_ok": "1/1 runs"
+  },
+  "orin/fix_unloaded": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 3,
+   "run_names": [
+    "fix_cl_r1",
+    "fix_cl_r2",
+    "fix_cl_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    1.047898,
+    1.072498
+   ],
+   "step_p99_ms_range": [
+    7.6337156,
+    7.68360128
+   ],
+   "step_max_ms": 8.824535,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.0157010000039,
+   "falls_rule_window": 0,
+   "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "fix_cl_r1"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 1,
+   "band_drop_fall_runs": [
+    "fix_cl_r1"
+   ],
+   "planner_model_ms_p50_range": [
+    7.056,
+    7.202500000000001
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "3/3 runs"
+  },
+  "orin/fix_cpu_saturated": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 3,
+   "run_names": [
+    "fix_a4cpu_r1",
+    "fix_a4cpu_r2",
+    "fix_a4cpu_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    1.104927,
+    1.163231
+   ],
+   "step_p99_ms_range": [
+    1.2222748399999999,
+    7.7051588
+   ],
+   "step_max_ms": 8.852374,
+   "compute_misses_step_gt20ms": 0,
+   "late_starts_gap_gt21ms": 0,
+   "slot_misses_gap_gt25ms": 0,
+   "max_start_gap_ms": 20.201610999996774,
+   "falls_rule_window": 1,
+   "band_drop_falls": 0,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 1,
+   "fall_d1_runs": [
+    "fix_a4cpu_r3"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
+   "band_drop_falls_le1p5s": 0,
+   "band_drop_fall_runs": [],
+   "planner_model_ms_p50_range": [
+    7.015499999999999,
+    7.1965
+   ],
+   "sim_overrun_steps_per_run": [
+    2,
+    8,
+    0
+   ],
+   "tracking_ok": "2/3 runs"
+  },
+  "orin/fix_gpu_cotenant": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 3,
+   "run_names": [
+    "fix_a4gpu_r1",
+    "fix_a4gpu_r2",
+    "fix_a4gpu_r3"
+   ],
+   "ticks": 12297,
+   "step_p50_ms_range": [
+    5.748168,
+    5.832062
+   ],
+   "step_p99_ms_range": [
+    9.9865503,
+    10.09239582
+   ],
+   "step_max_ms": 26.680979999999998,
+   "compute_misses_step_gt20ms": 46,
+   "late_starts_gap_gt21ms": 44,
+   "slot_misses_gap_gt25ms": 10,
+   "max_start_gap_ms": 26.68670899999779,
+   "falls_rule_window": 0,
+   "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "fix_a4gpu_r1"
+   ],
+   "compute_misses_per_run": [
+    14,
+    16,
+    16
+   ],
+   "band_drop_falls_le1p5s": 1,
+   "band_drop_fall_runs": [
+    "fix_a4gpu_r1"
+   ],
+   "planner_model_ms_p50_range": [
+    7.9825,
+    8.1875
+   ],
+   "sim_overrun_steps_per_run": [
+    0,
+    0,
+    0
+   ],
+   "tracking_ok": "3/3 runs"
   },
   "thor/unloaded_preregistered_r1-r3": {
    "board": "Jetson AGX Thor",
@@ -461,6 +1229,17 @@
    "max_start_gap_ms": 21.06166900000244,
    "falls_rule_window": 0,
    "band_drop_falls": 1,
+   "falls_d1": 1,
+   "falls_d1_drop_window": 1,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [
+    "cl_r3"
+   ],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 1,
    "band_drop_fall_runs": [
     "cl_r3"
@@ -500,6 +1279,15 @@
    "max_start_gap_ms": 20.152690999999322,
    "falls_rule_window": 0,
    "band_drop_falls": 0,
+   "falls_d1": 0,
+   "falls_d1_drop_window": 0,
+   "falls_d1_later": 0,
+   "fall_d1_runs": [],
+   "compute_misses_per_run": [
+    0,
+    0,
+    0
+   ],
    "band_drop_falls_le1p5s": 0,
    "band_drop_fall_runs": [],
    "planner_model_ms_p50_range": [
@@ -526,8 +1314,1791 @@
    "p_two_sided": 1.0
   }
  },
+ "band_drop_controlled_DERIVED": {
+  "rtx5090": {
+   "board": "RTX 5090",
+   "runs": 18,
+   "falls": 3,
+   "clopper_pearson_95": [
+    0.036,
+    0.414
+   ],
+   "per_D_ms": {
+    "10": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 1,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D010_r2"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      10.386,
+      12.975,
+      13.92
+     ]
+    },
+    "25": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 1,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D025_r2"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      29.931,
+      28.015,
+      29.035
+     ]
+    },
+    "40": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      41.05,
+      44.671,
+      45.016
+     ]
+    },
+    "60": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      62.406,
+      64.679,
+      60.959
+     ]
+    },
+    "80": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 1,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D080_r3"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      83.502,
+      80.695,
+      81.055
+     ]
+    },
+    "100": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      101.816,
+      102.428,
+      104.037
+     ]
+    }
+   },
+   "falls_drop_window": 3,
+   "falls_later": 0,
+   "D_le_40_vs_D_ge_60": {
+    "D_le_40": "2/9",
+    "D_ge_60": "1/9",
+    "fisher_two_sided_p": 1.0
+   },
+   "repeated_runs_bit_identical_before_the_drop": [
+    {
+     "runs": [
+      "bd_D025_r1",
+      "bd_D025_r3"
+     ],
+     "same_release_step": true,
+     "identical_80s_from_release": false,
+     "fell": [
+      false,
+      false
+     ]
+    }
+   ],
+   "falls_counting_identical_whole_runs_once": "3/18",
+   "release_minus_D_ms": {
+    "min": 0.39,
+    "max": 5.02
+   },
+   "body_state_agrees_with_D1": "18/18",
+   "body_first_down_s_in_fall_runs": [
+    0.724,
+    1.059,
+    0.721
+   ],
+   "timing": {
+    "ticks": 73807,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 19,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 23.022041000000172
+   },
+   "exploratory_release_state": {
+    "note": "NOT pre-registered as a test; exact two-sided permutation test of the rank sum of the fall runs (midranks for ties)",
+    "vxy_at_release_mps_fall_runs": [
+     0.056,
+     0.217,
+     0.039
+    ],
+    "vxy_at_release_mps_median_no_fall": 0.094,
+    "vxy_exact_p": 0.724,
+    "tilt_at_release_deg_fall_runs": [
+     4.82,
+     4.16,
+     6.19
+    ],
+    "tilt_exact_p": 0.898
+   }
+  },
+  "thor": {
+   "board": "Jetson AGX Thor",
+   "runs": 18,
+   "falls": 3,
+   "clopper_pearson_95": [
+    0.036,
+    0.414
+   ],
+   "per_D_ms": {
+    "10": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 1,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D010_r1"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      10.658,
+      12.91,
+      14.082
+     ]
+    },
+    "25": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      26.858,
+      28.545,
+      28.192
+     ]
+    },
+    "40": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 0,
+     "falls_later": 1,
+     "fall_runs": [
+      "bd_D040_r3"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      43.52,
+      40.439,
+      41.114
+     ]
+    },
+    "60": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      64.798,
+      60.581,
+      62.414
+     ]
+    },
+    "80": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      82.962,
+      82.662,
+      80.431
+     ]
+    },
+    "100": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 1,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D100_r2"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      104.967,
+      104.47,
+      102.205
+     ]
+    }
+   },
+   "falls_drop_window": 2,
+   "falls_later": 1,
+   "D_le_40_vs_D_ge_60": {
+    "D_le_40": "2/9",
+    "D_ge_60": "1/9",
+    "fisher_two_sided_p": 1.0
+   },
+   "repeated_runs_bit_identical_before_the_drop": [
+    {
+     "runs": [
+      "bd_D025_r1",
+      "bd_D080_r2"
+     ],
+     "same_release_step": false,
+     "identical_80s_from_release": false,
+     "fell": [
+      false,
+      false
+     ]
+    }
+   ],
+   "falls_counting_identical_whole_runs_once": "3/18",
+   "release_minus_D_ms": {
+    "min": 0.43,
+    "max": 4.97
+   },
+   "body_state_agrees_with_D1": "18/18",
+   "body_first_down_s_in_fall_runs": [
+    0.676,
+    1.162,
+    1.075
+   ],
+   "timing": {
+    "ticks": 73782,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 2,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.07543200001237
+   },
+   "exploratory_release_state": {
+    "note": "NOT pre-registered as a test; exact two-sided permutation test of the rank sum of the fall runs (midranks for ties)",
+    "vxy_at_release_mps_fall_runs": [
+     0.263,
+     0.141,
+     0.19
+    ],
+    "vxy_at_release_mps_median_no_fall": 0.07,
+    "vxy_exact_p": 0.027,
+    "tilt_at_release_deg_fall_runs": [
+     4.61,
+     4.72,
+     2.97
+    ],
+    "tilt_exact_p": 0.13
+   }
+  },
+  "orin": {
+   "board": "Jetson AGX Orin 64 GB",
+   "runs": 18,
+   "falls": 3,
+   "clopper_pearson_95": [
+    0.036,
+    0.414
+   ],
+   "per_D_ms": {
+    "10": {
+     "runs": 3,
+     "falls": 1,
+     "falls_drop_window": 0,
+     "falls_later": 1,
+     "fall_runs": [
+      "bd_D010_r1"
+     ],
+     "clopper_pearson_95": [
+      0.008,
+      0.906
+     ],
+     "release_delay_ms": [
+      10.516,
+      13.138,
+      12.996
+     ]
+    },
+    "25": {
+     "runs": 3,
+     "falls": 2,
+     "falls_drop_window": 2,
+     "falls_later": 0,
+     "fall_runs": [
+      "bd_D025_r1",
+      "bd_D025_r3"
+     ],
+     "clopper_pearson_95": [
+      0.094,
+      0.992
+     ],
+     "release_delay_ms": [
+      27.218,
+      29.805,
+      26.391
+     ]
+    },
+    "40": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      44.061,
+      43.368,
+      42.041
+     ]
+    },
+    "60": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      62.152,
+      60.322,
+      60.988
+     ]
+    },
+    "80": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      83.521,
+      81.828,
+      83.989
+     ]
+    },
+    "100": {
+     "runs": 3,
+     "falls": 0,
+     "falls_drop_window": 0,
+     "falls_later": 0,
+     "fall_runs": [],
+     "clopper_pearson_95": [
+      0.0,
+      0.708
+     ],
+     "release_delay_ms": [
+      101.057,
+      101.607,
+      103.602
+     ]
+    }
+   },
+   "falls_drop_window": 2,
+   "falls_later": 1,
+   "D_le_40_vs_D_ge_60": {
+    "D_le_40": "3/9",
+    "D_ge_60": "0/9",
+    "fisher_two_sided_p": 0.2059
+   },
+   "repeated_runs_bit_identical_before_the_drop": [
+    {
+     "runs": [
+      "bd_D025_r1",
+      "bd_D025_r3"
+     ],
+     "same_release_step": true,
+     "identical_80s_from_release": true,
+     "fell": [
+      true,
+      true
+     ]
+    },
+    {
+     "runs": [
+      "bd_D040_r1",
+      "bd_D080_r1"
+     ],
+     "same_release_step": false,
+     "identical_80s_from_release": false,
+     "fell": [
+      false,
+      false
+     ]
+    },
+    {
+     "runs": [
+      "bd_D040_r2",
+      "bd_D100_r3"
+     ],
+     "same_release_step": false,
+     "identical_80s_from_release": false,
+     "fell": [
+      false,
+      false
+     ]
+    }
+   ],
+   "falls_counting_identical_whole_runs_once": "2/17",
+   "release_minus_D_ms": {
+    "min": 0.32,
+    "max": 4.8
+   },
+   "body_state_agrees_with_D1": "18/18",
+   "body_first_down_s_in_fall_runs": [
+    0.707,
+    0.689,
+    0.688
+   ],
+   "timing": {
+    "ticks": 73782,
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.171110999996017
+   },
+   "exploratory_release_state": {
+    "note": "NOT pre-registered as a test; exact two-sided permutation test of the rank sum of the fall runs (midranks for ties)",
+    "vxy_at_release_mps_fall_runs": [
+     0.088,
+     0.244,
+     0.244
+    ],
+    "vxy_at_release_mps_median_no_fall": 0.127,
+    "vxy_exact_p": 0.158,
+    "tilt_at_release_deg_fall_runs": [
+     4.56,
+     3.69,
+     3.69
+    ],
+    "tilt_exact_p": 0.072
+   }
+  }
+ },
  "runs": {
   "rtx5090": {
+   "bd_D010_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.26330000000000003,
+     "p99": 2.571542,
+     "max": 2.6834160000000002,
+     "mean": 0.3123321694708608
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 135.725,
+     "p99": 336.327,
+     "max": 2490.896,
+     "mean": 153.82449963423556
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 60.595,
+     "p99": 2363.209,
+     "max": 2493.037,
+     "mean": 92.61483613752743
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.18888099999458,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.484,
+     "p99": 2.6604,
+     "max": 2.674,
+     "mean": 2.4617906976744184
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.509618,
+     "p99": 2.6993429,
+     "max": 2.727262,
+     "mean": 2.519896139534884
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 10.386,
+     "rx_latency_ms": 0.341,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.012381,
+     "step_release": 6479,
+     "tilt_at_release_deg": 5.59703008143869,
+     "vxy_at_release_mps": 0.12112391785005419,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2899205,
+     "p99": 3.2959990099999987,
+     "max": 3.641416,
+     "mean": 0.36543598878048783
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 142.5855,
+     "p99": 363.4269099999992,
+     "max": 3186.201,
+     "mean": 157.1473056097561
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.995,
+     "p99": 3013.86464,
+     "max": 3360.929,
+     "mean": 124.75845707317073
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.43482899999981,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.8955,
+     "p99": 3.24575,
+     "max": 3.284,
+     "mean": 2.8467790697674418
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.9295555,
+     "p99": 3.31639455,
+     "max": 3.353605,
+     "mean": 2.9192361046511626
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.82
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.824
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.724,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 12.975,
+     "rx_latency_ms": 2.947,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.015046,
+     "step_release": 6478,
+     "tilt_at_release_deg": 4.818864590128604,
+     "vxy_at_release_mps": 0.055773589397823335,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.266763,
+     "p99": 2.5742629999999997,
+     "max": 2.738841,
+     "mean": 0.32947354937820045
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 139.77,
+     "p99": 2312.521,
+     "max": 2479.733,
+     "mean": 171.8543930748598
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 61.237,
+     "p99": 513.643,
+     "max": 2553.941,
+     "mean": 91.8209685442575
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.281913999999233,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.4795,
+     "p99": 2.7215500000000006,
+     "max": 2.787,
+     "mean": 2.461290697674418
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.5182409999999997,
+     "p99": 2.7682660500000003,
+     "max": 2.808579,
+     "mean": 2.5238355
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 13.92,
+     "rx_latency_ms": 3.857,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.015896,
+     "step_release": 8375,
+     "tilt_at_release_deg": 4.629592525492217,
+     "vxy_at_release_mps": 0.042806641662393154,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.26279199999999997,
+     "p99": 2.578148,
+     "max": 3.429769,
+     "mean": 0.32917393026091196
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 137.504,
+     "p99": 442.593,
+     "max": 3098.055,
+     "mean": 159.72399609851257
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 61.339,
+     "p99": 2368.714,
+     "max": 3031.571,
+     "mean": 107.07507510363325
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.194901000000755,
+    "planner_calls": 87,
+    "planner_model_ms": {
+     "n": 87,
+     "p50": 2.464,
+     "p99": 3.049,
+     "max": 3.049,
+     "mean": 2.5128275862068965
+    },
+    "planner_total_ms": {
+     "n": 87,
+     "p50": 2.48296,
+     "p99": 3.05953312,
+     "max": 3.071967,
+     "mean": 2.5617598735632185
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 29.931,
+     "rx_latency_ms": 4.851,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.031725,
+     "step_release": 6475,
+     "tilt_at_release_deg": 4.6782723369538655,
+     "vxy_at_release_mps": 0.04876489377085379,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2666235,
+     "p99": 2.788510899999999,
+     "max": 3.55342,
+     "mean": 0.34092252317073174
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 138.881,
+     "p99": 433.85150999999945,
+     "max": 3092.483,
+     "mean": 156.2764773170732
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.8825,
+     "p99": 2374.4044599999997,
+     "max": 3099.362,
+     "mean": 119.53047414634145
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 1,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 21.738513000003877,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.6425,
+     "p99": 3.073,
+     "max": 3.09,
+     "mean": 2.625453488372093
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.6647144999999997,
+     "p99": 3.0948966,
+     "max": 3.117799,
+     "mean": 2.6809974418604656
+    },
+    "fall_rule_window": true,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     1.16
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     1.159
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 1.059,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 28.015,
+     "rx_latency_ms": 3.018,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.030018,
+     "step_release": 6498,
+     "tilt_at_release_deg": 4.158836414404922,
+     "vxy_at_release_mps": 0.2170316258898092,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 3,
+    "tracking_ok": true
+   },
+   "bd_D025_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.271717,
+     "p99": 3.3020639999999997,
+     "max": 3.6738180000000003,
+     "mean": 0.3401303379663496
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 140.968,
+     "p99": 395.596,
+     "max": 3341.237,
+     "mean": 158.67557327481103
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 62.442,
+     "p99": 2995.962,
+     "max": 3262.786,
+     "mean": 111.65182833455256
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 1,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 21.193849000002956,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.8345000000000002,
+     "p99": 3.3285000000000005,
+     "max": 3.371,
+     "mean": 2.8580930232558135
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.8725414999999996,
+     "p99": 3.3664521000000005,
+     "max": 3.39652,
+     "mean": 2.922160127906977
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 29.035,
+     "rx_latency_ms": 3.95,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.030606,
+     "step_release": 6475,
+     "tilt_at_release_deg": 4.6782723369538655,
+     "vxy_at_release_mps": 0.04876489377085379,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.275279,
+     "p99": 0.973916,
+     "max": 3.384749,
+     "mean": 0.3203123535722994
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 142.649,
+     "p99": 367.436,
+     "max": 1007.877,
+     "mean": 151.7166439892709
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 60.977,
+     "p99": 538.221,
+     "max": 3099.549,
+     "mean": 97.07082516459401
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 8,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.839575999998488,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.4175,
+     "p99": 3.120800000000001,
+     "max": 3.267,
+     "mean": 2.44910465116279
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.4475515,
+     "p99": 3.1425921000000008,
+     "max": 3.293887,
+     "mean": 2.5095188720930235
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 41.05,
+     "rx_latency_ms": 1.024,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.043136,
+     "step_release": 6472,
+     "tilt_at_release_deg": 3.6391940185039178,
+     "vxy_at_release_mps": 0.16208827803727735,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 5,
+    "tracking_ok": true
+   },
+   "bd_D040_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.267685,
+     "p99": 2.58237756,
+     "max": 3.48388,
+     "mean": 0.3271639141463415
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 138.61599999999999,
+     "p99": 386.58538999999905,
+     "max": 2986.344,
+     "mean": 151.0351719512195
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.592,
+     "p99": 2370.0516199999997,
+     "max": 3051.871,
+     "mean": 108.4205624390244
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.166383000003407,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.4795,
+     "p99": 2.878550000000001,
+     "max": 3.012,
+     "mean": 2.494744186046512
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.5116945,
+     "p99": 2.905231500000001,
+     "max": 3.05127,
+     "mean": 2.5525390465116278
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 44.671,
+     "rx_latency_ms": 4.608,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.046668,
+     "step_release": 6483,
+     "tilt_at_release_deg": 5.524314916455836,
+     "vxy_at_release_mps": 0.03537524302479389,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.257681,
+     "p99": 2.5503802299999996,
+     "max": 2.6717150000000003,
+     "mean": 0.32293020536585365
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 133.7125,
+     "p99": 2423.41897,
+     "max": 2483.635,
+     "mean": 184.90519731707317
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.341,
+     "p99": 380.0790899999996,
+     "max": 2519.738,
+     "mean": 77.41901707317072
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.176723999999012,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.455,
+     "p99": 2.6257,
+     "max": 2.641,
+     "mean": 2.4429302325581395
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.4773164999999997,
+     "p99": 2.68880575,
+     "max": 2.717183,
+     "mean": 2.503300593023256
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 45.016,
+     "rx_latency_ms": 5.003,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.046462,
+     "step_release": 6488,
+     "tilt_at_release_deg": 4.551334473942635,
+     "vxy_at_release_mps": 0.07901965169104738,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2716045,
+     "p99": 2.5862038,
+     "max": 3.364335,
+     "mean": 0.32691979975609764
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 139.7505,
+     "p99": 378.78097999999915,
+     "max": 2501.765,
+     "mean": 158.99376243902438
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.938,
+     "p99": 2363.8224799999994,
+     "max": 3157.71,
+     "mean": 98.20950634146342
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.204028000000108,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.4695,
+     "p99": 2.774,
+     "max": 2.774,
+     "mean": 2.4681395348837207
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.496713,
+     "p99": 2.7983828,
+     "max": 2.820544,
+     "mean": 2.5267821744186048
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 62.406,
+     "rx_latency_ms": 2.33,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.064331,
+     "step_release": 6481,
+     "tilt_at_release_deg": 5.944963315532442,
+     "vxy_at_release_mps": 0.12639031761383684,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.282533,
+     "p99": 2.5947662499999997,
+     "max": 5.068723,
+     "mean": 0.3338437746341464
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 142.325,
+     "p99": 376.89892999999927,
+     "max": 3089.158,
+     "mean": 154.33648292682926
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 62.0385,
+     "p99": 2370.9307400000002,
+     "max": 4815.451,
+     "mean": 101.67299024390245
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 3,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 23.022041000000172,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.4645,
+     "p99": 3.191900000000001,
+     "max": 3.299,
+     "mean": 2.5162325581395346
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.503813,
+     "p99": 3.2159802000000006,
+     "max": 3.32851,
+     "mean": 2.5905090116279075
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 64.679,
+     "rx_latency_ms": 4.572,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.065659,
+     "step_release": 6488,
+     "tilt_at_release_deg": 5.528241110017983,
+     "vxy_at_release_mps": 0.07890794941692142,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 7,
+    "tracking_ok": true
+   },
+   "bd_D060_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2750005,
+     "p99": 2.5790326499999994,
+     "max": 3.439159,
+     "mean": 0.3463022114634146
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 139.7645,
+     "p99": 457.13877999999954,
+     "max": 2487.744,
+     "mean": 165.31134951219514
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 62.215,
+     "p99": 2366.1742,
+     "max": 3232.654,
+     "mean": 110.19912658536585
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.216348999998445,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.463,
+     "p99": 2.827350000000002,
+     "max": 3.107,
+     "mean": 2.452837209302326
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.498972,
+     "p99": 2.879207300000002,
+     "max": 3.147469,
+     "mean": 2.517798197674419
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 60.959,
+     "rx_latency_ms": 0.885,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.062913,
+     "step_release": 6488,
+     "tilt_at_release_deg": 5.00142496912938,
+     "vxy_at_release_mps": 0.13987406819500067,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.26355850000000003,
+     "p99": 3.1669494199999977,
+     "max": 3.575357,
+     "mean": 0.3366082507317073
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 137.8045,
+     "p99": 437.18540999999993,
+     "max": 3162.939,
+     "mean": 156.89964121951218
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.4675,
+     "p99": 2739.1935499999995,
+     "max": 3330.139,
+     "mean": 115.76274097560974
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 1,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.274577999996836,
+    "planner_calls": 87,
+    "planner_model_ms": {
+     "n": 87,
+     "p50": 2.813,
+     "p99": 3.16098,
+     "max": 3.21,
+     "mean": 2.771586206896552
+    },
+    "planner_total_ms": {
+     "n": 87,
+     "p50": 2.840054,
+     "p99": 3.19079462,
+     "max": 3.256527,
+     "mean": 2.8304297471264364
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 83.502,
+     "rx_latency_ms": 3.388,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.085594,
+     "step_release": 6489,
+     "tilt_at_release_deg": 5.185953942918646,
+     "vxy_at_release_mps": 0.0931197765770822,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 6,
+    "tracking_ok": true
+   },
+   "bd_D080_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.26928850000000004,
+     "p99": 2.5727372,
+     "max": 3.4744800000000002,
+     "mean": 0.3244148143902439
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 138.4765,
+     "p99": 370.26736999999827,
+     "max": 2491.735,
+     "mean": 154.59645414634147
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.489999999999995,
+     "p99": 2366.5085299999996,
+     "max": 3103.469,
+     "mean": 103.08006731707317
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.21225100000447,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.458,
+     "p99": 2.927900000000001,
+     "max": 3.069,
+     "mean": 2.4666511627906975
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.4803495,
+     "p99": 3.1086768000000005,
+     "max": 3.179917,
+     "mean": 2.5287181162790695
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 80.695,
+     "rx_latency_ms": 0.664,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.082064,
+     "step_release": 6504,
+     "tilt_at_release_deg": 4.955504120829166,
+     "vxy_at_release_mps": 0.09398075307938623,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2743575,
+     "p99": 2.8393602099999993,
+     "max": 3.769406,
+     "mean": 0.3407567512195122
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 142.34,
+     "p99": 509.24681999999956,
+     "max": 3311.506,
+     "mean": 169.07451146341464
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 61.783500000000004,
+     "p99": 2344.3438599999963,
+     "max": 3409.845,
+     "mean": 104.2347375609756
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.1818119999989,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.7215,
+     "p99": 3.4929500000000044,
+     "max": 4.201,
+     "mean": 2.714860465116279
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.750648,
+     "p99": 3.7243947500000036,
+     "max": 4.226324,
+     "mean": 2.7874145813953493
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.76
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.762
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.721,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 81.055,
+     "rx_latency_ms": 0.955,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.08303,
+     "step_release": 6488,
+     "tilt_at_release_deg": 6.188247861844796,
+     "vxy_at_release_mps": 0.039207042423265545,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.27954,
+     "p99": 3.238322,
+     "max": 3.7849630000000003,
+     "mean": 0.3373368824676908
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 141.332,
+     "p99": 2458.62,
+     "max": 3300.61,
+     "mean": 179.13494928066322
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 61.703,
+     "p99": 410.553,
+     "max": 3355.26,
+     "mean": 83.46837307973664
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 5,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.110124999999243,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.963,
+     "p99": 3.5704000000000016,
+     "max": 3.788,
+     "mean": 2.950418604651163
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.992861,
+     "p99": 3.605236450000002,
+     "max": 3.835844,
+     "mean": 3.0139959418604656
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 101.816,
+     "rx_latency_ms": 1.709,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.103763,
+     "step_release": 6490,
+     "tilt_at_release_deg": 7.808747767608839,
+     "vxy_at_release_mps": 0.1691652123801538,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 8,
+    "tracking_ok": true
+   },
+   "bd_D100_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4100,
+    "step_ms": {
+     "n": 4100,
+     "p50": 0.2720585,
+     "p99": 3.3413137899999983,
+     "max": 3.655785,
+     "mean": 0.3588921436585366
+    },
+    "enc_us": {
+     "n": 4100,
+     "p50": 140.642,
+     "p99": 3050.463609999998,
+     "max": 3374.403,
+     "mean": 197.20574926829266
+    },
+    "dec_us": {
+     "n": 4100,
+     "p50": 62.091,
+     "p99": 454.1681999999996,
+     "max": 3361.085,
+     "mean": 90.79773170731706
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.31047699999999,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.7735000000000003,
+     "p99": 3.2466000000000004,
+     "max": 3.301,
+     "mean": 2.81106976744186
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.806196,
+     "p99": 3.2690779000000005,
+     "max": 3.320593,
+     "mean": 2.8677941627906973
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 102.428,
+     "rx_latency_ms": 2.469,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.104541,
+     "step_release": 6503,
+     "tilt_at_release_deg": 8.030737314932788,
+     "vxy_at_release_mps": 0.1847938442952215,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4101,
+    "step_ms": {
+     "n": 4101,
+     "p50": 0.284356,
+     "p99": 2.638413,
+     "max": 3.893796,
+     "mean": 0.3561387871250914
+    },
+    "enc_us": {
+     "n": 4101,
+     "p50": 147.536,
+     "p99": 897.613,
+     "max": 3652.29,
+     "mean": 184.55934333089493
+    },
+    "dec_us": {
+     "n": 4101,
+     "p50": 61.135,
+     "p99": 569.381,
+     "max": 3243.329,
+     "mean": 95.6017251889783
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.20453699999962,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 2.559,
+     "p99": 3.4145000000000016,
+     "max": 3.678,
+     "mean": 2.5918023255813956
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 2.5955705,
+     "p99": 3.4387361500000018,
+     "max": 3.709717,
+     "mean": 2.656106139534884
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 104.037,
+     "rx_latency_ms": 4.01,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.106197,
+     "step_release": 6490,
+     "tilt_at_release_deg": 3.112891084714209,
+     "vxy_at_release_mps": 0.24463105319162232,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
    "v1_r1": {
     "arm": "unloaded",
     "ticks": 4099,
@@ -575,6 +3146,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": "reference"
@@ -626,6 +3204,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": "reference"
@@ -677,6 +3262,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": "reference"
@@ -730,6 +3322,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 332,
     "tracking_ok": true
@@ -781,6 +3380,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 205,
     "tracking_ok": true
@@ -832,6 +3438,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 379,
     "tracking_ok": true
@@ -883,6 +3496,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -934,6 +3554,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -985,6 +3612,1265 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.734441,
+     "p99": 4.7486917,
+     "max": 5.527974,
+     "mean": 0.8245269736521103
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 423.471,
+     "p99": 473.37618,
+     "max": 2037.256,
+     "mean": 427.2008399609661
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 230.477,
+     "p99": 4222.8141399999995,
+     "max": 5022.668,
+     "mean": 320.2199846303977
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.049779000000854,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4399999999999995,
+     "p99": 4.5229,
+     "max": 4.528,
+     "mean": 4.398372093023256
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4607955,
+     "p99": 4.613550500000003,
+     "max": 5.007245,
+     "mean": 4.479367302325581
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.78
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.776
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.676,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 10.658,
+     "rx_latency_ms": 0.39,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.009971,
+     "step_release": 7687,
+     "tilt_at_release_deg": 4.607145126376618,
+     "vxy_at_release_mps": 0.26318909940534213,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.721148,
+     "p99": 4.73658502,
+     "max": 5.3510100000000005,
+     "mean": 0.8170912717736033
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 423.963,
+     "p99": 470.41995999999995,
+     "max": 949.592,
+     "mean": 429.3599321785802
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 230.898,
+     "p99": 4227.83612,
+     "max": 4843.945,
+     "mean": 315.74411246645525
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.23991300000489,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.439500000000001,
+     "p99": 4.4965,
+     "max": 4.505,
+     "mean": 4.390662790697674
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4601355,
+     "p99": 4.654133900000005,
+     "max": 5.315575,
+     "mean": 4.476406360465117
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 12.91,
+     "rx_latency_ms": 2.652,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.010993,
+     "step_release": 7669,
+     "tilt_at_release_deg": 5.079822419109465,
+     "vxy_at_release_mps": 0.024319528171297334,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.72013,
+     "p99": 4.80248202,
+     "max": 5.4557139999999995,
+     "mean": 0.8134793996096609
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 422.398,
+     "p99": 474.98242,
+     "max": 1228.37,
+     "mean": 426.27357306660167
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.556,
+     "p99": 4251.34332,
+     "max": 4586.075,
+     "mean": 315.7530678214199
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.091827999996895,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4935,
+     "p99": 4.576300000000001,
+     "max": 4.595,
+     "mean": 4.435337209302325
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.512251,
+     "p99": 4.677707700000003,
+     "max": 5.026852,
+     "mean": 4.515308162790697
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 14.082,
+     "rx_latency_ms": 3.798,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.013402,
+     "step_release": 7685,
+     "tilt_at_release_deg": 4.263675854832864,
+     "vxy_at_release_mps": 0.013867357090206145,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.714333,
+     "p99": 4.7331289199999995,
+     "max": 5.313483,
+     "mean": 0.8045450946572335
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 422.713,
+     "p99": 458.00064,
+     "max": 1507.666,
+     "mean": 424.82008465479385
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 225.537,
+     "p99": 4236.19582,
+     "max": 4790.28,
+     "mean": 311.29931349109535
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.02642200000264,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.405,
+     "p99": 4.5108999999999995,
+     "max": 4.516,
+     "mean": 4.374069767441861
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4273395,
+     "p99": 4.654326100000004,
+     "max": 5.252687,
+     "mean": 4.457636069767442
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 26.858,
+     "rx_latency_ms": 1.593,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.026185,
+     "step_release": 7687,
+     "tilt_at_release_deg": 4.840884079025851,
+     "vxy_at_release_mps": 0.05152104872257793,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.811269,
+     "p99": 4.83514974,
+     "max": 5.353446,
+     "mean": 0.8838793427665285
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 454.407,
+     "p99": 500.97318,
+     "max": 2414.204,
+     "mean": 453.888655281776
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 238.111,
+     "p99": 4239.514700000001,
+     "max": 4771.651,
+     "mean": 323.53542717736036
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.161153000000013,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.491,
+     "p99": 4.55715,
+     "max": 4.558,
+     "mean": 4.441732558139535
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.5189085,
+     "p99": 4.660482200000003,
+     "max": 5.079131,
+     "mean": 4.527011197674419
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 28.545,
+     "rx_latency_ms": 3.234,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.027656,
+     "step_release": 7686,
+     "tilt_at_release_deg": 5.724473892931056,
+     "vxy_at_release_mps": 0.0703193396905307,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 97,
+    "tracking_ok": true
+   },
+   "bd_D025_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.722028,
+     "p99": 4.7395841,
+     "max": 5.464835,
+     "mean": 0.8164942783605758
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 422.314,
+     "p99": 466.42038,
+     "max": 1007.519,
+     "mean": 426.4358789948768
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 230.444,
+     "p99": 4228.01296,
+     "max": 4891.529,
+     "mean": 314.4884976823615
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.045071000000462,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.3725000000000005,
+     "p99": 4.49185,
+     "max": 4.508,
+     "mean": 4.33839534883721
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.3964685,
+     "p99": 4.626231400000003,
+     "max": 5.113771,
+     "mean": 4.42080034883721
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 28.192,
+     "rx_latency_ms": 2.928,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.027608,
+     "step_release": 7686,
+     "tilt_at_release_deg": 4.893054688544967,
+     "vxy_at_release_mps": 0.10362574939184316,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.717408,
+     "p99": 4.739987579999999,
+     "max": 5.391399000000001,
+     "mean": 0.8040502432300561
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 420.659,
+     "p99": 453.09448000000003,
+     "max": 555.037,
+     "mean": 421.8194164430348
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.51,
+     "p99": 4240.37744,
+     "max": 4844.056,
+     "mean": 316.73835959990237
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.027411999999458,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4175,
+     "p99": 4.50145,
+     "max": 4.504,
+     "mean": 4.3831976744186045
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4379325000000005,
+     "p99": 4.617871350000003,
+     "max": 5.123306,
+     "mean": 4.465009686046512
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 43.52,
+     "rx_latency_ms": 3.271,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.042783,
+     "step_release": 7691,
+     "tilt_at_release_deg": 4.196761578990764,
+     "vxy_at_release_mps": 0.02805365491309403,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.726009,
+     "p99": 4.7479276399999994,
+     "max": 5.252242,
+     "mean": 0.8161347077335936
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 423.463,
+     "p99": 463.43668,
+     "max": 2444.75,
+     "mean": 426.0872871432057
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 230.379,
+     "p99": 4235.330019999999,
+     "max": 4763.612,
+     "mean": 315.5703922908026
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.071523999999044,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4405,
+     "p99": 4.5463000000000005,
+     "max": 4.548,
+     "mean": 4.407081395348837
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.466076,
+     "p99": 4.674183100000004,
+     "max": 5.228973,
+     "mean": 4.492070662790698
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 40.439,
+     "rx_latency_ms": 0.171,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.039387,
+     "step_release": 7685,
+     "tilt_at_release_deg": 6.697798179845105,
+     "vxy_at_release_mps": 0.03820501713372281,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 98,
+    "tracking_ok": true
+   },
+   "bd_D040_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.745567,
+     "p99": 4.77293824,
+     "max": 5.283321,
+     "mean": 0.8406243771651623
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 427.359,
+     "p99": 473.40644,
+     "max": 1108.223,
+     "mean": 430.624466211271
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 232.985,
+     "p99": 4239.27328,
+     "max": 4769.544,
+     "mean": 327.5347404244938
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.12961699999869,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.43,
+     "p99": 4.53855,
+     "max": 4.553,
+     "mean": 4.3915
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.454847,
+     "p99": 4.677709300000004,
+     "max": 5.23832,
+     "mean": 4.479915604651163
+    },
+    "fall_rule_window": true,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": true,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     5.362
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 1.162,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 41.114,
+     "rx_latency_ms": 0.837,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.040445,
+     "step_release": 7692,
+     "tilt_at_release_deg": 4.724402222336997,
+     "vxy_at_release_mps": 0.1406980883855742,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": false
+   },
+   "bd_D060_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.727111,
+     "p99": 4.78075638,
+     "max": 5.273919,
+     "mean": 0.8164963005611126
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 424.213,
+     "p99": 467.97369999999995,
+     "max": 1062.519,
+     "mean": 426.5328721639424
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 233.361,
+     "p99": 4246.6599400000005,
+     "max": 4486.688,
+     "mean": 319.6285318370334
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.026738000000478,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.431,
+     "p99": 4.536449999999999,
+     "max": 4.539,
+     "mean": 4.396058139534883
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.456589,
+     "p99": 4.635143200000003,
+     "max": 5.025521,
+     "mean": 4.476698569767442
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 64.798,
+     "rx_latency_ms": 4.538,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.064113,
+     "step_release": 7700,
+     "tilt_at_release_deg": 7.124840930675383,
+     "vxy_at_release_mps": 0.03590375308971347,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.738798,
+     "p99": 4.755499840000001,
+     "max": 5.424113,
+     "mean": 0.8278807806782142
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 426.917,
+     "p99": 481.19558,
+     "max": 4523.112,
+     "mean": 434.95191973652106
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 234.25,
+     "p99": 4243.66464,
+     "max": 4770.984,
+     "mean": 319.7867992193217
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.177208000000974,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4365000000000006,
+     "p99": 4.785100000000002,
+     "max": 4.984,
+     "mean": 4.410499999999999
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4657615,
+     "p99": 5.006699,
+     "max": 5.063649,
+     "mean": 4.492448558139535
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 60.581,
+     "rx_latency_ms": 0.301,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.059909,
+     "step_release": 7694,
+     "tilt_at_release_deg": 6.652025008735941,
+     "vxy_at_release_mps": 0.1075151714628906,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7195739999999999,
+     "p99": 4.71759766,
+     "max": 5.269520000000001,
+     "mean": 0.8103911366186874
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 423.371,
+     "p99": 461.5552,
+     "max": 1177.325,
+     "mean": 426.2513791168578
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 228.01,
+     "p99": 4218.34318,
+     "max": 4757.076,
+     "mean": 312.99715881922424
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.32229400000142,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.416,
+     "p99": 4.52935,
+     "max": 4.537,
+     "mean": 4.386906976744186
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.432965,
+     "p99": 4.6571011500000035,
+     "max": 5.222862,
+     "mean": 4.464771313953489
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 62.414,
+     "rx_latency_ms": 2.142,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.061828,
+     "step_release": 7686,
+     "tilt_at_release_deg": 5.989008741468523,
+     "vxy_at_release_mps": 0.10382943806764011,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.718056,
+     "p99": 4.7599172,
+     "max": 5.342807,
+     "mean": 0.8105314942668943
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 421.389,
+     "p99": 464.7532,
+     "max": 2426.944,
+     "mean": 425.401332032203
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 227.5,
+     "p99": 4230.4250600000005,
+     "max": 4854.854,
+     "mean": 313.4555794096121
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.873608000001695,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4565,
+     "p99": 4.551550000000001,
+     "max": 4.566,
+     "mean": 4.412569767441861
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4825289999999995,
+     "p99": 4.704729700000004,
+     "max": 5.31802,
+     "mean": 4.499167639534884
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 82.962,
+     "rx_latency_ms": 2.696,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.082345,
+     "step_release": 7692,
+     "tilt_at_release_deg": 8.148160121202288,
+     "vxy_at_release_mps": 0.12362451845483051,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7195750000000001,
+     "p99": 4.7400994999999995,
+     "max": 5.337955,
+     "mean": 0.8115977899487681
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 420.833,
+     "p99": 465.29841999999996,
+     "max": 4540.195,
+     "mean": 424.940794096121
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 232.509,
+     "p99": 4237.84198,
+     "max": 4836.066,
+     "mean": 316.23559697487195
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.304608000005828,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4425,
+     "p99": 4.53815,
+     "max": 4.539,
+     "mean": 4.408930232558139
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4673845,
+     "p99": 4.683973750000004,
+     "max": 5.31665,
+     "mean": 4.493268569767441
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 82.662,
+     "rx_latency_ms": 2.377,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.082036,
+     "step_release": 7698,
+     "tilt_at_release_deg": 3.4089375031564164,
+     "vxy_at_release_mps": 0.03545982592647968,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.725826,
+     "p99": 4.767751540000001,
+     "max": 5.287705,
+     "mean": 0.8179827616491826
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 423.354,
+     "p99": 466.73512,
+     "max": 4619.923,
+     "mean": 430.08924005855084
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 229.053,
+     "p99": 4234.13994,
+     "max": 4746.773,
+     "mean": 311.6337011466211
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 1,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 21.314226999998937,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.428,
+     "p99": 4.5273,
+     "max": 4.529,
+     "mean": 4.3897674418604655
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.459665,
+     "p99": 4.653190600000004,
+     "max": 5.222167,
+     "mean": 4.476930023255814
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 80.431,
+     "rx_latency_ms": 0.169,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.079806,
+     "step_release": 7695,
+     "tilt_at_release_deg": 5.5949829121228145,
+     "vxy_at_release_mps": 0.09137273112746155,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7380549999999999,
+     "p99": 4.74503416,
+     "max": 5.338520000000001,
+     "mean": 0.8297220495242742
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 426.676,
+     "p99": 472.20584,
+     "max": 2185.594,
+     "mean": 430.7598241034399
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 232.408,
+     "p99": 4233.61548,
+     "max": 4485.02,
+     "mean": 321.76965284215663
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.037866000000008,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.423,
+     "p99": 4.527,
+     "max": 4.544,
+     "mean": 4.384116279069767
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4460239999999995,
+     "p99": 4.638958350000003,
+     "max": 5.059937,
+     "mean": 4.465657825581395
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 104.967,
+     "rx_latency_ms": 4.707,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.104291,
+     "step_release": 7713,
+     "tilt_at_release_deg": 2.954190100679041,
+     "vxy_at_release_mps": 0.23529910300459225,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7195739999999999,
+     "p99": 4.747141620000001,
+     "max": 5.272586,
+     "mean": 0.808987798243474
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 421.306,
+     "p99": 466.95714,
+     "max": 4578.122,
+     "mean": 424.3894303488656
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.731,
+     "p99": 4240.44144,
+     "max": 4791.289,
+     "mean": 316.53658136130764
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.02763600000617,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.4325,
+     "p99": 4.5202,
+     "max": 4.527,
+     "mean": 4.390267441860465
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.455594,
+     "p99": 4.655372050000004,
+     "max": 5.255206,
+     "mean": 4.474892581395349
+    },
+    "fall_rule_window": true,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     1.1
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     1.095
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 1.075,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 104.47,
+     "rx_latency_ms": 4.203,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.103795,
+     "step_release": 7694,
+     "tilt_at_release_deg": 2.973861620048717,
+     "vxy_at_release_mps": 0.19040736696625618,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.73426,
+     "p99": 4.7633009,
+     "max": 5.432585,
+     "mean": 0.8316052573798487
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 425.991,
+     "p99": 469.62431999999995,
+     "max": 4515.649,
+     "mean": 431.4049404732862
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 232.759,
+     "p99": 4232.36344,
+     "max": 4870.094,
+     "mean": 319.51130617223714
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 1,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 22.07543200001237,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.436999999999999,
+     "p99": 4.609100000000002,
+     "max": 4.978,
+     "mean": 4.403941860465117
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.463793,
+     "p99": 5.059312800000002,
+     "max": 5.381354,
+     "mean": 4.487962534883721
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 102.205,
+     "rx_latency_ms": 1.906,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.101589,
+     "step_release": 7700,
+     "tilt_at_release_deg": 6.880390901380882,
+     "vxy_at_release_mps": 0.24709982581019943,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1038,6 +4924,15 @@
     "band_drop_reset_after_band_off_s": [
      0.92
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.921
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1089,6 +4984,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 94,
     "tracking_ok": true
@@ -1140,6 +5042,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1193,6 +5102,15 @@
     "band_drop_reset_after_band_off_s": [
      0.75
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.747
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1246,6 +5164,15 @@
     "band_drop_reset_after_band_off_s": [
      1.22
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     1.217
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1297,6 +5224,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1348,6 +5282,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1399,6 +5340,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 194,
     "tracking_ok": true
@@ -1450,6 +5398,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1501,6 +5456,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1554,8 +5516,597 @@
     "band_drop_reset_after_band_off_s": [
      0.78
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.782
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 69,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r1": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.757814,
+     "p99": 4.79086148,
+     "max": 8.606003000000001,
+     "mean": 0.8383358982678702
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 432.287,
+     "p99": 471.69518,
+     "max": 565.204,
+     "mean": 434.2758831422299
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 232.185,
+     "p99": 4256.7749,
+     "max": 8063.892,
+     "mean": 309.5376547938522
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01463700000022,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.442,
+     "p99": 8.631900000000014,
+     "max": 10.915,
+     "mean": 4.702011627906978
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.5045945,
+     "p99": 11.025687900000003,
+     "max": 11.466894,
+     "mean": 4.932768069767442
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 248,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r2": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.769463,
+     "p99": 0.87570604,
+     "max": 0.9878049999999999,
+     "mean": 0.7751945250060991
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 435.482,
+     "p99": 500.47256,
+     "max": 547.139,
+     "mean": 440.2939587704318
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 234.037,
+     "p99": 252.07319999999999,
+     "max": 281.556,
+     "mean": 234.51718321541836
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.012738000001264,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.3505,
+     "p99": 7.987800000000002,
+     "max": 8.219,
+     "mean": 4.670511627906977
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4024,
+     "p99": 8.021289650000002,
+     "max": 8.247586,
+     "mean": 4.816738058139536
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 105,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r3": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7591019999999999,
+     "p99": 0.8729585000000001,
+     "max": 0.987537,
+     "mean": 0.7700043852159064
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 430.89,
+     "p99": 475.26274,
+     "max": 555.055,
+     "mean": 435.2009724323006
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 234.463,
+     "p99": 252.96354,
+     "max": 299.01,
+     "mean": 235.37041693095878
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.016338999994332,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.3309999999999995,
+     "p99": 7.237950000000003,
+     "max": 7.776,
+     "mean": 4.426034883720931
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.358585,
+     "p99": 7.826724800000001,
+     "max": 7.976947,
+     "mean": 4.546234011627906
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 139,
+    "tracking_ok": true
+   },
+   "fix_a4gpu_r1": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 3.697196,
+     "p99": 11.4100776,
+     "max": 16.178024,
+     "mean": 3.7531610043913144
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 2218.982,
+     "p99": 4730.4304999999995,
+     "max": 4872.641,
+     "mean": 2147.882432300561
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 792.798,
+     "p99": 8597.468679999998,
+     "max": 14085.809,
+     "mean": 1489.8226360087824
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.020988000000216,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 8.139,
+     "p99": 13.702350000000006,
+     "max": 14.713,
+     "mean": 7.749581395348836
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.283072,
+     "p99": 13.757201250000007,
+     "max": 14.751561,
+     "mean": 7.917470453488374
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_a4gpu_r2": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 3.825316,
+     "p99": 11.83707742,
+     "max": 15.80707,
+     "mean": 3.8246415208587456
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 2367.815,
+     "p99": 4729.11998,
+     "max": 4833.567,
+     "mean": 2195.118196877287
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 802.279,
+     "p99": 8679.799579999999,
+     "max": 12120.411,
+     "mean": 1540.8665154915832
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01546000000235,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 8.4255,
+     "p99": 13.027600000000001,
+     "max": 13.269,
+     "mean": 8.20320930232558
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.5902055,
+     "p99": 13.056740600000001,
+     "max": 13.297022,
+     "mean": 8.346034930232559
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_a4gpu_r3": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 3.7254650000000002,
+     "p99": 11.5658757,
+     "max": 17.05106,
+     "mean": 3.7679917726274703
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 2247.621,
+     "p99": 4751.8751600000005,
+     "max": 5047.113,
+     "mean": 2141.4856162478654
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 793.538,
+     "p99": 8638.80386,
+     "max": 14246.272,
+     "mean": 1513.1200258599658
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01505200000247,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.997,
+     "p99": 14.986850000000002,
+     "max": 15.19,
+     "mean": 7.939453488372094
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.153978500000001,
+     "p99": 15.034952500000001,
+     "max": 15.228013,
+     "mean": 8.09817731395349
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r1": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7214640000000001,
+     "p99": 4.76207084,
+     "max": 5.318068,
+     "mean": 0.8090958582581117
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 421.99,
+     "p99": 455.77023999999994,
+     "max": 555.316,
+     "mean": 423.36020370822155
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.797,
+     "p99": 4254.09162,
+     "max": 4766.151,
+     "mean": 316.13398097096854
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.011175999999978,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.426,
+     "p99": 4.5442,
+     "max": 4.551,
+     "mean": 4.39596511627907
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.4595804999999995,
+     "p99": 4.686951000000004,
+     "max": 5.24467,
+     "mean": 4.489489953488372
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r2": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.724472,
+     "p99": 4.76586454,
+     "max": 5.327392,
+     "mean": 0.8109976230787997
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 421.898,
+     "p99": 455.11804,
+     "max": 551.213,
+     "mean": 422.9710356184435
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.305,
+     "p99": 4272.37682,
+     "max": 4787.372,
+     "mean": 318.56351256404
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01009099998919,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.443,
+     "p99": 4.482600000000001,
+     "max": 4.503,
+     "mean": 4.38567441860465
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.482826,
+     "p99": 4.643318450000004,
+     "max": 5.257633,
+     "mean": 4.488783325581395
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r3": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.7305750000000001,
+     "p99": 4.77563576,
+     "max": 5.339549,
+     "mean": 0.8202395664796291
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 425.564,
+     "p99": 493.14198,
+     "max": 553.426,
+     "mean": 433.00720639180287
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 228.231,
+     "p99": 4246.29566,
+     "max": 4805.409,
+     "mean": 313.9843481336911
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.012212000001455,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.453,
+     "p99": 4.5107,
+     "max": 4.526,
+     "mean": 4.405
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.493474,
+     "p99": 4.671000900000005,
+     "max": 5.296317,
+     "mean": 4.5049891046511625
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "stockref_cl_r1": {
+    "arm": "stock_sameday_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 0.735981,
+     "p99": 4.8192565400000005,
+     "max": 5.3078829999999995,
+     "mean": 0.8290782722615272
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 427.705,
+     "p99": 471.08808,
+     "max": 4692.263,
+     "mean": 435.1743644791413
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 231.714,
+     "p99": 4280.269,
+     "max": 4793.983,
+     "mean": 314.49678726518664
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.083763000002364,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 4.491,
+     "p99": 4.61225,
+     "max": 4.625,
+     "mean": 4.447488372093023
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 4.519887000000001,
+     "p99": 4.753530550000003,
+     "max": 5.273864,
+     "mean": 4.531973767441861
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
     "tracking_ok": true
    }
   },
@@ -1607,6 +6158,18 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": true,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     22.95,
+     24.03,
+     65.05,
+     70.59
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 4,
     "sim_overrun_steps": 297,
     "tracking_ok": false
@@ -1658,6 +6221,26 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": true,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     14.515,
+     24.795,
+     25.715,
+     28.515,
+     29.241,
+     30.295,
+     31.215,
+     31.855,
+     63.695,
+     64.715,
+     75.435,
+     76.495
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 12,
     "sim_overrun_steps": 36,
     "tracking_ok": false
@@ -1713,6 +6296,24 @@
      1.79,
      2.71
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     0.674,
+     1.794,
+     2.715,
+     9.754,
+     11.554,
+     12.614,
+     22.254,
+     23.434,
+     25.314,
+     26.774
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 10,
     "sim_overrun_steps": 92,
     "tracking_ok": false
@@ -1764,6 +6365,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 7,
     "tracking_ok": true
@@ -1817,6 +6425,15 @@
     "band_drop_reset_after_band_off_s": [
      0.63
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.627
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1868,8 +6485,1267 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 5,
+    "tracking_ok": true
+   },
+   "bd_D010_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0501289999999999,
+     "p99": 7.6692236000000005,
+     "max": 8.823416,
+     "mean": 1.1904272083434984
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 645.547,
+     "p99": 691.5009200000001,
+     "max": 834.926,
+     "mean": 647.4946933398389
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.045,
+     "p99": 6873.36232,
+     "max": 8011.946,
+     "mean": 441.21413393510613
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.151631999993697,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2385,
+     "p99": 7.2687,
+     "max": 7.284,
+     "mean": 7.155162790697675
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.271926499999999,
+     "p99": 7.500771250000007,
+     "max": 8.475122,
+     "mean": 7.287044860465117
+    },
+    "fall_rule_window": true,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": true,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     5.667
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.707,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 10.516,
+     "rx_latency_ms": 5.024,
+     "steps_rx_to_release": 1,
+     "release_rel_s": 2.009577,
+     "step_release": 8185,
+     "tilt_at_release_deg": 4.562710852909504,
+     "vxy_at_release_mps": 0.08835031580177577,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": false
+   },
+   "bd_D010_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0953920000000001,
+     "p99": 7.70419426,
+     "max": 8.688323,
+     "mean": 1.2303775306172235
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 666.656,
+     "p99": 713.57218,
+     "max": 838.848,
+     "mean": 667.1146967553062
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 307.008,
+     "p99": 6863.0794000000005,
+     "max": 7895.235,
+     "mean": 445.02232593315443
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.011006000000634,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2325,
+     "p99": 7.259600000000001,
+     "max": 7.263,
+     "mean": 7.149616279069768
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.259441000000001,
+     "p99": 7.4465333500000055,
+     "max": 8.309155,
+     "mean": 7.27122006976744
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 13.138,
+     "rx_latency_ms": 2.638,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.012324,
+     "step_release": 8182,
+     "tilt_at_release_deg": 5.184160193992703,
+     "vxy_at_release_mps": 0.06860387451712274,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D010_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.054351,
+     "p99": 7.6440779800000005,
+     "max": 8.817283999999999,
+     "mean": 1.1933370151256404
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 648.26,
+     "p99": 681.28326,
+     "max": 845.944,
+     "mean": 649.9130700170774
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 302.834,
+     "p99": 6857.807,
+     "max": 8012.457,
+     "mean": 440.92528470358627
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.007973000001584,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.219,
+     "p99": 7.23645,
+     "max": 7.239,
+     "mean": 7.133744186046511
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.241014,
+     "p99": 7.451208350000006,
+     "max": 8.486227,
+     "mean": 7.2575375000000015
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 10.0,
+     "release_delay_ms": 12.996,
+     "rx_latency_ms": 2.496,
+     "steps_rx_to_release": 2,
+     "release_rel_s": 2.012248,
+     "step_release": 8166,
+     "tilt_at_release_deg": 4.943844065696743,
+     "vxy_at_release_mps": 0.020315208153144793,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0506289999999998,
+     "p99": 7.64343608,
+     "max": 8.628015,
+     "mean": 1.1894624425469627
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 645.507,
+     "p99": 679.23692,
+     "max": 847.589,
+     "mean": 646.869466699195
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 302.849,
+     "p99": 6858.477199999999,
+     "max": 7826.378,
+     "mean": 440.86323444742624
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.00638200000003,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.205,
+     "p99": 7.22675,
+     "max": 7.231,
+     "mean": 7.122383720930231
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.231764,
+     "p99": 7.4069022000000055,
+     "max": 8.267245,
+     "mean": 7.24462010465116
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.83
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.829
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.689,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 27.218,
+     "rx_latency_ms": 1.725,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.026476,
+     "step_release": 8172,
+     "tilt_at_release_deg": 3.6876249089880764,
+     "vxy_at_release_mps": 0.2438454796595263,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0523040000000001,
+     "p99": 7.65093374,
+     "max": 8.790803,
+     "mean": 1.1951125428153209
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 644.693,
+     "p99": 698.325,
+     "max": 1197.262,
+     "mean": 647.0999926811418
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 301.723,
+     "p99": 6846.681140000001,
+     "max": 7969.376,
+     "mean": 440.22446425957554
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.171110999996017,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.206,
+     "p99": 7.23345,
+     "max": 7.253,
+     "mean": 7.122744186046511
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.238317500000001,
+     "p99": 7.469317950000007,
+     "max": 8.446489,
+     "mean": 7.254201488372092
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 29.805,
+     "rx_latency_ms": 4.305,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.028922,
+     "step_release": 8180,
+     "tilt_at_release_deg": 4.317339558970202,
+     "vxy_at_release_mps": 0.08078317823441747,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D025_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0458859999999999,
+     "p99": 7.6300361,
+     "max": 8.623643,
+     "mean": 1.186093168089778
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 643.316,
+     "p99": 677.05046,
+     "max": 1758.579,
+     "mean": 645.5308943644791
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 301.032,
+     "p99": 6854.3865000000005,
+     "max": 7831.201,
+     "mean": 439.2930509880459
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.063032999999905,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.164,
+     "p99": 7.1819,
+     "max": 7.187,
+     "mean": 7.081290697674419
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.1884335,
+     "p99": 7.363454650000006,
+     "max": 8.226894,
+     "mean": 7.200704662790697
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.83
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.828
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.688,
+    "release": {
+     "D_ms": 25.0,
+     "release_delay_ms": 26.391,
+     "rx_latency_ms": 0.9,
+     "steps_rx_to_release": 5,
+     "release_rel_s": 2.025646,
+     "step_release": 8172,
+     "tilt_at_release_deg": 3.6876249089880764,
+     "vxy_at_release_mps": 0.2438454796595263,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0572249999999999,
+     "p99": 7.66971562,
+     "max": 8.771527,
+     "mean": 1.201650768724079
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 649.436,
+     "p99": 703.3054999999999,
+     "max": 870.054,
+     "mean": 652.0995962429861
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.308,
+     "p99": 6867.2656799999995,
+     "max": 7961.283,
+     "mean": 442.08120297633565
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.013693000000785,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2855,
+     "p99": 7.362350000000001,
+     "max": 7.489,
+     "mean": 7.203976744186047
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.320125,
+     "p99": 7.6776179500000055,
+     "max": 8.467738,
+     "mean": 7.337108744186045
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 44.061,
+     "rx_latency_ms": 3.553,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.043253,
+     "step_release": 8165,
+     "tilt_at_release_deg": 6.484177935710394,
+     "vxy_at_release_mps": 0.022659221202891437,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.055388,
+     "p99": 7.65847718,
+     "max": 8.825524999999999,
+     "mean": 1.195166210539156
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 648.84,
+     "p99": 690.54522,
+     "max": 840.832,
+     "mean": 650.7604274213223
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.989,
+     "p99": 6867.3775,
+     "max": 8025.715,
+     "mean": 442.21713930226883
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.015062999998918,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.23,
+     "p99": 7.2517,
+     "max": 7.267,
+     "mean": 7.145476744186045
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.25409,
+     "p99": 7.482342850000006,
+     "max": 8.464738,
+     "mean": 7.27107784883721
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 43.368,
+     "rx_latency_ms": 2.88,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.042408,
+     "step_release": 8168,
+     "tilt_at_release_deg": 4.472702551968022,
+     "vxy_at_release_mps": 0.030514448488088285,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D040_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0698610000000002,
+     "p99": 7.69827466,
+     "max": 8.953022,
+     "mean": 1.2121933664308366
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 652.976,
+     "p99": 711.2588400000001,
+     "max": 977.479,
+     "mean": 655.0542969016833
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 305.688,
+     "p99": 6871.162179999999,
+     "max": 7839.418,
+     "mean": 443.92271700414733
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.015119000003324,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.23,
+     "p99": 7.314200000000002,
+     "max": 7.661,
+     "mean": 7.149930232558139
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.2598044999999995,
+     "p99": 8.729218700000006,
+     "max": 9.649461,
+     "mean": 7.302812011627908
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 40.0,
+     "release_delay_ms": 42.041,
+     "rx_latency_ms": 1.549,
+     "steps_rx_to_release": 8,
+     "release_rel_s": 2.041352,
+     "step_release": 8181,
+     "tilt_at_release_deg": 3.500581176074657,
+     "vxy_at_release_mps": 0.11447254348630224,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0534729999999999,
+     "p99": 7.6569393,
+     "max": 8.79915,
+     "mean": 1.1945979717004147
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 646.785,
+     "p99": 685.1862799999999,
+     "max": 847.042,
+     "mean": 648.4103664308368
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 302.976,
+     "p99": 6865.6435599999995,
+     "max": 7991.021,
+     "mean": 441.42903561844355
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.070238999999674,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.202,
+     "p99": 7.23155,
+     "max": 7.246,
+     "mean": 7.1200465116279075
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.2312095,
+     "p99": 7.4487000500000065,
+     "max": 8.415853,
+     "mean": 7.24574369767442
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 62.152,
+     "rx_latency_ms": 1.659,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.061314,
+     "step_release": 8181,
+     "tilt_at_release_deg": 4.393925539481173,
+     "vxy_at_release_mps": 0.1842407460224562,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.050135,
+     "p99": 7.64651612,
+     "max": 8.787346,
+     "mean": 1.1892763481336912
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 644.75,
+     "p99": 688.8819,
+     "max": 846.964,
+     "mean": 646.9752166382044
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.367,
+     "p99": 6850.75988,
+     "max": 7981.439,
+     "mean": 441.01541205172
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.007501000000047,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2145,
+     "p99": 7.2423,
+     "max": 7.244,
+     "mean": 7.132569767441861
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.250213499999999,
+     "p99": 7.454253950000007,
+     "max": 8.437834,
+     "mean": 7.2649775581395355
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 60.322,
+     "rx_latency_ms": 4.823,
+     "steps_rx_to_release": 11,
+     "release_rel_s": 2.059324,
+     "step_release": 8191,
+     "tilt_at_release_deg": 6.684934234073569,
+     "vxy_at_release_mps": 0.12700297996547952,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D060_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.055435,
+     "p99": 7.66274262,
+     "max": 8.800779,
+     "mean": 1.1948746950475728
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 649.351,
+     "p99": 682.02656,
+     "max": 1717.587,
+     "mean": 651.291794340083
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.555,
+     "p99": 6875.6028400000005,
+     "max": 7983.553,
+     "mean": 441.87475920956325
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.0237900000011,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2125,
+     "p99": 7.23475,
+     "max": 7.239,
+     "mean": 7.129430232558138
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.235315,
+     "p99": 7.4363467500000064,
+     "max": 8.420294,
+     "mean": 7.2499806976744186
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 60.0,
+     "release_delay_ms": 60.988,
+     "rx_latency_ms": 0.495,
+     "steps_rx_to_release": 12,
+     "release_rel_s": 2.060266,
+     "step_release": 8206,
+     "tilt_at_release_deg": 5.49395901861481,
+     "vxy_at_release_mps": 0.11340048337452452,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.069052,
+     "p99": 7.65602656,
+     "max": 8.874388999999999,
+     "mean": 1.2133074066845573
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 656.547,
+     "p99": 687.94556,
+     "max": 2048.858,
+     "mean": 658.4148028787508
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 304.562,
+     "p99": 6868.00096,
+     "max": 8005.634,
+     "mean": 442.76201073432543
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01262400000269,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.202500000000001,
+     "p99": 7.23705,
+     "max": 7.243,
+     "mean": 7.119151162790699
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.229417,
+     "p99": 7.469175700000007,
+     "max": 8.500768,
+     "mean": 7.244673325581396
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 83.521,
+     "rx_latency_ms": 3.028,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.082469,
+     "step_release": 8173,
+     "tilt_at_release_deg": 4.57584660596617,
+     "vxy_at_release_mps": 0.19568640628031994,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.067019,
+     "p99": 7.6491578,
+     "max": 8.828835999999999,
+     "mean": 1.2091579180287877
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 647.507,
+     "p99": 706.3555799999999,
+     "max": 2560.716,
+     "mean": 650.4216111246645
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 304.922,
+     "p99": 6843.9268,
+     "max": 8002.806,
+     "mean": 443.1044949987802
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.127027000009548,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.2085,
+     "p99": 7.31645,
+     "max": 7.336,
+     "mean": 7.127290697674417
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.237418,
+     "p99": 7.552922800000006,
+     "max": 8.491979,
+     "mean": 7.256008639534882
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 81.828,
+     "rx_latency_ms": 1.336,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.081203,
+     "step_release": 8169,
+     "tilt_at_release_deg": 7.255775714835358,
+     "vxy_at_release_mps": 0.22552969675569773,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D080_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.088259,
+     "p99": 7.69311134,
+     "max": 8.807227999999999,
+     "mean": 1.2264150853866795
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 660.994,
+     "p99": 705.25256,
+     "max": 834.723,
+     "mean": 662.9226757745793
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 305.569,
+     "p99": 6859.19824,
+     "max": 7977.818,
+     "mean": 443.6897804342522
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.009218000000033,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.214,
+     "p99": 7.23645,
+     "max": 7.239,
+     "mean": 7.131244186046512
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.2409655,
+     "p99": 7.442719500000006,
+     "max": 8.435035,
+     "mean": 7.255799290697673
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 80.0,
+     "release_delay_ms": 83.989,
+     "rx_latency_ms": 3.489,
+     "steps_rx_to_release": 16,
+     "release_rel_s": 2.083253,
+     "step_release": 8172,
+     "tilt_at_release_deg": 4.661069924135153,
+     "vxy_at_release_mps": 0.13975991339878363,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r1": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0465989999999998,
+     "p99": 7.64646704,
+     "max": 8.81569,
+     "mean": 1.1858832324957307
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 643.205,
+     "p99": 688.0085399999999,
+     "max": 834.951,
+     "mean": 645.4758384971946
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 302.05,
+     "p99": 6854.46262,
+     "max": 8017.218,
+     "mean": 440.0158755794096
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.008041000008234,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.1745,
+     "p99": 7.21815,
+     "max": 7.219,
+     "mean": 7.092686046511627
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.204921,
+     "p99": 7.4390726000000065,
+     "max": 8.422662,
+     "mean": 7.2220061162790685
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 101.057,
+     "rx_latency_ms": 0.562,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.10028,
+     "step_release": 8199,
+     "tilt_at_release_deg": 8.60784394638162,
+     "vxy_at_release_mps": 0.17596251126465431,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r2": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.05467,
+     "p99": 7.6403750399999995,
+     "max": 8.797087,
+     "mean": 1.1999201007562819
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 648.212,
+     "p99": 687.7127800000001,
+     "max": 2335.959,
+     "mean": 651.0018763112954
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 304.795,
+     "p99": 6856.04848,
+     "max": 8023.533,
+     "mean": 442.71983239814585
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.13299199999892,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.008,
+     "p99": 7.036449999999999,
+     "max": 7.039,
+     "mean": 6.925930232558138
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.032162,
+     "p99": 7.250921350000007,
+     "max": 8.256649,
+     "mean": 7.046813697674419
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 101.607,
+     "rx_latency_ms": 1.11,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.100883,
+     "step_release": 8182,
+     "tilt_at_release_deg": 7.93865989752588,
+     "vxy_at_release_mps": 0.1343093527506978,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "bd_D100_r3": {
+    "arm": "banddrop_controlled",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.0593299999999999,
+     "p99": 7.68171682,
+     "max": 8.81333,
+     "mean": 1.2077135264698708
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 652.462,
+     "p99": 706.70796,
+     "max": 840.582,
+     "mean": 656.0357621371066
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 303.671,
+     "p99": 6863.9966,
+     "max": 8014.827,
+     "mean": 442.1586230787997
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.06756699999096,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.206,
+     "p99": 7.270600000000001,
+     "max": 7.342,
+     "mean": 7.123953488372094
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.234599,
+     "p99": 7.547968050000005,
+     "max": 8.423967,
+     "mean": 7.250883534883719
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": {
+     "D_ms": 100.0,
+     "release_delay_ms": 103.602,
+     "rx_latency_ms": 3.11,
+     "steps_rx_to_release": 20,
+     "release_rel_s": 2.102753,
+     "step_release": 8180,
+     "tilt_at_release_deg": 4.379210739704951,
+     "vxy_at_release_mps": 0.1415580157886428,
+     "resets_at_release": 0,
+     "note": "release_delay_ms = simulator CLOCK_MONOTONIC at the release step minus the orchestrator CLOCK_MONOTONIC at its band_off write (same clock); the band is released at the first 5 ms physics step at or after command + D"
+    },
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
     "tracking_ok": true
    },
    "cl_r10": {
@@ -1919,6 +7795,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -1970,6 +7853,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2021,6 +7911,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2072,6 +7969,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2123,6 +8027,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2174,6 +8085,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2225,6 +8143,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 32,
     "tracking_ok": true
@@ -2276,6 +8201,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2329,6 +8261,15 @@
     "band_drop_reset_after_band_off_s": [
      0.83
     ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.826
+    ],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 1,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2380,6 +8321,13 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 0,
     "tracking_ok": true
@@ -2431,8 +8379,605 @@
     "band_drop_fall": false,
     "band_drop_fall_le1p5s": false,
     "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": null,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
     "sim_resets": 0,
     "sim_overrun_steps": 180,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r1": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.122746,
+     "p99": 1.2222748399999999,
+     "max": 1.5041410000000002,
+     "mean": 1.1253853600878263
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 665.098,
+     "p99": 705.83712,
+     "max": 858.338,
+     "mean": 667.1953186142962
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 315.829,
+     "p99": 332.98354,
+     "max": 371.348,
+     "mean": 316.6814315686753
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.01459600000817,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.021,
+     "p99": 7.393050000000013,
+     "max": 9.303,
+     "mean": 6.968744186046513
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.0753595,
+     "p99": 8.217466600000007,
+     "max": 9.354498,
+     "mean": 7.114795023255813
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 2,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r2": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.104927,
+     "p99": 7.7051588,
+     "max": 8.852374,
+     "mean": 1.2465061959014394
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 657.388,
+     "p99": 724.17548,
+     "max": 859.974,
+     "mean": 660.2020961210051
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 313.463,
+     "p99": 6883.35722,
+     "max": 8016.336,
+     "mean": 452.0625259819468
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.201610999996774,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.1965,
+     "p99": 7.396199999999999,
+     "max": 7.403,
+     "mean": 7.150558139534883
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.336453,
+     "p99": 7.639786000000007,
+     "max": 8.642973,
+     "mean": 7.335591674418605
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 8,
+    "tracking_ok": true
+   },
+   "fix_a4cpu_r3": {
+    "arm": "fix_cpu_saturated",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.163231,
+     "p99": 1.2510133200000002,
+     "max": 1.5125650000000002,
+     "mean": 1.1650388187362772
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 689.677,
+     "p99": 741.1015600000001,
+     "max": 873.127,
+     "mean": 691.3329194925592
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 325.495,
+     "p99": 340.31192,
+     "max": 375.19,
+     "mean": 325.99186777262753
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.042606999999407,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.015499999999999,
+     "p99": 7.2155000000000005,
+     "max": 7.275,
+     "mean": 6.951523255813954
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.0679134999999995,
+     "p99": 7.672647650000013,
+     "max": 9.636242,
+     "mean": 7.115932674418605
+    },
+    "fall_rule_window": true,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": true,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": true,
+    "d1_resets_s_after_band_off": [
+     6.868
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.688,
+    "release": null,
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": false
+   },
+   "fix_a4gpu_r1": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 5.748168,
+     "p99": 9.9865503,
+     "max": 26.680979999999998,
+     "mean": 5.559114939497438
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 3034.999,
+     "p99": 4946.62702,
+     "max": 5027.053,
+     "mean": 2670.1211956574775
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 2321.229,
+     "p99": 7890.93998,
+     "max": 22056.302,
+     "mean": 2743.2659046108806
+    },
+    "compute_misses_step_gt20ms": 14,
+    "late_starts_gap_gt21ms": 10,
+    "slot_misses_gap_gt25ms": 3,
+    "max_start_gap_ms": 26.68670899999779,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 8.1875,
+     "p99": 20.140400000000007,
+     "max": 21.123,
+     "mean": 9.743965116279071
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.2561625,
+     "p99": 20.197561450000006,
+     "max": 21.182748,
+     "mean": 10.029941220930233
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.57
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.569
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.509,
+    "release": null,
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_a4gpu_r2": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 5.832062,
+     "p99": 10.043790360000001,
+     "max": 25.415198,
+     "mean": 5.521865036594291
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 3055.755,
+     "p99": 4975.19642,
+     "max": 5070.052,
+     "mean": 2626.2727328616734
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 2310.665,
+     "p99": 7723.90296,
+     "max": 23773.654,
+     "mean": 2748.9900561112468
+    },
+    "compute_misses_step_gt20ms": 16,
+    "late_starts_gap_gt21ms": 13,
+    "slot_misses_gap_gt25ms": 1,
+    "max_start_gap_ms": 25.41900600000372,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.9825,
+     "p99": 20.752650000000003,
+     "max": 21.051,
+     "mean": 9.958767441860465
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.042201500000001,
+     "p99": 20.803890550000002,
+     "max": 21.109718,
+     "mean": 10.23286158139535
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_a4gpu_r3": {
+    "arm": "fix_gpu_cotenant",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 5.822375,
+     "p99": 10.09239582,
+     "max": 25.798068999999998,
+     "mean": 5.543102012198097
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 3103.696,
+     "p99": 4985.012479999999,
+     "max": 10466.455,
+     "mean": 2671.610129055867
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 2305.209,
+     "p99": 7758.3153,
+     "max": 20651.749,
+     "mean": 2713.498552085875
+    },
+    "compute_misses_step_gt20ms": 16,
+    "late_starts_gap_gt21ms": 21,
+    "slot_misses_gap_gt25ms": 6,
+    "max_start_gap_ms": 25.805653000003076,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 8.0465,
+     "p99": 20.914650000000005,
+     "max": 21.383,
+     "mean": 10.187360465116281
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 8.108184999999999,
+     "p99": 20.971196400000004,
+     "max": 21.439628,
+     "mean": 10.462046744186049
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r1": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.072498,
+     "p99": 7.68360128,
+     "max": 8.824535,
+     "mean": 1.2134967579897535
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 651.46,
+     "p99": 710.753,
+     "max": 833.723,
+     "mean": 653.6227623810685
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 306.259,
+     "p99": 6868.5694,
+     "max": 8052.057,
+     "mean": 444.56960722127343
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.013618999990285,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.056,
+     "p99": 7.09335,
+     "max": 7.101,
+     "mean": 6.974697674418604
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.0891765,
+     "p99": 7.316470350000007,
+     "max": 8.304654,
+     "mean": 7.103550034883721
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": true,
+    "band_drop_fall_le1p5s": true,
+    "band_drop_reset_after_band_off_s": [
+     0.8
+    ],
+    "fall_d1": true,
+    "fall_d1_drop_window": true,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [
+     0.804
+    ],
+    "body_down": true,
+    "body_first_down_s_after_band_off": 0.704,
+    "release": null,
+    "sim_resets": 1,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r2": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.052534,
+     "p99": 7.65032002,
+     "max": 8.750496,
+     "mean": 1.1929844862161503
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 646.119,
+     "p99": 692.74164,
+     "max": 835.518,
+     "mean": 648.3324130275677
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 302.708,
+     "p99": 6857.62626,
+     "max": 7937.377,
+     "mean": 440.94648231275914
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.010950999996567,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.201,
+     "p99": 7.2799000000000005,
+     "max": 7.336,
+     "mean": 7.121837209302325
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.22501,
+     "p99": 7.535082800000006,
+     "max": 8.379823,
+     "mean": 7.243376569767442
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "fix_cl_r3": {
+    "arm": "fix_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.047898,
+     "p99": 7.6337156,
+     "max": 8.729631,
+     "mean": 1.1877442144425467
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 644.232,
+     "p99": 696.28378,
+     "max": 830.017,
+     "mean": 646.4421190534277
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 301.749,
+     "p99": 6846.992219999999,
+     "max": 7913.66,
+     "mean": 439.6652683581361
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.0157010000039,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.202500000000001,
+     "p99": 7.24105,
+     "max": 7.247,
+     "mean": 7.116779069767442
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.236905,
+     "p99": 7.457330750000007,
+     "max": 8.398251,
+     "mean": 7.247673534883723
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
+    "tracking_ok": true
+   },
+   "stockref_cl_r1": {
+    "arm": "stock_sameday_unloaded",
+    "ticks": 4099,
+    "step_ms": {
+     "n": 4099,
+     "p50": 1.059276,
+     "p99": 7.6752469,
+     "max": 12.551223,
+     "mean": 1.2050943305684314
+    },
+    "enc_us": {
+     "n": 4099,
+     "p50": 647.713,
+     "p99": 693.72568,
+     "max": 11776.829,
+     "mean": 653.1171502805562
+    },
+    "dec_us": {
+     "n": 4099,
+     "p50": 305.522,
+     "p99": 6866.70002,
+     "max": 7886.611,
+     "mean": 443.59485142717733
+    },
+    "compute_misses_step_gt20ms": 0,
+    "late_starts_gap_gt21ms": 0,
+    "slot_misses_gap_gt25ms": 0,
+    "max_start_gap_ms": 20.02070300000196,
+    "planner_calls": 86,
+    "planner_model_ms": {
+     "n": 86,
+     "p50": 7.216,
+     "p99": 7.2501,
+     "max": 7.262,
+     "mean": 7.133883720930233
+    },
+    "planner_total_ms": {
+     "n": 86,
+     "p50": 7.2451755,
+     "p99": 7.451271900000005,
+     "max": 8.317053,
+     "mean": 7.2606898372093
+    },
+    "fall_rule_window": false,
+    "band_drop_fall": false,
+    "band_drop_fall_le1p5s": false,
+    "band_drop_reset_after_band_off_s": [],
+    "fall_d1": false,
+    "fall_d1_drop_window": false,
+    "fall_d1_later": false,
+    "d1_resets_s_after_band_off": [],
+    "body_down": false,
+    "body_first_down_s_after_band_off": null,
+    "release": null,
+    "sim_resets": 0,
+    "sim_overrun_steps": 0,
     "tracking_ok": true
    }
   }

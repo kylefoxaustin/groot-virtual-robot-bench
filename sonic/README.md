@@ -13,7 +13,8 @@ as [nvidia/GEAR-SONIC](https://huggingface.co/nvidia/GEAR-SONIC) under the NVIDI
 We ran that program unmodified, apart from a timing probe, against upstream's MuJoCo simulation of the G1, on an RTX 5090
 desktop, a Jetson AGX Thor and a Jetson AGX Orin 64 GB. We asked whether each computer keeps the 20 ms rhythm, and whether
 the robot stays up and follows its commands. The numbers are in [RESULTS.md §8](../RESULTS.md#8-gear-sonic-whole-body-controller-the-50-hz-loop-on-each-computer-measured-2026-10-13--2026-10-14)
-and the README.
+and the README. Two follow-ups are below: a [controlled band-drop test](#controlled-band-drop-test) (RESULTS.md §8.1) and a
+[late-start fix on the Jetsons](#late-start-fix-jetsons) (RESULTS.md §8.2).
 
 ## How it was measured
 
@@ -39,7 +40,9 @@ TensorRT's TF32 permission is left on, see below). The same keyboard script drov
 - **fall, rule window** (pre-registered): pelvis below 0.30 m, tilt above 60°, or a simulator fall-reset, from 1 s after
   the band drop to the end of the run.
 - **band-drop fall** (found during the Jetson runs, reported separately): a simulator fall-reset within 3 s of the band-off
-  command. A reset later than +1.0 s is counted in both columns. **Open item: cause unknown, a controlled test is running.**
+  command. A reset later than +1.0 s is counted in both columns.
+- **fall, D1 rule** (written before the controlled band-drop test; used from then on, and the first campaign re-scored with it):
+  any simulator fall-reset from the band-off command to the stop command, split into drop window (≤ 3 s after the command) and later.
 - **tracking**: mean joint error per phase within ±30% of the RTX 5090 runs' range, distance walked per phase within ±15%,
   turn angle within ±15°.
 
@@ -71,30 +74,68 @@ The rows compare the same program, probe, span, script and scoring. Four things 
 - **The simulator shares the computer.** On a robot the physics is not on the computer. That makes the CPU-saturated arm
   pessimistic for the simulator side: the hogs starve it too, and the per-run simulator overrun steps are recorded.
 
+## Controlled band-drop test
+
+Some unloaded first-campaign runs fell right after the band drop (Thor 3/10, Orin 1/10, RTX 5090 0/3) with clean timing. The
+simulator read its stdin every 100 ms, so the release came 0–100 ms after the command, uncontrolled. The follow-up controls it:
+
+- **Release mechanism.** `sim_driver.py` with `SIM_RELEASE_DELAY_MS=D` polls stdin every 5 ms physics step; the orchestrator
+  (`--release_delay_ms D`) writes `band_off <its CLOCK_MONOTONIC ns>`, and the simulator releases the band at the first physics
+  step at or after command + D. It logs the actual delay, the pelvis tilt and the horizontal pelvis speed at that step
+  (`release` in each `__run.json`). A simulator-only self-test at D = 10 and 25 ms ran before the runs on each machine.
+- **Design.** D ∈ {10, 25, 40, 60, 80, 100} ms × 3 runs per machine, unloaded, NVIDIA's stock deploy (same binaries as the first
+  campaign), in a seeded shuffled order per machine ([harness/banddrop_order.json](harness/banddrop_order.json)), 15 s apart.
+  Predictions and decision rules were written before the first run. Run names: `bd_D<ms>_r<n>`.
+- **Scoring.** Falls by the D1 rule. Two checks added afterwards and labelled as such: a body-state check (tilt above 60° or pelvis
+  below 0.30 m after the command), because the simulator resets only below 0.2 m and a fallen robot can lie just above that for
+  seconds; and simulator-state fingerprints (`sim_fingerprint` in each `__run.json`) to find runs that repeat bit for bit.
+- **Statistics** (DERIVED, in `make_sonic_table.py`, numpy-only): Clopper-Pearson 95% intervals, Fisher exact two-sided tests,
+  an exact permutation test of the rank sum (exploratory).
+
+Result: every machine falls at some delay (3/18 each), with on-time control and no shown dependence on D. See RESULTS.md §8.1.
+
+## Late-start fix (Jetsons)
+
+On the Jetsons the deploy runs as root, so upstream's main thread gets SCHED_FIFO 99 pinned to CPU0, and its `sleep(0.02)` on an
+integer `sleep()` makes it spin, while the 50 Hz control thread runs at normal priority. The fix is a deployment change:
+**control thread SCHED_FIFO 90 + sleeping main loop instead of upstream's busy-spinning FIFO-99 main thread**
+([harness/latefix.patch](harness/latefix.patch), applied on top of `sonic_probe.patch`). It is inert unless the deploy gets
+`SONIC_CTRL_FIFO=90` and `SONIC_MAIN_SLEEP=abs`, and it needs root or CAP_SYS_NICE. The first campaign's three arms were repeated
+with it (3 runs each per Jetson, `fix_cl_r*`, `fix_a4cpu_r*`, `fix_a4gpu_r*`), after one same-session stock run (`stockref_cl_r1`).
+The orchestrator reads every deploy and simulator thread's scheduling policy, priority and CPU time from /proc after init, at
+t + 20 s and at the stop command (`levers_readback.json`), which is how we checked that the fix was in effect in every run.
+Result: RESULTS.md §8.2.
+
 ## Files
 
 | Path | What |
 |---|---|
 | `harness/sonic_probe.hpp`, `harness/sonic_probe.patch` | the timing probe (header + patch to upstream `g1_deploy_onnx_ref.cpp` @ b042411). The 5090 runs used the same probe without its planner-I/O capture; per-tick record and span are identical |
-| `harness/sim_driver.py` | headless upstream MuJoCo G1 simulator: stdin commands (band_off), 50 Hz state log, fall-reset counter, wall-clock pacing, optional `SIM_POLL_CMDS=1` |
+| `harness/sim_driver.py` | headless upstream MuJoCo G1 simulator: stdin commands (band_off), 50 Hz state log, fall-reset counter, wall-clock pacing, optional `SIM_POLL_CMDS=1`, optional controlled release `SIM_RELEASE_DELAY_MS=D` |
 | `harness/run_closed_loop_x86.py`, `harness/Dockerfile` | one run on an x86 + NVIDIA GPU host, deploy in a container with TensorRT 10.13 (upstream's x86 requirement) |
-| `harness/run_closed_loop_jetson.py`, `harness/build_jetson.sh`, `harness/mkref.py`, `harness/jetson_runs.sh` | native Jetson build, one run, and the campaign as we ran it (unloaded, CPU-saturated, GPU co-tenant, diagnostic) |
+| `harness/run_closed_loop_jetson.py`, `harness/build_jetson.sh`, `harness/mkref.py`, `harness/jetson_runs.sh` | native Jetson build, one run, and the campaign as we ran it (unloaded, CPU-saturated, GPU co-tenant, diagnostic, `banddrop`, `fix`) |
+| `harness/banddrop_order.json`, `harness/banddrop_x86.sh` | controlled band-drop test: the seeded run order per machine, and the RTX 5090 batch |
+| `harness/latefix.patch` | the late-start fix (control thread SCHED_FIFO 90 + sleeping main loop), a patch to upstream `g1_deploy_onnx_ref.cpp` on top of the probe patch, plus a small header |
 | `harness/groot_cotenant*.{py,sh}` | the GR00T N1.5 full-TensorRT co-tenant loop (uses this repo's GR00T setup and `speed/` engines) |
 | `scoring/analyze_run.py`, `scoring/analyze_cl.py` | one run dir → `summary.json` (latency, phases, falls, heading, distance) |
-| `scoring/export_run.py` | one analysed run dir → the published raw format in `results/sonic/raw/` |
+| `scoring/export_run.py` | one analysed run dir → the published raw format in `results/sonic/raw/` (with the release readback, body-state check and state fingerprints) |
 | `scoring/score_groot.py` | GR00T co-tenant rate alone vs during each SONIC run |
 | `gate/` | engine-correctness gate: reference sets (`make_refsets.py`), board engines on them (`engine_gate.py`, `planner_gate.py`), scoring (`score_gate.py`), a harness check (`planner_ort_check.py`) |
-| `make_sonic_table.py` | rebuilds `results/sonic/sonic_same_span_table_2026-10-14.json` from `results/sonic/raw/` |
+| `make_sonic_table.py` | rebuilds `results/sonic/sonic_same_span_table_2026-10-14.json` from `results/sonic/raw/`, including the controlled band-drop analysis and the late-start-fix groups |
 | `env.sh` | paths (`SONIC_WORK`, `SONIC_REPO`, ...) |
 
 Results: `results/sonic/sonic_rtx5090_2026-10-13.json`, `sonic_thor_2026-10-14.json`, `sonic_orin_2026-10-14.json` (setup,
-versions, engine hashes, A2, loaded arms, predictions vs outcomes, caveats); `sonic_same_span_table_2026-10-14.json`
+versions, engine hashes, A2, loaded arms, predictions vs outcomes, caveats); `sonic_banddrop_controlled_2026-10-14.json` and
+`sonic_jetson_latefix_2026-10-14.json` (the two follow-ups); `sonic_same_span_table_2026-10-14.json`
 (every run and every group, rebuilt); `raw/<board>/<run>__ticks.csv.gz` (per tick: time, step, encoder, decoder, planner
 active), `__planner.csv.gz` (per planner call), `__run.json` (band-off and stop times, simulator resets, fall flags,
-tracking per phase). All times are relative to the control start.
+tracking per phase; for the follow-up runs also the release readback, body state and state fingerprints). All times are
+relative to the control start. Run names: `v1_r*` / `cl_r*` unloaded, `a4cpu_r*` CPU saturated, `a4gpu_r*` GPU co-tenant,
+`diag_nonroot_cpu`, `bd_D<ms>_r*` controlled band drop, `stockref_cl_r1` and `fix_*` the late-start fix.
 
 **Not published:** the per-tick input/output tensors (about 50 MB per run), the simulator state logs, the two reference
-sets (their sha256 is in the RTX 5090 record), deploy logs and host census files. The joint-error and fall numbers derived
+sets (their sha256 is in the RTX 5090 record), deploy logs, host census files and the per-run /proc scheduling readbacks
+(summarised per run in the late-start-fix record). The joint-error and fall numbers derived
 from them are published per run, as measured.
 
 ## Rebuild the table (no GPU)
@@ -125,7 +166,11 @@ What we did, in order. Paths come from `sonic/env.sh` (`source setup/env.sh; sou
    `sudo -E bash sonic/harness/jetson_runs.sh unloaded 1 3` (then `cpu`, `gpu <orin|thor>`, `diag`). The first launch builds
    the engines (minutes); let it finish before measuring. Stop gracefully only: the scripts send `o`, then SIGINT, then SIGTERM.
    Never SIGKILL a process holding a CUDA context.
-7. **Score.** `python3 sonic/scoring/analyze_cl.py <run_dir>`, then
+7. **Controlled band drop.** x86: `bash sonic/harness/banddrop_x86.sh`. Jetson, as root: `sudo -E bash sonic/harness/jetson_runs.sh banddrop <orin|thor>`.
+8. **Late-start fix (Jetson).** Keep the stock binary, then `patch -d $SONIC_REPO -p1 < sonic/harness/latefix.patch`, rebuild with
+   `build_jetson.sh`, copy `target/release/g1_deploy_onnx_ref` to `$SONIC_FIX_BIN`, and restore the stock source and binary
+   (`patch -R` and rebuild). Then, as root: `sudo -E SONIC_FIX_BIN=... bash sonic/harness/jetson_runs.sh fix <orin|thor>`.
+9. **Score.** `python3 sonic/scoring/analyze_cl.py <run_dir>`, then
    `python3 sonic/scoring/export_run.py <run_dir> results/sonic/raw/<label> <label>`, then `python3 sonic/make_sonic_table.py`.
    Tracking is scored against the RTX 5090 runs already in `results/sonic/raw/rtx5090/`.
 
@@ -141,6 +186,6 @@ Two traps we hit, both handled by the scripts:
 
 GEAR-SONIC and `g1_deploy_onnx_ref` are NVIDIA's work: [NVlabs/GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl),
 source under the Apache License 2.0, model weights under the NVIDIA Open Model License. Nothing of theirs is vendored
-here. `harness/sonic_probe.patch` is a modification of their `g1_deploy_onnx_ref.cpp` and is distributed under the
-Apache License 2.0 (see [NOTICE](../NOTICE)). `harness/sim_driver.py` drives their `gear_sonic` simulator through its
+here. `harness/sonic_probe.patch` and `harness/latefix.patch` are modifications of their `g1_deploy_onnx_ref.cpp` and are
+distributed under the Apache License 2.0 (see [NOTICE](../NOTICE)). `harness/sim_driver.py` drives their `gear_sonic` simulator through its
 public API. The MuJoCo G1 model, the motion clips and the network weights are downloaded from upstream, not redistributed.
