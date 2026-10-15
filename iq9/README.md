@@ -5,6 +5,9 @@ whole-policy speed loop, the closed-loop accuracy run against an RTX 5090 refere
 gates, a SmoothQuant follow-up, and a hand-coded Hexagon int-vs-float microbench. **No IQ-9075 results are published in
 this repo** -- run it and see.
 
+The GEAR-SONIC whole-body controller (encoder/decoder on one NSP, split planner on the other, upstream's deploy cross-built
+with a QNN shim, the MuJoCo closed loop) has its own guide: [iq9/sonic/](sonic/README.md).
+
 **Heads-up: these are the original research scripts, packaged as they ran.** The NVIDIA side of the repo was rebuilt into
 clean harnesses. This side is the original scripts (`work/`) with private paths swapped for environment variables. They
 assume the directory layout below, talk to the board over ssh, and a few steps were driven by hand. Read each script's

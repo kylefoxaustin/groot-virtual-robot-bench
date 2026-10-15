@@ -31,6 +31,7 @@ GR00T decides *what* to do a few times a second; a whole-body controller has to 
 We ran NVIDIA's **GEAR-SONIC** ([NVlabs/GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl), unmodified
 apart from a timing probe) on a simulated **Unitree G1** in MuJoCo: the same 82 s script (stand, drop, walk, turn, run, dance) on
 each machine, with the simulator on the same computer, idle and under load. Details: [sonic/README.md](sonic/README.md).
+IQ-9075: reproduction scripts in [iq9/sonic/](iq9/sonic/README.md), no results published.
 
 <!-- sonic:start -->
 | Machine | Load | Runs | Step p50 / p99 ms | Compute misses (step > 20 ms) | Slot misses (gap > 25 ms) | Late starts (gap > 21 ms) | Max gap ms | Falls, D1 rule (drop ≤ 3 s · later) |
@@ -165,7 +166,7 @@ accuracy/   closed-loop harness: noise bank, policy servers (incl. fp8), sim cli
 shims/      stand-ins for packages GR00T imports but never calls on our paths (see docs/SETUP.md)
 profiling/  where the time goes: per-engine timing, matmul vs glue, int vs FP, DDR bandwidth, Thor DiT anomaly
 sonic/      GEAR-SONIC whole-body controller: timing probe + patch, sim driver, run scripts, scoring, engine gate, table builder
-iq9/        scripts for the Qualcomm IQ-9075: port, speed, closed loop, int8/int16, Hexagon microbench (no results)
+iq9/        scripts for the Qualcomm IQ-9075: port, speed, closed loop, int8/int16, Hexagon microbench, GEAR-SONIC (no results)
 results/    every published number as JSON + the raw data behind it (see results/README.md)
 tools/      make_results_md.py (writes RESULTS.md + the headline above), check_results.py (rebuilds and compares)
 ```

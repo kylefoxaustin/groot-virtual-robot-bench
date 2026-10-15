@@ -20,7 +20,14 @@ Third-party software and models used (each under its own license -- read them be
       gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/g1_deploy_onnx_ref.cpp from that repository (Copyright (c) 2026 NVIDIA
       CORPORATION & AFFILIATES) and are distributed under the Apache License 2.0.
       No other upstream file is included.
+      iq9/sonic/deploy/shim/encoder.hpp, control_policy.hpp and localmotion_kplanner_tensorrt.hpp replace the upstream headers of
+      the same names in gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/include/ (same class names and public interfaces, with a QNN
+      implementation; parts follow the upstream headers) and are distributed under the Apache License 2.0.
+      iq9/sonic/deploy/build_deploy.sh compiles a copy of the upstream deploy source from your checkout with them; it is not included.
   * NVIDIA GEAR-SONIC model weights -- NVIDIA Open Model License; https://huggingface.co/nvidia/GEAR-SONIC (downloaded, not included)
   * Qualcomm QAIRT/QNN SDK and Hexagon SDK -- NOT included and not redistributed; iq9/ code only #includes their headers
-      and expects you to obtain them from Qualcomm under Qualcomm's license.
+      and expects you to obtain them from Qualcomm under Qualcomm's license. iq9/sonic/deploy/get_sampleapp.sh copies the
+      SDK's SampleApp helper sources from your own SDK install into your work directory; they are not in this repository.
+  * Eclipse Cyclone DDS Python package 0.10.2 and ZeroMQ libzmq 4.3.4 -- downloaded and built by iq9/sonic/deploy/
+      (build_clayer.sh, build_sysroot.sh) under their own licenses; not included.
   * NVIDIA TensorRT, PyTorch, Transformers and the other Python packages listed in setup/ -- their respective licenses.
