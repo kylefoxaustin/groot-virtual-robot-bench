@@ -2,7 +2,13 @@
 contention window binning. Used by make_drone_table.py (rebuild of the published numbers) and by the run scripts
 (scoring your own runs the same way). Needs only numpy."""
 import math
+from decimal import Decimal, ROUND_HALF_UP
 import numpy as np
+
+
+def rhu(x, n=2):
+    """round half up (22.25 -> 22.3 at n = 1), on the shortest decimal repr of the float; Python's round() would give 22.2"""
+    return float(Decimal(repr(float(x))).quantize(Decimal(1).scaleb(-n), rounding=ROUND_HALF_UP))
 
 GATE_SIGMA = 0.07        # G1: pooled RMS deviation vs the RTX 5090 bf16 reference, in dataset-action standard deviations
 GATE_P95 = 0.20          # G2: per-frame RMS, 95th percentile
@@ -63,8 +69,8 @@ def bin_contention(run, ref_exec, ysd3, swap):
         g = dev_sigma(acts[m], ref_exec[js[m]], ysd3)[1] if n else None
         if n < 5: void.append(f"{kind} window [{a:.2f}, {b:.2f}] has {n} < 5 decisions")
         if b > ts[-1]: void.append(f"{kind} window ends after the nav loop's last decision")
-        w = {"kind": kind, "t0_rel_s": round(a, 4), "t1_rel_s": round(b, 4), "len_s": round(b - a, 4), "n": n,
-             "rate_hz": round(n / (b - a), 2), "gate_sigma": (round(g, 5) if g is not None else None),
+        w = {"kind": kind, "t0_rel_s": rhu(a, 4), "t1_rel_s": rhu(b, 4), "len_s": rhu(b - a, 4), "n": n,
+             "rate_hz": rhu(n / (b - a), 2), "gate_sigma": (rhu(g, 5) if g is not None else None),
              "gate_pass": bool(g is not None and g <= GATE_SIGMA), "_m": m}
         if n < 5: w["status"] = "VOID"
         return w
@@ -107,14 +113,14 @@ def bin_contention(run, ref_exec, ysd3, swap):
         ws = [w for w in W if w["kind"] == k]; m = np.zeros(len(ts), bool)
         for w in ws: m |= w["_m"]
         n = sum(w["n"] for w in ws); t = sum(w["len_s"] for w in ws)
-        pooled[k] = {"windows": len(ws), "n": n, "time_s": round(t, 4), "rate_hz": round(n / t, 2),
+        pooled[k] = {"windows": len(ws), "n": n, "time_s": rhu(t, 4), "rate_hz": rhu(n / t, 2),
                      "per_window_rate_min": min(w["rate_hz"] for w in ws), "per_window_rate_max": max(w["rate_hz"] for w in ws),
-                     "gate_sigma": round(dev_sigma(acts[m], ref_exec[js[m]], ysd3)[1], 5) if m.any() else None,
+                     "gate_sigma": rhu(dev_sigma(acts[m], ref_exec[js[m]], ysd3)[1], 5) if m.any() else None,
                      "void_windows": sum(1 for w in ws if w.get("status") == "VOID")}
     solo = pooled["solo"]["rate_hz"]
-    for k in pooled: pooled[k]["pct_of_solo"] = round(100 * pooled[k]["rate_hz"] / solo, 1)
+    for k in pooled: pooled[k]["pct_of_solo"] = rhu(100 * pooled[k]["rate_hz"] / solo, 1)
     for w in W: w.pop("_m")
     g_all = dev_sigma(acts, ref_exec[js], ysd3)[1]; g_fault = dev_sigma(acts, ref_exec[swap[js]], ysd3)[1]
-    return {"windows": W, "pooled": pooled, "n_decisions": int(len(ts)), "all_decisions_gate_sigma": round(g_all, 5),
+    return {"windows": W, "pooled": pooled, "n_decisions": int(len(ts)), "all_decisions_gate_sigma": rhu(g_all, 5),
             "every_scored_window_passes": all(w["gate_pass"] for w in W if w.get("status") != "VOID"),
-            "planted_fault_sigma": round(g_fault, 4), "planted_fault_fails": bool(g_fault > GATE_SIGMA), "void": void or None}
+            "planted_fault_sigma": rhu(g_fault, 4), "planted_fault_fails": bool(g_fault > GATE_SIGMA), "void": void or None}

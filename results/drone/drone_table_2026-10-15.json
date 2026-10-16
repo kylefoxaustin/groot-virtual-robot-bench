@@ -57,13 +57,13 @@
    ],
    "engines_in_pipeline_ms_gate_pass": {
     "vit": 1.919,
-    "llm": 1.958,
+    "llm": 1.959,
     "vlln": 0.649,
-    "sum": 4.526
+    "sum": 4.527
    },
    "host_and_glue_DERIVED": {
-    "ms": 2.633,
-    "share_pct": 36.78,
+    "ms": 2.632,
+    "share_pct": 36.76,
     "basis": "full-cost median minus the gate pass's synced ViT + LLM + vlln engine medians (two passes, so DERIVED)"
    },
    "standalone_engine_ms": {
@@ -3106,7 +3106,7 @@
      },
      {
       "kind": "radar20",
-      "t0_rel_s": 25.955,
+      "t0_rel_s": 25.9551,
       "t1_rel_s": 29.9551,
       "len_s": 4.0001,
       "n": 88,
@@ -4295,7 +4295,7 @@
      {
       "kind": "radarflat4s",
       "t0_rel_s": 16.2083,
-      "t1_rel_s": 20.2083,
+      "t1_rel_s": 20.2084,
       "len_s": 4.0,
       "n": 360,
       "rate_hz": 90.0,
@@ -4364,9 +4364,9 @@
      },
      {
       "kind": "recovery",
-      "t0_rel_s": 21.2083,
+      "t0_rel_s": 21.2084,
       "t1_rel_s": 25.3863,
-      "len_s": 4.178,
+      "len_s": 4.1779,
       "n": 482,
       "rate_hz": 115.37,
       "gate_sigma": 0.02706,
@@ -4430,7 +4430,7 @@
      "recovery": {
       "windows": 5,
       "n": 2525,
-      "time_s": 20.6334,
+      "time_s": 20.6333,
       "rate_hz": 122.37,
       "per_window_rate_min": 114.0,
       "per_window_rate_max": 137.65,

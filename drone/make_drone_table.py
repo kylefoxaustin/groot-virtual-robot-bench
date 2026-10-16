@@ -29,7 +29,7 @@ def J(p):
     return json.load(gzip.open(p, "rt") if p.endswith(".gz") else open(p))
 
 
-def r(x, n=3): return round(float(x), n)
+def r(x, n=3): return M.rhu(x, n)   # round half up, everywhere in the published numbers
 
 
 REF = J("gate/reference_actions.json.gz")
@@ -58,7 +58,7 @@ for b in BOARDS:
     FC[b], _ = fullcost(b)
     gp = J(f"gate/{b}_gate_pass_timings.json"); rows = gp["rows_us"][2:]
     eng = {k: float(np.median([x[k] for x in rows]) / 1e3) for k in ("vit", "llm", "vlln")}
-    es = sum(round(v, 3) for v in eng.values())
+    es = sum(M.rhu(v, 3) for v in eng.values())
     host = FC[b]["median_of_run_medians_ms"] - es
     FC[b]["engines_in_pipeline_ms_gate_pass"] = {**{k: r(v) for k, v in eng.items()}, "sum": r(es)}
     FC[b]["host_and_glue_DERIVED"] = {"ms": r(host), "share_pct": r(100 * host / FC[b]["median_of_run_medians_ms"], 2),
@@ -182,7 +182,7 @@ for p in sorted(glob.glob(os.path.join(RAW, "contention", "*.json.gz"))):
     if run["mode"] in ("radar", "radarflat"):
         po = res["pooled"]; rec = po["recovery"]["rate_hz"]
         for k in ("radar20", "radarflat4s"):
-            if k in po: po[k]["pct_of_recovery"] = round(100 * po[k]["rate_hz"] / rec, 1)
+            if k in po: po[k]["pct_of_recovery"] = M.rhu(100 * po[k]["rate_hz"] / rec, 1)
         rw = [x for x in res["windows"] if x["kind"] in ("radar20", "radarflat4s")]
         res["radar_fuse_ms_under_nav"] = [x["worker_per_inf_ms_mean"] for x in rw]
         if "radar_alone" in w: res["radar_alone_ms"] = w["radar_alone"]["per_inf_ms_mean"]

@@ -52,8 +52,8 @@
  },
  "targets": {
   "decision_rate_target_hz": 30,
-  "why": "any target from 23 to 39 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.",
-  "range_note": "40 Hz would be marginal for Thor: its full-cost rate is 40.8 Hz, but its decisions while serving the closed loop took 25.5 ms (39.2 Hz) and one window of the all-jobs run measured 39.8 Hz."
+  "why": "on the full-cost rates, any target from 23 to 40 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.",
+  "range_note": "The band is read off the full-cost rates (Thor 40.8 Hz, Orin 22.3 Hz). Serving the closed loop, Thor ran at 39.2 Hz (25.5 ms per decision)."
  },
  "caveats": [
   "Simulation only: a kinematic drone (velocity setpoints integrated every 20 ms, no aerodynamics), a toy scene with four coloured pillars, ~2 m/s, a 0.8 m goal. The flight controller that would track the setpoints is not modelled.",

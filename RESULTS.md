@@ -296,7 +296,7 @@ Record: `results/sonic/sonic_jetson_latefix_2026-10-14.json` (the change, binari
 
 Same brain, new body: GR00T N1.5's frozen vision-language backbone (camera image + instruction in) with a small action head trained to fly a simulated quadrotor to a named pillar (16 velocity setpoints per decision, 20 ms apart). No diffusion transformer: the head replaces GR00T's action head. One decision = raw camera frame + prompt + drone state in, setpoints out, host work included (*full cost*). Method, scripts and how to run it: [drone/README.md](drone/README.md). Every number below is rebuilt from `results/drone/raw/` by `drone/make_drone_table.py`; setup, software and caveats: `results/drone/drone_setup_2026-10-15.json`.
 
-**Target.** 30 decisions per second (Hz) is our design choice, not a standard: any target from 23 to 39 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.
+**Target.** 30 decisions per second (Hz) is our design choice, not a standard: on the full-cost rates, any target from 23 to 40 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.
 
 ### 9.1 Full-cost decision rate (MEASURED)
 
@@ -304,9 +304,9 @@ Same brain, new body: GR00T N1.5's frozen vision-language backbone (camera image
 
 | Machine | TensorRT | Full cost (median of 3 runs) | Run spread | Transform / GPU / head (ms) | Host + glue (DERIVED) | Engines alone, summed (DERIVED) |
 |---|---|---|---|---|---|---|
-| RTX 5090 | 11.2.1.2 | **7.16 ms = 139.7 Hz** | 1.09% | 1.77 / 5.00 / 0.36 | 2.6 ms (37%) | 4.57 ms = 219 Hz |
+| RTX 5090 | 11.2.1.2 | **7.16 ms = 139.7 Hz** | 1.09% | 1.77 / 5.01 / 0.36 | 2.6 ms (37%) | 4.57 ms = 219 Hz |
 | Jetson AGX Thor | 10.13.2.6 | **24.49 ms = 40.8 Hz** | 0.51% | 7.10 / 16.61 / 0.80 | 9.7 ms (40%) | 14.33 ms = 70 Hz |
-| Jetson AGX Orin 64 GB | 10.3.0 | **44.94 ms = 22.2 Hz** | 0.05% | 6.94 / 36.57 / 1.44 | 11.3 ms (25%) | 32.79 ms = 31 Hz |
+| Jetson AGX Orin 64 GB | 10.3.0 | **44.94 ms = 22.3 Hz** | 0.05% | 6.94 / 36.57 / 1.44 | 11.3 ms (25%) | 32.79 ms = 31 Hz |
 | RTX 5090, pinned to P-cores, 8 threads | 11.2.1.2 | **6.78 ms = 147.5 Hz** | 0.78% | 1.43 / 5.00 / 0.35 | | |
 
 Host + glue = full cost minus the three engines' in-pipeline time (from the gate pass): GR00T's input transforms, the projector and embedding merge, padding, pooling, copies, the head and a stream sync after every engine. **The RTX 5090's host CPU matters:** it is a hybrid CPU, and the decision takes about 7.2 ms with the Python thread on a performance core (P-core) and about 8.6 ms on an efficiency core (E-core). Over 75 s back to back: 145.8 Hz pinned to the performance cores (10 s bins within 1.8%), 120.7 Hz unpinned (10 s bins 113–136 Hz). The three short unpinned runs above happened to stay on performance cores.
@@ -318,7 +318,7 @@ The 256 gate frames through each machine's TensorRT path, scored in **action spa
 | Machine | Deviation vs reference (gate ≤ 0.07σ) | Per-frame p95 (≤ 0.20σ) | vs fp32 control | Zero-image null (≥ 10×) | Planted fault (must fail) | Verdict |
 |---|---|---|---|---|---|---|
 | RTX 5090 | **0.027σ** | 0.056σ | 0.013σ | 1.39σ (51×) | 1.49σ, fails | **PASS** |
-| Jetson AGX Thor | **0.026σ** | 0.054σ | 0.011σ | 1.38σ (54×) | 1.49σ, fails | **PASS** |
+| Jetson AGX Thor | **0.026σ** | 0.055σ | 0.012σ | 1.38σ (54×) | 1.49σ, fails | **PASS** |
 | Jetson AGX Orin 64 GB | **0.029σ** | 0.048σ | 0.015σ | 1.38σ (48×) | 1.49σ, fails | **PASS** |
 
 The reference's own bf16-vs-fp32 difference is 0.023σ; the three TensorRT machines differ from each other by 0.011–0.019σ. A pad-token swap and a rerun were bit-identical on every machine. The timed decisions are the gated decisions: the full-cost runs reproduce the gate's actions to float rounding.
@@ -330,7 +330,7 @@ The reference's own bf16-vs-fp32 difference is 0.023σ; the three TensorRT machi
 | Machine | Lockstep, 4 setpoints | Same outcome as the RTX 5090 (McNemar p) | Back-to-back at own latency | Latency → delay | Same outcome as the RTX 5090 at that delay (p) |
 |---|---|---|---|---|---|
 | RTX 5090 | **32/40** | -- | **33/40** | 7.2 ms → 1 tick (injected) | -- |
-| Jetson AGX Thor | **34/40** | 36/40 (0.62) | **35/40** | 25.5 ms → 2 ticks on every decision | 40/40 (1.00) |
+| Jetson AGX Thor | **34/40** | 36/40 (0.63) | **35/40** | 25.5 ms → 2 ticks on every decision | 40/40 (1.00) |
 | Jetson AGX Orin 64 GB | **35/40** | 37/40 (0.25) | **36/40** | 45.2 ms → 3 ticks on every decision | 40/40 (1.00) |
 
 Thor and Orin agree on 37/40 episodes (lockstep) and 39/40 (back-to-back). No pair differs at p < 0.05: at 40 episodes that rules out a large drop, not a small one. Episodes 7, 11, 12 and 17 fail on every machine; in these arms every failure is a fly-away (at least 6.7 m from the pillar), not a near miss.
@@ -350,18 +350,18 @@ Thor and Orin agree on 37/40 episodes (lockstep) and 39/40 (back-to-back). No pa
 | 15 | 3 = 60 ms | 34/40 | 34/40 | 37/40 | 0.25 / 0.25 |
 | 15 | 5 = 100 ms | 36/40 | 33/40 | 37/40 | 1.00 / 0.22 |
 | 15 | 8 = 160 ms | 38/40 | 37/40 | 37/40 | 1.00 / 1.00 |
-| 4 | 1 = 20 ms | 34/40 | 31/40 | 32/40 | 0.62 / 1.00 |
-| 4 | 2 = 40 ms | 35/40 | 34/40 | 32/40 | 0.38 / 0.62 |
+| 4 | 1 = 20 ms | 34/40 | 31/40 | 32/40 | 0.63 / 1.00 |
+| 4 | 2 = 40 ms | 35/40 | 34/40 | 32/40 | 0.38 / 0.63 |
 | 4 | 3 = 60 ms | 35/40 | 35/40 | 32/40 | 0.38 / 0.38 |
 | 1 (= d, back-to-back) | 1 = 20 ms | 33/40 | 31/40 | 30/40 | 0.25 / 1.00 |
 | 2 (= d, back-to-back) | 2 = 40 ms | 35/40 | 32/40 | 33/40 | 0.50 / 1.00 |
 | 3 (= d, back-to-back) | 3 = 60 ms | 36/40 | 33/40 | 33/40 | 0.25 / 1.00 |
-| 4 (= d, back-to-back) | 4 = 80 ms | 37/40 | 36/40 | 32/40 | 0.06 / 0.12 |
+| 4 (= d, back-to-back) | 4 = 80 ms | 37/40 | 36/40 | 32/40 | 0.06 / 0.13 |
 | 5 (= d, back-to-back) | 5 = 100 ms | 38/40 | 38/40 | 35/40 | 0.25 / 0.25 |
-| 15 (= d, back-to-back) | 15 = 300 ms | 39/40 | 39/40 | 37/40 | 0.62 / 0.62 |
-| 17 (= d, back-to-back) | 17 = 340 ms | 40/40 | 36/40 | 36/40 | 0.12 / 1.00 |
+| 15 (= d, back-to-back) | 15 = 300 ms | 39/40 | 39/40 | 37/40 | 0.63 / 0.63 |
+| 17 (= d, back-to-back) | 17 = 340 ms | 40/40 | 36/40 | 36/40 | 0.13 / 1.00 |
 
-No delayed arm is worse than its no-delay control at p < 0.05 (smallest p = 0.062, an arm that did *better*). On this task, flying the previous chunk while deciding does not cost reach, up to 340 ms of delay. Aligning the late chunk does not help.
+No delayed arm is worse than its no-delay control at p < 0.05 (smallest p = 0.063, an arm that did *better*). On this task, flying the previous chunk while deciding does not cost reach, up to 340 ms of delay. Aligning the late chunk does not help.
 
 ### 9.4 Sharing the computer with other AI jobs (MEASURED rates; % and gate DERIVED)
 
@@ -371,7 +371,7 @@ The nav policy (the drone policy making its flight decisions) runs back to back 
 
 | Machine | Run | Nav alone | Nav during the job | % of alone | Per window | Window length | Gate, all decisions |
 |---|---|---|---|---|---|---|---|
-| RTX 5090 | unpinned, rep 1 | 115.93 Hz | **81.71 Hz** | 70% | 78.88–83.71 Hz | 0.18 s | 0.027σ |
+| RTX 5090 | unpinned, rep 1 | 115.93 Hz | **81.71 Hz** | 71% | 78.88–83.71 Hz | 0.18 s | 0.027σ |
 | RTX 5090 | unpinned, rep 2 | 113.64 Hz | **81.96 Hz** | 72% | 79.52–84.02 Hz | 0.17–0.18 s | 0.027σ |
 | RTX 5090 | nav on P-cores 0–11 (6 threads), burst on 12–15 | 147.28 Hz | **86.01 Hz** | 58% | 85.79–86.18 Hz | 0.19 s | 0.027σ |
 | Jetson AGX Thor | seeded stand-in | 41.12 Hz | **18.15 Hz** | 44% | 16.71–18.59 Hz | 0.54 s | 0.026σ |
