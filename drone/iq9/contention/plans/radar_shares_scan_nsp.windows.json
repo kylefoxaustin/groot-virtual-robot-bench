@@ -1,0 +1,4 @@
+[{"label": "scan_a", "workers": ["scan_a"]},
+ {"label": "after_scan_a", "after": "scan_a", "offset_s": 1, "len_s": 25},
+ {"label": "scan_b+radar", "workers": ["scan_b", "radar_shared"]},
+ {"label": "recovery", "after": "radar_shared", "offset_s": 1, "len_s": 50}]

@@ -1,0 +1,16 @@
+# The GPU "scan" schedule on the IQ-9075: nav alone, then 5 bursts of the dilation-free seg_512 scan stand-in on NSP1
+# (190 tiles = one 50 MP frame per burst), a gap between bursts, a tail for the last recovery window.
+# Same worker names and windows as drone/contention/run_contention.sh scan: score with drone/contention/score_run.py.
+# EXECF writes each output with one fwrite; for the SampleApp's own writer use --bin $ORCH --cmd EXEC instead.
+mode scan
+sleep 60
+run vis_burst1 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst2 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst3 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst4 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst5 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 10

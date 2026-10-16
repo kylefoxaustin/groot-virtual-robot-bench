@@ -3,6 +3,7 @@ Copyright 2026 Kyle Fox. Licensed under the Apache License, Version 2.0 (see LIC
 
 This repository contains benchmark harnesses and measured results only. It does not redistribute any third-party
 code, model weights, ONNX graphs, TensorRT engines or simulation assets; setup/ downloads them from their sources.
+The one exception is drone/assets/ (below).
 
 Third-party software and models used (each under its own license -- read them before use):
   * NVIDIA Isaac-GR00T (N1.5 tree, commit 4af2b622), Apache License 2.0 -- https://github.com/NVIDIA/Isaac-GR00T
@@ -12,6 +13,11 @@ Third-party software and models used (each under its own license -- read them be
       https://huggingface.co/nvidia/GR00T-N1.5-3B
   * gr00t-n1.5-robocasa-tabletop-posttrain weights (post-trained GR00T N1.5) -- derived from GR00T N1.5, so the
       NVIDIA One-Way Noncommercial License applies; https://huggingface.co/youliangtan/gr00t-n1.5-robocasa-tabletop-posttrain
+  * drone/assets/drone_head.npz and drone/assets/gate_set.npz (the drone's trained action head and the RTX 5090 reference
+      actions on the gate frames) were produced from GR00T N1.5-3B and are distributed under the NVIDIA One-Way
+      Noncommercial License (copy in drone/assets/LICENSE-NVIDIA-OneWay-Noncommercial.txt): non-commercial use only.
+      The gate frames themselves are renders of our MuJoCo scene.
+  * MuJoCo (used by drone/), Apache License 2.0 -- https://github.com/google-deepmind/mujoco (pip package, not included)
   * robosuite, MIT License -- https://github.com/ARISE-Initiative/robosuite
   * RoboCasa GR-1 Tabletop Tasks, MIT License -- https://github.com/robocasa/robocasa-gr1-tabletop-tasks
       Its simulation assets (downloaded by setup/setup_x86.sh) carry their own licenses; see that repository.

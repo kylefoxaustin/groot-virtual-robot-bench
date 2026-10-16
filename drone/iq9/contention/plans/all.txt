@@ -1,0 +1,20 @@
+# The GPU "all" schedule on the IQ-9075, every co-tenant on NSP1: radar fusion at 20 calls/s and route planning (seg_1024,
+# dilation-free, one frame every 3 s: an ASSUMED duty, as on the GPUs) in the background, plus 5 scan bursts.
+# Score with drone/contention/score_run.py (windows: outside vs inside the scan bursts).
+mode all
+sleep 60
+bg bg_radar hz --ctx $CTX/radar512_fix_fp16.bin --graph radar512 --device 1 --list $IN/radar_list.txt --spec hz:20,t:100000 --bin $ORCH_G --cmd EXECF
+bg bg_plan hz --ctx $CTX/seg1024df_fix_fp16.bin --graph seg1024df --device 1 --list $IN/seg1024_list.txt --spec hz:0.333333,t:100000 --warmup 2 --bin $ORCH_G --cmd EXECF
+sleep 6
+run vis_burst1 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst2 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst3 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst4 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 5
+run vis_burst5 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 10
+stopbg
+sleep 10

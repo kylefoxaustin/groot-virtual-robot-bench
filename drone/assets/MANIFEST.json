@@ -1,0 +1,62 @@
+{
+ "what": "assets the drone benchmark needs that cannot be regenerated bit for bit; everything else is downloaded or rebuilt",
+ "files": {
+  "drone_head.npz": {
+   "sha256": "09564a0213c7857bf3bb9f36dfcde8692861c0c103186e033f88fc86958d6de5",
+   "bytes": 5017900,
+   "what": "the trained drone action head (1,348,672 weights, MLP 2052->512->512->64) + the normalisation statistics it was trained with (fmu/fsd/smu/ssd/ymu/ysd); numpy float32. Every published number used exactly this file."
+  },
+  "gate_set.npz": {
+   "sha256": "c5b1163e7af134ee2f5c2c67d0109937e7892ee7351316a4b318be0f5817bc1a",
+   "bytes": 2213296,
+   "what": "the 256 gate frames (224x224x3 uint8 FPV renders), their prompts and drone states, their index in the training dataset, and the RTX 5090 eager reference actions on them (bf16 = the reference; fp32 = a control), [256, 16, 4] float32"
+  }
+ },
+ "license": "drone_head.npz and the reference actions in gate_set.npz are outputs of training on / running NVIDIA's GR00T N1.5-3B; they are distributed under the NVIDIA One-Way Noncommercial License (LICENSE-NVIDIA-OneWay-Noncommercial.txt): research or evaluation use only.",
+ "gate_set_arrays": {
+  "images": [
+   [
+    256,
+    224,
+    224,
+    3
+   ],
+   "uint8"
+  ],
+  "instructions": [
+   [
+    256
+   ],
+   "<U24"
+  ],
+  "states": [
+   [
+    256,
+    4
+   ],
+   "float32"
+  ],
+  "dataset_index": [
+   [
+    256
+   ],
+   "int64"
+  ],
+  "ref_actions_bf16": [
+   [
+    256,
+    16,
+    4
+   ],
+   "float32"
+  ],
+  "ref_actions_fp32": [
+   [
+    256,
+    16,
+    4
+   ],
+   "float32"
+  ]
+ }
+}

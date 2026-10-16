@@ -1,0 +1,13 @@
+# Does the radar fusion fit next to the scan on the same NSP? Scan burst A alone on NSP1, then the radar at 20 calls/s on
+# NSP1 with scan burst B sharing it. Bin with: bin_session.py RUN_DIR plans/radar_shares_scan_nsp.windows.json
+# Variant: put the radar beside the nav instead (--device 0 on the bg line).
+mode custom
+sleep 60
+run scan_a burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190
+sleep 30
+bg radar_shared hz --ctx $CTX/radar512_fix_fp16.bin --graph radar512 --device 1 --list $IN/radar_list.txt --spec hz:20,t:100000
+sleep 5
+run scan_b burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190
+sleep 5
+stopbg
+sleep 60

@@ -7,6 +7,7 @@ this repo** -- run it and see.
 
 The GEAR-SONIC whole-body controller (encoder/decoder on one NSP, split planner on the other, upstream's deploy cross-built
 with a QNN shim, the MuJoCo closed loop) has its own guide: [iq9/sonic/](sonic/README.md).
+The GR00T drone (the backbone on one NSP, the stand-in AI jobs on the other) is in [drone/iq9/](../drone/iq9/README.md).
 
 **Heads-up: these are the original research scripts, packaged as they ran.** The NVIDIA side of the repo was rebuilt into
 clean harnesses. This side is the original scripts (`work/`) with private paths swapped for environment variables. They

@@ -401,6 +401,136 @@ w(f"- **The variable moved** (MEASURED from /proc after init, at t + 20 s and at
 w("- 3 runs per arm; sim2sim only; the AGX Orin 64 GB developer kit, not the G1's Orin NX.\n")
 w("Record: `results/sonic/sonic_jetson_latefix_2026-10-14.json` (the change, binaries, scheduling readbacks per run, GR00T rates, caveats). "
   "Reproduce: [sonic/README.md](sonic/README.md#late-start-fix-jetsons).\n")
+# ---------------------------------------------------------------- drone (GR00T as a drone's flight brain)
+DT_ = J("drone/drone_table_2026-10-15.json"); DS_ = J("drone/drone_setup_2026-10-15.json")
+DFC, DG, DCL, DCO = DT_["full_cost"], DT_["output_gate"], DT_["closed_loop"], DT_["contention"]["runs"]
+DB = {"rtx5090": "RTX 5090", "thor": "Jetson AGX Thor", "orin": "Jetson AGX Orin 64 GB"}
+DTRT = {"rtx5090": "11.2.1.2", "thor": "10.13.2.6", "orin": "10.3.0"}
+def rch(arm): a = DCL["arms"][arm]; return f"{a['reached']}/{a['n']}"
+def prw(p): return f"{p['per_window_rate_min']:.2f}–{p['per_window_rate_max']:.2f}"
+def rng2(v): a, b = f"{min(v):.2f}", f"{max(v):.2f}"; return a if a == b else f"{a}–{b}"
+w("## 9. GR00T as a drone's flight brain (MEASURED, 2026-10-14 / 2026-10-15)\n")
+w("Same brain, new body: GR00T N1.5's frozen vision-language backbone (camera image + instruction in) with a small action head "
+  "trained to fly a simulated quadrotor to a named pillar (16 velocity setpoints per decision, 20 ms apart). No diffusion transformer: "
+  "the head replaces GR00T's action head. One decision = raw camera frame + prompt + drone state in, setpoints out, host work included "
+  "(*full cost*). Method, scripts and how to run it: [drone/README.md](drone/README.md). Every number below is rebuilt from "
+  "`results/drone/raw/` by `drone/make_drone_table.py`; setup, software and caveats: `results/drone/drone_setup_2026-10-15.json`.\n")
+w(f"**Target.** {DS_['targets']['decision_rate_target_hz']} decisions per second (Hz) is our design choice, not a standard: {DS_['targets']['why']}\n")
+w("### 9.1 Full-cost decision rate (MEASURED)\n")
+w("3 runs × 64 decisions per machine, each run its own process. Jetsons at MAXN + `jetson_clocks`; RTX 5090 clocks not locked.\n")
+w("| Machine | TensorRT | Full cost (median of 3 runs) | Run spread | Transform / GPU / head (ms) | Host + glue (DERIVED) | Engines alone, summed (DERIVED) |")
+w("|---|---|---|---|---|---|---|")
+for b in ("rtx5090", "thor", "orin"):
+    f = DFC[b]; s = f["stage_ms_median_of_run_medians"]; e = sum(f["standalone_engine_ms"].values())
+    w(f"| {DB[b]} | {DTRT[b]} | **{f['median_of_run_medians_ms']:.2f} ms = {f['hz']:.1f} Hz** | {f['run_spread_pct']:.2f}% "
+      f"| {s['transform_ms']:.2f} / {s['gpu_policy_ms']:.2f} / {s['head_ms']:.2f} | {f['host_and_glue_DERIVED']['ms']:.1f} ms ({f['host_and_glue_DERIVED']['share_pct']:.0f}%) "
+      f"| {e:.2f} ms = {1000 / e:.0f} Hz |")
+p, l1, l2 = DFC["rtx5090_pinned"], DFC["rtx5090_pinned_75s"], DFC["rtx5090_unpinned_75s"]
+w(f"| RTX 5090, pinned to P-cores, 8 threads | {DTRT['rtx5090']} | **{p['median_of_run_medians_ms']:.2f} ms = {p['hz']:.1f} Hz** | {p['run_spread_pct']:.2f}% "
+  f"| {p['stage_ms_median_of_run_medians']['transform_ms']:.2f} / {p['stage_ms_median_of_run_medians']['gpu_policy_ms']:.2f} / {p['stage_ms_median_of_run_medians']['head_ms']:.2f} | | |")
+w("")
+w(f"Host + glue = full cost minus the three engines' in-pipeline time (from the gate pass): GR00T's input transforms, the projector and "
+  f"embedding merge, padding, pooling, copies, the head and a stream sync after every engine. **The RTX 5090's host CPU matters:** it is a hybrid "
+  f"CPU, and the decision takes about 7.2 ms with the Python thread on a performance core (P-core) and about 8.6 ms on an efficiency core (E-core). Over 75 s "
+  f"back to back: {l1['rate_hz']:.1f} Hz pinned to the performance cores (10 s bins within {l1['per_10s_bin_spread_pct']:.1f}%), "
+  f"{l2['rate_hz']:.1f} Hz unpinned (10 s bins {min(l2['per_10s_bin_hz']):.0f}–{max(l2['per_10s_bin_hz']):.0f} Hz). The three short unpinned runs above "
+  f"happened to stay on performance cores.\n")
+w("### 9.2 Output gate: same decisions as the RTX 5090 reference? (MEASURED)\n")
+w("The 256 gate frames through each machine's TensorRT path, scored in **action space**: the setpoints the drone would fly, in units of the "
+  "training data's action spread (σ), against the RTX 5090 running the policy eagerly in bf16 (what the head was trained on).\n")
+w("| Machine | Deviation vs reference (gate ≤ 0.07σ) | Per-frame p95 (≤ 0.20σ) | vs fp32 control | Zero-image null (≥ 10×) | Planted fault (must fail) | Verdict |")
+w("|---|---|---|---|---|---|---|")
+for b in ("rtx5090", "thor", "orin"):
+    g = DG["boards"][b]
+    w(f"| {DB[b]} | **{g['G1_sigma']:.3f}σ** | {g['G2_p95_sigma']:.3f}σ | {g['vs_fp32_sigma']:.3f}σ | {g['G3_null_sigma']:.2f}σ ({g['G3_ratio']:.0f}×) "
+      f"| {g['G4_planted_swap_sigma']:.2f}σ, fails | **{g['verdict']}** |")
+cb = DG["cross_board_sigma"]
+w(f"\nThe reference's own bf16-vs-fp32 difference is {DG['reference_bf16_vs_fp32_sigma']:.3f}σ; the three TensorRT machines differ from each other by "
+  f"{min(cb.values()):.3f}–{max(cb.values()):.3f}σ. A pad-token swap and a rerun were bit-identical on every machine. The timed decisions are the gated "
+  "decisions: the full-cost runs reproduce the gate's actions to float rounding.\n")
+w("### 9.3 Closed loop: does it reach the pillar? (MEASURED; agreement and tests DERIVED)\n")
+w("40 held-out episodes, the same on every machine, rendered with Mesa's software rasteriser (bit-repeatable). Reached = within 0.8 m of the "
+  "named pillar within 25.6 s of flight. *Lockstep*: the simulator pauses for each decision, then flies 4 setpoints (80 ms). *Back-to-back*: "
+  "the drone keeps flying the previous setpoints while the next decision is computed, and each new chunk lands its own latency late "
+  "(rounded up to 20 ms ticks); on the Jetsons that latency is measured per decision (the board serves, the simulator runs on the x86 "
+  "machine; board-side time while serving, so slightly above §9.1), on the RTX 5090 it is injected as 1 tick (its 7.2 ms rounded up).\n")
+w("| Machine | Lockstep, 4 setpoints | Same outcome as the RTX 5090 (McNemar p) | Back-to-back at own latency | Latency → delay | Same outcome as the RTX 5090 at that delay (p) |")
+w("|---|---|---|---|---|---|")
+PA = DCL["pairs"]
+w(f"| RTX 5090 | **{rch('rtx5090_trt_np_K4_llvmpipe')}** | -- | **{rch('rtx5090_delay_trt_K1_d1_naive')}** | 7.2 ms → 1 tick (injected) | -- |")
+for b, d, k in (("thor", 2, "K2_d2"), ("orin", 3, "K3_d3")):
+    a1 = PA[f"{b}_K4_lockstep__vs__rtx5090_trt_np_K4_llvmpipe"]; a2 = PA[f"{b}_naive_backtoback__vs__rtx5090_delay_trt_{k}_naive"]
+    bw = DCL["arms"][f"{b}_naive_backtoback"]
+    w(f"| {DB[b]} | **{rch(f'{b}_K4_lockstep')}** | {a1['same_outcome']}/40 ({a1['mcnemar_exact_p']:.2f}) | **{rch(f'{b}_naive_backtoback')}** "
+      f"| {bw['board_wall_ms_median_of_episode_medians']:.1f} ms → {d} ticks on every decision | {a2['same_outcome']}/40 ({a2['mcnemar_exact_p']:.2f}) |")
+pr = PA["thor_K4_lockstep__vs__orin_K4_lockstep"]
+w(f"\nThor and Orin agree on {pr['same_outcome']}/40 episodes (lockstep) and {PA['thor_naive_backtoback__vs__orin_naive_backtoback']['same_outcome']}/40 (back-to-back). "
+  "No pair differs at p < 0.05: at 40 episodes that rules out a large drop, not a small one. Episodes 7, 11, 12 and 17 fail on every "
+  "machine; in these arms every failure is a fly-away (at least 6.7 m from the pillar), not a near miss.\n")
+w("**On the RTX 5090 alone** (local closed loop):\n")
+ks = DCL["k_sweep_rtx5090_trt"]
+w(f"- Setpoints flown per decision (lockstep): " + ", ".join(f"{k}: {v}/40" for k, v in ks.items()) +
+  f". Re-deciding every 20 ms is the worst (K = 1 vs K = 15: McNemar p = {PA['rtx5090_trt_np_K1_llvmpipe__vs__rtx5090_trt_np_K15_llvmpipe']['mcnemar_exact_p']:.3f}, uncorrected).")
+w(f"- TensorRT fp16 vs the eager bf16 policy, lockstep K = 4: {rch('rtx5090_trt_np_K4_llvmpipe')} vs {rch('rtx5090_eager_np_K4_llvmpipe')}, "
+  f"same outcome {PA['rtx5090_trt_np_K4_llvmpipe__vs__rtx5090_eager_np_K4_llvmpipe']['same_outcome']}/40; K = 15: {rch('rtx5090_trt_np_K15_llvmpipe')} vs "
+  f"{rch('rtx5090_eager_np_K15_llvmpipe')}, same outcome {PA['rtx5090_trt_np_K15_llvmpipe__vs__rtx5090_eager_np_K15_llvmpipe']['same_outcome']}/40.")
+w(f"- With NVIDIA's EGL renderer (not bit-repeatable) the eager policy reached {rch('rtx5090_eager_torch_K4_nvidia')}, "
+  f"{rch('rtx5090_rerun1_eager_torch_K4_nvidia')} and {rch('rtx5090_rerun2_eager_torch_K4_nvidia')} in three runs; one rerun flipped 2 episodes. "
+  "That is why every per-episode comparison here uses the software renderer.\n")
+w("**Flying while deciding, delay sweep** (RTX 5090 policy, delay injected; McNemar vs the same K with no delay, DERIVED):\n")
+w("| Setpoints per decision K | Delay d (ticks = ms) | Naive (late chunk starts at setpoint 0) | Aligned (skips the d setpoints already past) | No delay, same K | p (naive / aligned) |")
+w("|---|---|---|---|---|---|")
+rows = {}
+for r_ in DCL["delay_sweep_rtx5090"]["rows"]: rows.setdefault((r_["K"], r_["d_ticks"]), {})[r_["mode"]] = r_
+order = sorted(rows, key=lambda k: (k[0] == k[1], -k[0] if k[0] != k[1] else k[0], k[1]))
+for K, d in order:
+    n, a = rows[(K, d)]["naive"], rows[(K, d)]["aligned"]
+    lab = f"{K} (= d, back-to-back)" if K == d else str(K)
+    w(f"| {lab} | {d} = {d * 20} ms | {n['reached']}/40 | {a['reached']}/40 | {n['control_d0_reached']}/40 | {n['mcnemar_vs_control_p']:.2f} / {a['mcnemar_vs_control_p']:.2f} |")
+w(f"\nNo delayed arm is worse than its no-delay control at p < 0.05 (smallest p = {DCL['delay_sweep_rtx5090']['min_mcnemar_p']:.3f}, an arm that did *better*). "
+  "On this task, flying the previous chunk while deciding does not cost reach, up to 340 ms of delay. Aligning the late chunk does not help.\n")
+w("### 9.4 Sharing the computer with other AI jobs (MEASURED rates; % and gate DERIVED)\n")
+w("The nav policy (the drone policy making its flight decisions) runs back to back while other jobs share the same GPU as separate processes. The **50 MP inspection AI on the flight "
+  "computer is a stress case** (real drones usually run it on a payload computer, or after the flight): a segmentation stand-in over 190 "
+  "tiles of 512 × 512, 5 bursts 5 s apart. Radar = a point-cloud fusion stand-in at 20 Hz (or back to back). Route planning = the "
+  "segmentation stand-in at 1024 × 1024, one frame every 3 s (an ASSUMED duty). Stand-ins have random weights from a fixed seed; only "
+  "their compute matters. Nav decisions are gated in every window (all PASS).\n")
+def ctab(rows_):
+    w("| Machine | Run | Nav alone | Nav during the job | % of alone | Per window | Window length | Gate, all decisions |")
+    w("|---|---|---|---|---|---|---|---|")
+    for b, run, kind, lab in rows_:
+        R = DCO[run]; po = R["pooled"]; k = po[kind]
+        wl = [x["len_s"] for x in R["windows"] if x["kind"] == kind]
+        w(f"| {DB[b]} | {lab} | {po['solo']['rate_hz']:.2f} Hz | **{k['rate_hz']:.2f} Hz** | {k['pct_of_solo']:.0f}% | {prw(k)} Hz "
+          f"| {rng2(wl)} s | {R['all_decisions_gate_sigma']:.3f}σ |")
+w("**The 50 MP inspection burst:**\n")
+ctab([("rtx5090", "e1_scan_rtx5090", "scan_burst", "unpinned, rep 1"), ("rtx5090", "e1_scan_rtx5090_rep2", "scan_burst", "unpinned, rep 2"),
+      ("rtx5090", "e1_scan_rtx5090_pinned", "scan_burst", "nav on P-cores 0–11 (6 threads), burst on 12–15"),
+      ("thor", "e1_scan_thor", "scan_burst", "seeded stand-in"), ("orin", "e1_scan_orin", "scan_burst", "seeded stand-in"),
+      ("thor", "thor_c2_scan_0925standin", "scan_burst", "first, unseeded stand-in"), ("orin", "orin_c2_scan_0925standin", "scan_burst", "first, unseeded stand-in")])
+sc = {b: DCO[f"e1_scan_{b}"] for b in ("rtx5090", "thor", "orin")}
+w(f"\nBurst alone, per tile: RTX 5090 {sc['rtx5090']['scan_alone_per_tile_ms']:.2f} ms, Thor {sc['thor']['scan_alone_per_tile_ms']:.2f} ms, Orin "
+  f"{sc['orin']['scan_alone_per_tile_ms']:.2f} ms; with the nav running it stretches to {min(sc['rtx5090']['scan_per_tile_ms_under_nav']):.2f}, "
+  f"{min(sc['thor']['scan_per_tile_ms_under_nav']):.2f} and {min(sc['orin']['scan_per_tile_ms_under_nav']):.2f} ms (fastest burst). From 1 s after each burst the nav is back at its "
+  "solo rate, and decisions made during a burst are bit-identical to decisions on the same frame outside it: contention changes timing, not numerics.\n")
+w("**Radar fusion:**\n")
+ctab([("rtx5090", "e2_radar_rtx5090", "radar20", "20 Hz"), ("thor", "e2_radar_thor", "radar20", "20 Hz"), ("orin", "e2_radar_orin", "radar20", "20 Hz"),
+      ("rtx5090", "e2_radarflat_rtx5090", "radarflat4s", "back to back, 4 s"), ("thor", "e2_radarflat_thor", "radarflat4s", "back to back, 4 s"),
+      ("orin", "e2_radarflat_orin", "radarflat4s", "back to back, 4 s")])
+w(f"\nRadar at 20 Hz costs about 1% on the Jetsons ({DCO['e2_radar_thor']['pooled']['radar20']['pct_of_recovery']:.1f}% and "
+  f"{DCO['e2_radar_orin']['pooled']['radar20']['pct_of_recovery']:.1f}% of the nav rate right after each window). On the RTX 5090 the "
+  "windows swing with the host CPU's core placement more than radar costs, so the effect cannot be resolved there. A second radar arm "
+  "(400 fusions back to back) finished in under 0.25 s per window and left fewer than 5 nav decisions in every window on the Jetsons "
+  "and in 2 of 5 on the RTX 5090; 5 decisions is our minimum for a scored window, so it is marked VOID (not scored) and kept in the raw data.\n")
+w("**All three at once** (radar 20 Hz + route planning throughout, plus the 5 inspection bursts):\n")
+w("| Machine | Nav alone | Outside the bursts | Inside the bursts | Planning frame (mean) | Gate, all decisions |")
+w("|---|---|---|---|---|---|")
+for b in ("rtx5090", "thor", "orin"):
+    R = DCO[f"e3_all_{b}"]; po = R["pooled"]
+    w(f"| {DB[b]} | {po['solo']['rate_hz']:.2f} Hz | {po['outside_scan']['rate_hz']:.2f} Hz ({po['outside_scan']['pct_of_solo']:.0f}%) "
+      f"| **{po['inside_scan']['rate_hz']:.2f} Hz** ({po['inside_scan']['pct_of_solo']:.0f}%) | {R['bg_plan']['per_inf_ms_mean']:.1f} ms | {R['all_decisions_gate_sigma']:.3f}σ |")
+w("\nInside the bursts all three jobs together cost about what the burst alone costs; radar plus planning take at most ~2% outside them.\n")
+w("**Caveats.** " + " ".join(DS_["caveats"]) + "\n")
 open(os.path.join(OUT, "RESULTS.md"), "w").write("\n".join(L))
 # ---------------------------------------------------------------- README headline (between the markers)
 H = []
@@ -462,6 +592,33 @@ H2.append("Stock = the runs above (3 per loaded arm, 10 unloaded); fix = 3 runs 
 a, b = "<!-- sonic:start -->", "<!-- sonic:end -->"
 if a in rd and b in rd:
     rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H2) + "\n" + rd[rd.index(b):]
+# ---- README: drone headline (between the drone markers)
+DH = DT_["headline"]
+H3 = ["| Machine | One decision, full cost | Same decisions as the RTX 5090? | Reached the pillar, 40 simulated flights: lockstep · back-to-back at its own latency | Decision rate during a 50 MP inspection burst |",
+      "|---|---|---|---|---|"]
+for b in ("rtx5090", "thor", "orin"):
+    h = DH[b]; pin = f" ({h['full_cost_hz_pinned']:.1f} Hz pinned to performance cores)" if b == "rtx5090" else ""
+    H3.append(f"| {DB[b]} | {h['full_cost_ms']:.2f} ms = **{h['full_cost_hz']:.1f} Hz**{pin} | {h['gate']} ({h['gate_sigma']:.3f}σ) "
+              f"| {h['reach_lockstep_K4']}/40 · {h['reach_backtoback']}/40 | **{h['scan_hz']:.2f} Hz** ({h['scan_pct_of_solo']:.0f}% of its {h['scan_solo_hz']:.1f} Hz alone in that run) |")
+H3.append("")
+H3.append("MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame + prompt + drone state in, setpoints out, host work included (TensorRT fp16). "
+          "*Same decisions*: on 256 frames, the setpoints each machine would fly deviate from the RTX 5090 running the policy in plain "
+          "PyTorch by 0.026–0.029σ (RMS over all frames; limit 0.07σ; σ = the spread of each setpoint in the training data). "
+          "The RTX 5090's rate during the burst is against its own run alone, which was slower than 139.7 Hz because its hybrid CPU "
+          "moved the process to efficiency cores; pinned to performance cores it ran 147.3 Hz alone and 86.0 Hz (58%) during the burst. *Lockstep*: the simulator pauses while the policy decides. "
+          "*Back-to-back*: the drone keeps flying while the next decision is computed, so each new plan lands as late as the decision took "
+          "(Thor and Orin measured; the RTX 5090's 7.2 ms applied as one injected 20 ms tick). In this simulator reach hardly depends on speed, and no machine differs from the "
+          "RTX 5090 at p < 0.05; 40 flights rule out only a large drop.")
+H3.append("")
+H3.append(f"**Speed is the difference.** Against our {DS_['targets']['decision_rate_target_hz']} Hz target (a design choice; any target "
+          "from 23 to 39 Hz gives the same verdict), the RTX 5090 and Thor keep up alone and Orin does not; during the inspection burst "
+          "only the RTX 5090 does. The RTX 5090 is a desktop reference, not a drone computer. Both extra loads are stress cases: "
+          "real drones usually run 50 MP inspection on a payload computer or after the flight, and a 3B vision-language-action model "
+          "is far heavier than the navigation networks production drones fly. "
+          "[RESULTS.md §9](RESULTS.md#9-gr00t-as-a-drones-flight-brain-measured-2026-10-14--2026-10-15)")
+a, b = "<!-- drone:start -->", "<!-- drone:end -->"
+if a in rd and b in rd:
+    rd = rd[:rd.index(a) + len(a)] + "\n" + "\n".join(H3) + "\n" + rd[rd.index(b):]
 open(os.path.join(OUT, "README.md"), "w").write(rd)
 
 print("wrote RESULTS.md", len(L), "lines")

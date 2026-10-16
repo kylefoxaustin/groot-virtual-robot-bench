@@ -13,6 +13,9 @@ if [ "$(uname -m)" = "aarch64" ]; then
 else
   export GROOT_SHIM="${GROOT_SHIM:-$GVRB_ROOT/shims/x86}"
 fi
+if [ -z "${GROOT_PY:-}" ] && [ "$(uname -m)" = aarch64 ] && [ ! -x "$GVRB_WORK/venv-groot/bin/python" ]; then
+  GROOT_PY=python3                                                         # Orin: system python3 (setup/setup_orin_jp6.sh)
+fi
 export GROOT_PY="${GROOT_PY:-$GVRB_WORK/venv-groot/bin/python}"            # policy / TensorRT env
 export ROBOCASA_PY="${ROBOCASA_PY:-$GVRB_WORK/venv-robocasa/bin/python}"   # simulator env (x86 only)
 export PYTHONPATH="$GROOT_SHIM:$GROOT_REPO${PYTHONPATH:+:$PYTHONPATH}"
@@ -23,3 +26,5 @@ export IQ9_QNN_ROOT="${IQ9_QNN_ROOT:-/opt/qnn}"                            # QNN
 export IQ9_PY_ROOT="${IQ9_PY_ROOT:-/opt/iq9-python}"                       # Python tree ON the IQ-9075
 export GVRB_BOARD_WORK="${GVRB_BOARD_WORK:-$HOME/gvrb-board}"              # engine/profile dir ON a Jetson (profiling/)
 unset _here
+# drone benchmark paths: DRONE_WORK, DRONE_ENG, DRONE_ASSETS, DRONE_STANDINS, DRONE_RUNS (drone/README.md)
+[ -f "$GVRB_ROOT/drone/env.sh" ] && source "$GVRB_ROOT/drone/env.sh"

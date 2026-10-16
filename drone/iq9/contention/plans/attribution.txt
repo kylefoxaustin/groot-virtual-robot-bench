@@ -1,0 +1,19 @@
+# Is a scan's effect on the nav caused by the NPU work or by the host work around it? Five arms on NSP1, one at a time:
+#   s1/s2  EXEC with the SampleApp's output writer (original build)       f  EXECF: same call, output written with one fwrite
+#   h      EXECNOP: EXEC's host work, graphExecute replaced by a sleep of SLEEP_US (set it to your own per-tile exec_us
+#          from an s1 run: exec_ms_mean in s1.json x 1000)
+#   n      EXECONLY: the NPU work only, with GAP_MS of client sleep after each call (your s1 per-call wall minus exec)
+#   SLEEP_US=... GAP_MS=... sh drone/iq9/contention/run_session.sh TAG drone/iq9/contention/plans/attribution.txt
+# Bin with: bin_session.py RUN_DIR plans/attribution.windows.json
+mode custom
+sleep 60
+run s1 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH --cmd EXEC
+sleep 20
+run h burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECNOP --sleep-us ${SLEEP_US}
+sleep 20
+run n burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190,gap_ms:${GAP_MS} --bin $ORCH_G --cmd EXECONLY
+sleep 20
+run f burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH_G --cmd EXECF
+sleep 20
+run s2 burst --ctx $CTX/seg512df_fix_fp16.bin --graph seg512df --device 1 --list $IN/seg_list.txt --spec n:190 --bin $ORCH --cmd EXEC
+sleep 60

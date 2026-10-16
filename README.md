@@ -2,14 +2,16 @@
 
 **So you want to see how well GR00T works? You've found the right repo.**
 
-NVIDIA's GR00T N1.5 is a robot *policy*: it looks at a camera image, reads an instruction, and outputs joint commands.
-We put it in charge of a simulated humanoid and measured two things on three NVIDIA machines: **how fast it decides**
-and **whether it still decides the same way**. Every script we ran is here, along with the raw data and a checker that
-rebuilds the published numbers from it. There are also scripts for the Qualcomm IQ-9075, so you can measure that one
-yourself (we publish no IQ-9075 results).
+NVIDIA's GR00T N1.5 is a robot *policy*: it looks at a camera image, reads an instruction, and outputs motor commands.
+We put it in charge of simulated robots and measured two things on three NVIDIA machines: **how fast it decides** and
+**whether it still decides the same way**:
 
-New: NVIDIA's GEAR-SONIC whole-body controller, timed in closed loop on the same three NVIDIA machines
-([below](#also-measured-gear-sonic-the-controller-that-keeps-a-humanoid-on-its-feet)).
+- **a humanoid** putting milk in a microwave ([the headline](#the-headline));
+- **a simulated drone** flying to a named pillar, with GR00T's vision-language half and a new action head ([same brain, new body](#new-same-brain-new-body-gr00t-flies-a-simulated-drone));
+- and NVIDIA's **GEAR-SONIC** controller, which keeps a humanoid balanced at 50 Hz ([below](#also-measured-gear-sonic-the-controller-that-keeps-a-humanoid-on-its-feet)).
+
+Every script we ran is here, along with the raw data and a checker that rebuilds the published numbers from it. There
+are also scripts for the Qualcomm IQ-9075, so you can measure that one yourself (we publish no IQ-9075 results).
 
 ## The headline
 
@@ -24,6 +26,37 @@ Speed = NVIDIA's full TensorRT path, fp16 engines, image + instruction in, actio
 <!-- results:end -->
 
 Every number, with how it was measured: [RESULTS.md](RESULTS.md).
+
+## New: same brain, new body: GR00T flies a simulated drone
+
+We kept GR00T N1.5's vision-language backbone frozen and trained a small action head (1.35 M weights) to fly a simulated
+quadrotor in MuJoCo: camera image + "fly to the red pillar" in, 16 velocity setpoints out, 20 ms apart (no diffusion
+transformer: the small head replaces GR00T's action head). On each machine we timed the whole decision, checked its output against the RTX 5090's, flew 40 held-out
+episodes, and loaded the computer with other AI jobs a drone might run. Details: [drone/README.md](drone/README.md).
+IQ-9075: reproduction scripts in [drone/iq9/](drone/iq9/README.md), no results published.
+
+<!-- drone:start -->
+| Machine | One decision, full cost | Same decisions as the RTX 5090? | Reached the pillar, 40 simulated flights: lockstep · back-to-back at its own latency | Decision rate during a 50 MP inspection burst |
+|---|---|---|---|---|
+| RTX 5090 | 7.16 ms = **139.7 Hz** (147.5 Hz pinned to performance cores) | PASS (0.027σ) | 32/40 · 33/40 | **81.71 Hz** (70% of its 115.9 Hz alone in that run) |
+| Jetson AGX Thor | 24.49 ms = **40.8 Hz** | PASS (0.026σ) | 34/40 · 35/40 | **18.15 Hz** (44% of its 41.1 Hz alone in that run) |
+| Jetson AGX Orin 64 GB | 44.94 ms = **22.2 Hz** | PASS (0.029σ) | 35/40 · 36/40 | **11.96 Hz** (54% of its 22.2 Hz alone in that run) |
+
+MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame + prompt + drone state in, setpoints out, host work included (TensorRT fp16). *Same decisions*: on 256 frames, the setpoints each machine would fly deviate from the RTX 5090 running the policy in plain PyTorch by 0.026–0.029σ (RMS over all frames; limit 0.07σ; σ = the spread of each setpoint in the training data). The RTX 5090's rate during the burst is against its own run alone, which was slower than 139.7 Hz because its hybrid CPU moved the process to efficiency cores; pinned to performance cores it ran 147.3 Hz alone and 86.0 Hz (58%) during the burst. *Lockstep*: the simulator pauses while the policy decides. *Back-to-back*: the drone keeps flying while the next decision is computed, so each new plan lands as late as the decision took (Thor and Orin measured; the RTX 5090's 7.2 ms applied as one injected 20 ms tick). In this simulator reach hardly depends on speed, and no machine differs from the RTX 5090 at p < 0.05; 40 flights rule out only a large drop.
+
+**Speed is the difference.** Against our 30 Hz target (a design choice; any target from 23 to 39 Hz gives the same verdict), the RTX 5090 and Thor keep up alone and Orin does not; during the inspection burst only the RTX 5090 does. The RTX 5090 is a desktop reference, not a drone computer. Both extra loads are stress cases: real drones usually run 50 MP inspection on a payload computer or after the flight, and a 3B vision-language-action model is far heavier than the navigation networks production drones fly. [RESULTS.md §9](RESULTS.md#9-gr00t-as-a-drones-flight-brain-measured-2026-10-14--2026-10-15)
+<!-- drone:end -->
+
+Run it on an x86 Linux PC with an NVIDIA GPU (Thor and Orin: [drone/README.md](drone/README.md#jetson-agx-orin-jetpack-6-and-jetson-agx-thor-jetpack-7)):
+
+```bash
+git clone https://github.com/kylefoxaustin/groot-virtual-robot-bench.git && cd groot-virtual-robot-bench
+source setup/env.sh && bash setup/setup_x86.sh --policy-only   # GR00T env + base model, ~20 GB
+bash drone/setup.sh                                            # MuJoCo, ONNX export, the 3 TensorRT engines
+bash drone/run_fullcost.sh mygpu rtx5090                       # decision rate + output gate, next to ours
+$GROOT_PY drone/closed_loop.py --out $DRONE_RUNS/cl --arm k4 --K 4 --episodes 0-9   # 10 flights, then compare:
+python3 drone/compare_closed_loop.py $DRONE_RUNS/cl/k4_episodes.jsonl results/drone/raw/closed_loop/rtx5090_trt_np_K4_llvmpipe.jsonl
+```
 
 ## Also measured: GEAR-SONIC, the controller that keeps a humanoid on its feet
 
@@ -107,6 +140,7 @@ the RoboCasa post-trained model on the milk task.
 | **An x86 Linux PC with an NVIDIA GPU** | [docs/SETUP.md](docs/SETUP.md), then [docs/SPEED.md](docs/SPEED.md) | eager vs hybrid vs full-TensorRT policy-call speed on your GPU, two engine builds | setup: ~22 GB of models and sim assets plus several GB of pip wheels |
 | ...the same PC, and patience | [docs/SETUP.md](docs/SETUP.md), then [docs/ACCURACY.md](docs/ACCURACY.md) | 20 closed-loop episodes on your GPU, seed by seed against our shipped RTX 5090 run | 20 episodes × 720 sim steps; GPU time is only ~1 min of it (900 calls × ~60 ms on the 5090), the simulator the rest |
 | **A Jetson AGX Thor or Orin** | the same two docs; each has a Jetson section | the same speed run on the board, and the board as closed-loop policy server (the simulator stays on an x86 PC) | |
+| **Any of the above, and you want the drone** | [drone/README.md](drone/README.md) | the drone's decision rate, output gate, closed-loop flights and the other-AI-jobs runs on your machine, next to ours | x86: setup ~20 GB, ~10 min, first results ~15 min later. A Jetson also needs an x86 GPU machine once, for the ONNX export |
 | **A Qualcomm IQ-9075** | [iq9/README.md](iq9/README.md) (needs Qualcomm's QAIRT SDK) | scripts to port GR00T to the Hexagon NPU and measure speed, closed-loop behaviour and int8/int16 yourself | |
 | **A question about where the time goes** | [profiling/README.md](profiling/README.md) | matmul vs glue, integer vs floating-point instructions, DDR bandwidth (mostly Jetson) | |
 
@@ -166,15 +200,19 @@ accuracy/   closed-loop harness: noise bank, policy servers (incl. fp8), sim cli
 shims/      stand-ins for packages GR00T imports but never calls on our paths (see docs/SETUP.md)
 profiling/  where the time goes: per-engine timing, matmul vs glue, int vs FP, DDR bandwidth, Thor DiT anomaly
 sonic/      GEAR-SONIC whole-body controller: timing probe + patch, sim driver, run scripts, scoring, engine gate, table builder
-iq9/        scripts for the Qualcomm IQ-9075: port, speed, closed loop, int8/int16, Hexagon microbench, GEAR-SONIC (no results)
+drone/      GR00T drone: policy, simulator, full-cost timing, output gate, closed loop, contention stand-ins, the trained head
+iq9/        scripts for the Qualcomm IQ-9075: port, speed, closed loop, int8/int16, Hexagon microbench, GEAR-SONIC (no results;
+            the drone's IQ-9075 scripts are in drone/iq9/)
 results/    every published number as JSON + the raw data behind it (see results/README.md)
 tools/      make_results_md.py (writes RESULTS.md + the headline above), check_results.py (rebuilds and compares)
 ```
 
 ## Licenses
 
-Our code and results: Apache License 2.0 ([LICENSE](LICENSE)). **Model weights are not included** and come under
-NVIDIA's model license (GR00T N1.5-3B: NVIDIA One-Way Noncommercial License) -- read it before use. robosuite and
+Our code and results: Apache License 2.0 ([LICENSE](LICENSE)). **GR00T's model weights are not included** and come under
+NVIDIA's model license (GR00T N1.5-3B: NVIDIA One-Way Noncommercial License) -- read it before use. The one exception is
+the drone's small trained head and its reference actions (`drone/assets/`, 7 MB): they were made from GR00T N1.5, so they
+ship under that same NVIDIA license (non-commercial use only; copy in `drone/assets/`). robosuite and
 RoboCasa-GR1 are MIT; Isaac-GR00T is Apache-2.0; RoboCasa's downloaded simulation assets carry their own licenses.
 GR00T-WholeBodyControl (GEAR-SONIC) code is Apache-2.0 and is not included (only our probe patch against it); its model weights
 come under the NVIDIA Open Model License.

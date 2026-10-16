@@ -8,7 +8,8 @@
   * sonic:    sonic/make_sonic_table.py on results/sonic/raw/<board>/*              == results/sonic/sonic_same_span_table_2026-10-14.json
               (and the per-board records' deadline / band-drop numbers, the controlled band-drop record and the late-start-fix
               record must agree with that table)
-  * docs:     tools/make_results_md.py output                                       == the committed RESULTS.md + README headline and SONIC table
+  * drone:    drone/make_drone_table.py on results/drone/raw/*                       == results/drone/drone_table_2026-10-15.json
+  * docs:     tools/make_results_md.py output                                       == the committed RESULTS.md + README headline, SONIC and drone tables
 Records marked "published record" in docs/BENCHMARKS.md have no raw data in this repo to rebuild from, so they are not checked.
 Everything is regenerated into a temporary directory: the check never modifies your checkout.
 Needs only python3 + numpy. Exit code 1 on any mismatch.   usage: python3 tools/check_results.py"""
@@ -121,9 +122,17 @@ with tempfile.TemporaryDirectory() as td:
                     gg = g[side["group"]]
                     if any(side[k] != gg[k] for k in KEYS) or side["max_start_gap_ms"] != round(gg["max_start_gap_ms"], 2):
                         bad.append(f"sonic: latefix record {b_}/{arm_} ({side['group']}) disagrees with the rebuilt table")
+    # ---- drone table from the raw data (full cost, output gate, closed loop, contention)
+    dtab = "drone_table_2026-10-15.json"; RDR = os.path.join(ROOT, "results", "drone")
+    run([f"{ROOT}/drone/make_drone_table.py", f"{td}/{dtab}"])
+    if os.path.exists(f"{td}/{dtab}"):
+        pub, new = json.load(open(f"{RDR}/{dtab}")), json.load(open(f"{td}/{dtab}"))
+        for k in sorted(set(pub) | set(new)):
+            if json.dumps(pub.get(k), sort_keys=True) != json.dumps(new.get(k), sort_keys=True):
+                bad.append(f"drone table: '{k}' differs from a fresh drone/make_drone_table.py run")
     # ---- RESULTS.md + README headline, generated into the temp dir and compared
     run([f"{ROOT}/tools/make_results_md.py", td])
-    for f, what in (("RESULTS.md", "RESULTS.md"), ("README.md", "README.md headline + SONIC tables")):
+    for f, what in (("RESULTS.md", "RESULTS.md"), ("README.md", "README.md headline + SONIC and drone tables")):
         if os.path.exists(f"{td}/{f}") and open(f"{td}/{f}").read() != open(f"{ROOT}/{f}").read():
             bad.append(f"{what} is stale -- run python3 tools/make_results_md.py and commit the result")
 

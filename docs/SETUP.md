@@ -18,7 +18,8 @@ and for the closed loop on a single NVIDIA GPU; the Jetson parts only matter if 
   `sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt install python3.12-venv python3.10-venv`. `setup_x86.sh` checks first.
 - **Accounts:** none for the NVIDIA path. Both models download from Hugging Face without a token (they are not gated),
   but they are under NVIDIA's One-Way Noncommercial License -- read it.
-- **Closed loop with a Jetson:** the Jetson must be reachable from the x86 host over ssh (key auth) and TCP port 5571.
+- **Closed loop with a Jetson:** the Jetson must be reachable from the x86 host over ssh (key auth) and TCP port 5571 (humanoid);
+  the drone's policy server listens on 127.0.0.1:47124 and is reached through an ssh tunnel ([drone/README.md](../drone/README.md)).
 
 ## Install
 
@@ -52,7 +53,9 @@ NVIDIA's "PyTorch for Jetson" wheels or the jetson-ai-lab index -- then `GROOT_P
 For the closed-loop server, make a venv with an aarch64 CUDA 13 torch build (we used torch 2.14.0+cu130 from PyTorch's
 `https://download.pytorch.org/whl/cu130` index) plus GR00T N1.5's pins -- **transformers 4.51.3, tokenizers 0.21.4,
 huggingface_hub 0.35.3**, the rest as in `setup/requirements-orin-jp6.txt`. A bf16 control run in this environment
-reproduced the earlier Thor bf16 outcomes on all 20 seeds (2026-10-12). Then `bash setup/fetch_upstream.sh && bash setup/fetch_models.sh all`.
+reproduced the earlier Thor bf16 outcomes on all 20 seeds (2026-10-12). Then `bash setup/fetch_upstream.sh && bash setup/thor_container.sh 'bash setup/fetch_models.sh all'` (the container has
+`huggingface_hub`; JetPack 7's system Python does not, and will not let pip install into it). The container needs docker with the
+NVIDIA runtime, your user in the `docker` group, ~35 GB for the image, and network access (each start pip-installs GR00T's pins).
 
 **Both Jetsons, for the closed loop:** Jetson has no flash-attn, so switch GR00T's vision-language backbone to PyTorch
 SDPA attention (exact attention, different kernel): `$GROOT_PY accuracy/board_patch_sdpa.py --isaac $GROOT_REPO apply`

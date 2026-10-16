@@ -1,0 +1,192 @@
+--- a/iq9/work/optionB/src/resident_orch.cpp
++++ b/iq9/work/optionB/src/resident_orch.cpp
+@@ -12,6 +12,9 @@
+ //   GFRAME <io_dir> <out_file> [pixel_path]           ->  OKGFRAME <k=v ...>
+ //   PING -> PONG ;  QUIT -> BYE (exit 0)
+ //   ERR <msg> on failure (server stays alive for EXEC/GFRAME errors).
++//   BFRAME <frameDir> <constDir> <outPrefix> [dump 0|1] [pixelPath] -> OKBFRAME wall_us=.. vit=.. ...
++//                            (the drone policy's backbone: ViT -> mlp1/scatter -> LLM -> vlln -> mean-pool)
++//   --device N : pin every graph to HTP device id N (strict: an unknown id is an error, never a fallback)
+ //
+ // GFRAME runs GR00T's whole glued action loop IN-MEMORY: ViT -> [mlp1 GEMM +
+ // embed/scatter host glue] -> LLM -> vl-self-attn -> state-enc -> 4x{action-enc +
+@@ -409,6 +412,83 @@
+   return true;
+ }
+ 
++// ---- BFRAME: drone policy backbone (ViT -> mlp1/scatter -> LLM -> vlln+vl_self_attn -> mean-pool)
++// frameDir: input_ids.raw (int64, Npad), attention_mask.raw (f32, Npad; 1 = valid, valid tokens first),
++//           pixel_values.raw (f32 1x3x224x224, unless pixelPath given). constDir: position_ids.raw (ViT).
++// The LLM is causal, so right-padding to its compiled length leaves the valid tokens exact.
++// vl_self_attention is bidirectional with no mask, so it is compiled at exactly nValid tokens and
++// fed only the valid LLM rows. Output: <outPrefix>.pool = mean over the nValid vlln rows (2048 f32).
++// dump!=0 also writes <outPrefix>.llm (nValid x 2048) and <outPrefix>.vlln (nValid x 2048).
++struct BTimes { uint64_t vit, mlp1, gluevlm, llm, vlln, pool; };
++bool runBackboneFrame(const std::string &frameDir, const std::string &constDir, const std::string &outPrefix,
++                      const std::string &pixelPath, bool dump, BTimes &tm) {
++  Loaded &vit = g_graphs.at("groot_vit");
++  Loaded &llm = g_graphs.at("groot_llm");
++  Loaded &vlln = g_graphs.at("vlln_vl_self_attention_47");
++  uint64_t g0;
++  std::string idp = frameDir + "/input_ids.raw";
++  FILE *fi = fopen(idp.c_str(), "rb");
++  if (!fi) { std::cout << "ERR open input_ids" << std::endl; return false; }
++  fseek(fi, 0, SEEK_END); long ibytes = ftell(fi); fseek(fi, 0, SEEK_SET);
++  size_t N = ibytes / 8;
++  std::vector<int64_t> ids(N);
++  if (fread(ids.data(), 8, N, fi) != N) { fclose(fi); std::cout << "ERR read input_ids" << std::endl; return false; }
++  fclose(fi);
++  std::vector<float> amask;
++  if (!readF32(frameDir + "/attention_mask.raw", amask, N)) return false;
++  size_t nValid = 0;
++  for (size_t i = 0; i < N; ++i) { if (amask[i] != 0.0f) { if (nValid != i) { std::cout << "ERR mask not prefix-valid" << std::endl; return false; } ++nValid; } }
++  { Qnn_Tensor_t *pv = byName(vit.inputs, nIn(vit), "pixel_values");
++    Qnn_Tensor_t *pid = byName(vit.inputs, nIn(vit), "position_ids");
++    if (!pv || !pid) { std::cout << "ERR vit inputs" << std::endl; return false; }
++    if (!setInputFromF32File(*pv, pixelPath)) return false;
++    if (!setInputFromF32File(*pid, constDir + "/position_ids.raw")) return false; }
++  if (!execOnly(vit, tm.vit)) { std::cout << "ERR exec vit" << std::endl; return false; }
++  float *vit_out = fbuf(vit.outputs[0]);
++  if (telems(vit.outputs[0]) != (size_t)NPATCH * DVIT) { std::cout << "ERR vit out size" << std::endl; return false; }
++  std::vector<float> proj((size_t)NPATCH * DLLM);
++  g0 = nowUs();
++  g_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, NPATCH, DLLM, DVIT, 1.0f,
++          vit_out, DVIT, g_glue.mlp1_w.data(), DVIT, 0.0f, proj.data(), DLLM);
++  for (int i = 0; i < NPATCH; ++i) { float *pr = &proj[(size_t)i * DLLM]; for (int j = 0; j < DLLM; ++j) pr[j] += g_glue.mlp1_b[j]; }
++  tm.mlp1 = nowUs() - g0;
++  Qnn_Tensor_t *ie = byName(llm.inputs, nIn(llm), "inputs_embeds");
++  Qnn_Tensor_t *am = byName(llm.inputs, nIn(llm), "attention_mask");
++  if (!ie || !am) { std::cout << "ERR llm inputs" << std::endl; return false; }
++  if (telems(*ie) != N * DLLM) { std::cout << "ERR inputs_embeds size " << telems(*ie) << "/" << N * DLLM << std::endl; return false; }
++  g0 = nowUs();
++  { float *dst = fbuf(*ie); size_t pk = 0;
++    for (size_t i = 0; i < N; ++i) {
++      int64_t id = ids[i]; const float *src;
++      if (id == g_glue.image_token) { if (pk >= (size_t)NPATCH) { std::cout << "ERR too many image tokens" << std::endl; return false; } src = &proj[pk * DLLM]; ++pk; }
++      else { if (id < 0 || id >= EMBED_ROWS) { std::cout << "ERR token id range " << id << std::endl; return false; } src = &g_glue.embed[(size_t)id * DLLM]; }
++      memcpy(&dst[i * DLLM], src, DLLM * sizeof(float));
++    }
++    if (pk != (size_t)NPATCH) { std::cout << "ERR image tokens " << pk << "/" << NPATCH << std::endl; return false; } }
++  tm.gluevlm = nowUs() - g0;
++  if (!setInputFromF32File(*am, frameDir + "/attention_mask.raw")) return false;
++  if (!execOnly(llm, tm.llm)) { std::cout << "ERR exec llm" << std::endl; return false; }
++  { Qnn_Tensor_t *bf = byName(vlln.inputs, nIn(vlln), "backbone_features");
++    if (!bf || telems(*bf) != nValid * DLLM) { std::cout << "ERR vlln in size " << (bf ? telems(*bf) : 0) << "/" << nValid * DLLM << std::endl; return false; }
++    memcpy(fbuf(*bf), fbuf(llm.outputs[0]), nValid * DLLM * sizeof(float)); }
++  if (!execOnly(vlln, tm.vlln)) { std::cout << "ERR exec vlln" << std::endl; return false; }
++  if (telems(vlln.outputs[0]) != nValid * DLLM) { std::cout << "ERR vlln out size" << std::endl; return false; }
++  g0 = nowUs();
++  std::vector<double> acc(DLLM, 0.0);
++  { const float *v = fbuf(vlln.outputs[0]);
++    for (size_t r = 0; r < nValid; ++r) for (int j = 0; j < DLLM; ++j) acc[j] += v[r * DLLM + j]; }
++  std::vector<float> pooled(DLLM);
++  for (int j = 0; j < DLLM; ++j) pooled[j] = (float)(acc[j] / (double)nValid);
++  tm.pool = nowUs() - g0;
++  auto wr = [](const std::string &p, const float *d, size_t n) {
++    FILE *fo = fopen(p.c_str(), "wb"); if (!fo) return false; fwrite(d, sizeof(float), n, fo); fclose(fo); return true; };
++  if (!wr(outPrefix + ".pool", pooled.data(), DLLM)) { std::cout << "ERR write pool" << std::endl; return false; }
++  if (dump) {
++    wr(outPrefix + ".llm", fbuf(llm.outputs[0]), nValid * DLLM);
++    wr(outPrefix + ".vlln", fbuf(vlln.outputs[0]), nValid * DLLM);
++  }
++  return true;
++}
+ // ---- generic EXEC (file-based, kept for debug/verification) ---------------
+ bool execGraph(const std::string &name, const std::string &listFile, const std::string &outDir,
+                uint64_t &execUs) {
+@@ -444,6 +524,7 @@
+   std::vector<std::string> ctxPaths;
+   QnnLog_Level_t logLevel = QNN_LOG_LEVEL_ERROR;
+   int blasThreads = 6;
++  int devSel = -1;  // -1 = legacy unpinned deviceCreate(nullptr); >=0 = pin to that HTP deviceId (strict)
+ 
+   for (int i = 1; i < argc; ++i) {
+     std::string a = argv[i];
+@@ -453,6 +534,7 @@
+     else if (a == "--blas" && i + 1 < argc) blasPath = argv[++i];
+     else if (a == "--glue" && i + 1 < argc) glueDir = argv[++i];
+     else if (a == "--blas_threads" && i + 1 < argc) blasThreads = atoi(argv[++i]);
++    else if (a == "--device" && i + 1 < argc) devSel = atoi(argv[++i]);
+     else if (a == "--log_level" && i + 1 < argc) {
+       std::string l = argv[++i];
+       if (l == "warn") logLevel = QNN_LOG_LEVEL_WARN;
+@@ -462,7 +544,7 @@
+   }
+   if (backendPath.empty() || systemLib.empty() || ctxPaths.empty()) {
+     std::cerr << "usage: resident_orch --backend <lib> --system_library <lib> "
+-                 "--ctx name.bin [--ctx ...] [--blas libopenblas.so] [--glue dir]\n";
++                 "--ctx name.bin [--ctx ...] [--blas libopenblas.so] [--glue dir] [--device N]\n";
+     return 2;
+   }
+ 
+@@ -490,9 +572,48 @@
+   if (g_fp.qnnInterface.backendCreate(g_logHandle, nullptr, &g_backend) != QNN_BACKEND_NO_ERROR) {
+     std::cerr << "ERR backendCreate\n"; return 1;
+   }
+-  if (g_fp.qnnInterface.deviceCreate) {
+-    Qnn_ErrorHandle_t de = g_fp.qnnInterface.deviceCreate(g_logHandle, nullptr, &g_device);
+-    if (de != QNN_SUCCESS && de != QNN_DEVICE_ERROR_UNSUPPORTED_FEATURE) { std::cerr << "ERR deviceCreate rc=" << de << "\n"; return 1; }
++  if (devSel < 0) {
++    if (g_fp.qnnInterface.deviceCreate) {
++      Qnn_ErrorHandle_t de = g_fp.qnnInterface.deviceCreate(g_logHandle, nullptr, &g_device);
++      if (de != QNN_SUCCESS && de != QNN_DEVICE_ERROR_UNSUPPORTED_FEATURE) { std::cerr << "ERR deviceCreate rc=" << de << "\n"; return 1; }
++    }
++    std::cerr << "[DEVICE] UNPINNED (legacy deviceCreate(nullptr))\n";
++  } else {
++    // STRICT pin: the requested deviceId MUST exist in the platform info, else hard-fail
++    // (no silent fallback to an unpinned device -- a bogus id must be REJECTED).
++    if (!g_fp.qnnInterface.deviceCreate || !g_fp.qnnInterface.deviceGetPlatformInfo) {
++      std::cout << "ERR device_pin_unsupported" << std::endl; std::cerr << "ERR deviceCreate/deviceGetPlatformInfo NULL\n"; return 3;
++    }
++    const QnnDevice_PlatformInfo_t *pi = nullptr;
++    Qnn_ErrorHandle_t pe = g_fp.qnnInterface.deviceGetPlatformInfo(g_logHandle, &pi);
++    if (pe != QNN_SUCCESS || !pi) { std::cout << "ERR getPlatformInfo rc=" << pe << std::endl; return 3; }
++    int found = -1;
++    for (uint32_t i = 0; i < pi->v1.numHwDevices; ++i) {
++      std::cerr << "[DEVICE] hw[" << i << "] deviceId=" << pi->v1.hwDevices[i].v1.deviceId
++                << " numCores=" << pi->v1.hwDevices[i].v1.numCores << "\n";
++      if ((int)pi->v1.hwDevices[i].v1.deviceId == devSel) found = (int)i;
++    }
++    if (found < 0) {
++      std::cout << "ERR device_not_found requested=" << devSel << " numHwDevices=" << pi->v1.numHwDevices << std::endl;
++      std::cerr << "ERR requested deviceId " << devSel << " not in platform (" << pi->v1.numHwDevices << " devices) -- REJECTED\n";
++      return 3;
++    }
++    QnnDevice_HardwareDeviceInfo_t selHw = pi->v1.hwDevices[found];
++    QnnDevice_PlatformInfo_t selPlat;
++    selPlat.version = QNN_DEVICE_PLATFORM_INFO_VERSION_1;
++    selPlat.v1.numHwDevices = 1;
++    selPlat.v1.hwDevices = &selHw;
++    QnnDevice_Config_t devCfg;
++    devCfg.option = QNN_DEVICE_CONFIG_OPTION_PLATFORM_INFO;
++    devCfg.hardwareInfo = &selPlat;
++    const QnnDevice_Config_t *devCfgs[2] = {&devCfg, nullptr};
++    Qnn_ErrorHandle_t de = g_fp.qnnInterface.deviceCreate(g_logHandle, devCfgs, &g_device);
++    if (de != QNN_SUCCESS) {
++      std::cout << "ERR deviceCreate_pinned rc=" << de << " deviceId=" << devSel << std::endl;
++      std::cerr << "ERR pinned deviceCreate rc=" << de << "\n"; return 3;
++    }
++    std::cerr << "[DEVICE] PINNED deviceId=" << devSel << " (hw index " << found << ")\n";
++    std::cout << "DEVICE pinned=" << devSel << std::endl;
+   }
+ 
+   uint64_t tLoad0 = nowUs();
+@@ -527,6 +648,18 @@
+                   << " state=" << tm.state << " aenc_sum=" << tm.aenc << " dit_sum=" << tm.dit
+                   << " adec_sum=" << tm.adec << " glueah=" << tm.glueah << std::endl;
+       }
++    } else if (tok[0] == "BFRAME" && tok.size() >= 4) {
++      // BFRAME <frameDir> <constDir> <outPrefix> [dump0/1] [pixelPath]
++      bool dump = (tok.size() >= 5) && tok[4] == "1";
++      std::string pixelPath = (tok.size() >= 6) ? tok[5] : (tok[1] + "/pixel_values.raw");
++      BTimes tm; memset(&tm, 0, sizeof(tm));
++      uint64_t w0 = nowUs();
++      if (runBackboneFrame(tok[1], tok[2], tok[3], pixelPath, dump, tm)) {
++        uint64_t wall = nowUs() - w0;
++        std::cout << "OKBFRAME wall_us=" << wall << " vit=" << tm.vit << " mlp1=" << tm.mlp1
++                  << " gluevlm=" << tm.gluevlm << " llm=" << tm.llm << " vlln=" << tm.vlln
++                  << " pool=" << tm.pool << std::endl;
++      }
+     } else { std::cout << "ERR bad command: " << line << std::endl; }
+     std::cout.flush();
+   }

@@ -1,0 +1,7 @@
+# Extra packages for the drone benchmark, on top of the GR00T environment (setup/requirements-*.txt).
+# Versions are the ones behind the published numbers (x86); the Jetson pins are what JetPack 6 / our Orin had.
+mujoco==3.8.1
+PyOpenGL==3.1.10
+scipy==1.17.1 ; platform_machine == "x86_64"
+# contention runs: stand-in generation (CPU onnxruntime); the x86 workers get their own venv (contention/setup_workers_x86.sh)
+onnxruntime==1.29.0 ; platform_machine == "x86_64"

@@ -1,0 +1,88 @@
+{
+ "generator": "drone/contention/make_standins.py",
+ "seed": 20261015,
+ "made_utc": "2026-10-15T17:33:12Z",
+ "torch": "2.9.0+cu128",
+ "torchvision": "0.24.0+cu128",
+ "files": {
+  "seg_512.onnx": {
+   "sha256": "37fe22f13ade9882fe425ca6a45bb658b82051f39ad6a05fba737fcb7d886738",
+   "bytes": 44083080
+  },
+  "seg_1024.onnx": {
+   "sha256": "14096c5a4d170180c0bf3f177b8f6bb6be4f5c8f5bfbe59acb15d0476e82cb4a",
+   "bytes": 44083080
+  },
+  "radar_fusion.onnx": {
+   "sha256": "8ba0cbfbe40ae1e8fc79350bff37abab8caf3bddd9ab35799182d039c3c5e2b5",
+   "bytes": 194439
+  },
+  "check_inputs_fp32.npz": {
+   "sha256": "22856efe47a09d9ed6c0440f0b05c2f384493c84aae58de98a63d67b950f46c5",
+   "bytes": 12665360
+  },
+  "check_ref_fp32.npz": {
+   "sha256": "d0cda22d39a6ced5f9585dd9cb6c798217154dfbfc39a56eafbce25970885e0f",
+   "bytes": 110625542
+  },
+  "seg_tile0.raw": {
+   "sha256": "96d29abc4aeec12ab38f3c8c4d4ede14c3c2c52fd399e46b9230364bc525b945",
+   "bytes": 3145728
+  },
+  "seg_tile1.raw": {
+   "sha256": "d0516f957633b0976bd76209f5ff28fa14ed4b090ac599db9873fef6d7b170ee",
+   "bytes": 3145728
+  },
+  "seg_tile2.raw": {
+   "sha256": "97c6bfbda94b16a68e7260718b17e5cfbd092971c2dfb2482c49ddc33771b200",
+   "bytes": 3145728
+  },
+  "seg_tile3.raw": {
+   "sha256": "0a91cb1c51cf8f934278436ae16cae4a6a794748a2b9b3fa8f865cc0d98a11dd",
+   "bytes": 3145728
+  },
+  "radar_cloud0.raw": {
+   "sha256": "f54145a16b34dc6e6c283c9af42ad4956ec8b22b5eb2e969af959dcd37a940fd",
+   "bytes": 10240
+  },
+  "radar_cloud1.raw": {
+   "sha256": "36753622f62ac58306656cccb3e0bcc4966ebe36b1effe00307ee14ad8814f91",
+   "bytes": 10240
+  },
+  "radar_cloud2.raw": {
+   "sha256": "7f9b378bf0398fb26bd84f95c0498f9e3d3a22079527dfac26de46f0fc635f4c",
+   "bytes": 10240
+  },
+  "radar_cloud3.raw": {
+   "sha256": "e3a383153edf3f48e415c7a5c5e97e7c0e98e395c555361e1e4790ef43cc7433",
+   "bytes": 10240
+  },
+  "radar_cloud4.raw": {
+   "sha256": "b26a81bf64f35ff3e856b5dde8d1632ebcbbc3bf517f65b1ac914da645898552",
+   "bytes": 10240
+  },
+  "radar_cloud5.raw": {
+   "sha256": "8ab51416dcfe49a4fd64d03c5e45fe1f5318368d9e18fe45504cb537c9783308",
+   "bytes": 10240
+  },
+  "radar_cloud6.raw": {
+   "sha256": "caf6cc363f712799f1360d4a59f0760106a55d0c7a257ea943df40e545e638db",
+   "bytes": 10240
+  },
+  "radar_cloud7.raw": {
+   "sha256": "7bf40dba4d517a228b867a26ac4fd56720979c9d68428b7dc13f80e77f5158bb",
+   "bytes": 10240
+  }
+ },
+ "notes": {
+  "seg_out_absmax": 1.3026041984558105,
+  "seg_out_std": 0.21056653559207916,
+  "seg_argmax_classes_used": 20,
+  "seg_argmax_top_class_share": 0.5711507797241211,
+  "seg_zero_tile_out_absmax": 5.740301132202148,
+  "radar_out_absmax": 0.17131489515304565,
+  "radar_out_std": 0.08308010548353195,
+  "radar_mflop_per_frame": 48.562176
+ },
+ "onnxruntime_for_check_ref": "1.24.4 (CPU provider). check_ref_fp32.npz is onnxruntime's fp32 output and can differ in the last bits with another onnxruntime version; the ONNX files, tiles and clouds do not depend on it. Only the IQ-9075 output checks use check_ref_fp32.npz."
+}

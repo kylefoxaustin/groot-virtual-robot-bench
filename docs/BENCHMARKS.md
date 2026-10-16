@@ -66,9 +66,23 @@ One row per measurement behind our GR00T results. **Status** tells you what this
 | Controlled band-drop test: release at D = 10-100 ms × 3 runs, falls per D, Clopper-Pearson, Fisher, bit-identical runs, body-state check | 5090, Thor, Orin | `sonic/harness/sim_driver.py` (`SIM_RELEASE_DELAY_MS`), `sonic/harness/banddrop_x86.sh`, `sonic/harness/jetson_runs.sh banddrop` | same table (`band_drop_controlled_DERIVED`) + `results/sonic/sonic_banddrop_controlled_2026-10-14.json` | regenerates (counts from the per-run simulator records; intervals and tests DERIVED) |
 | Late-start fix (control thread SCHED_FIFO 90 + sleeping main loop): unloaded, CPU saturated, GPU co-tenant vs stock | Thor, Orin | `sonic/harness/latefix.patch`, `sonic/harness/jetson_runs.sh fix` | same table (`<board>/fix_*`, `<board>/stock_sameday_unloaded`) + `results/sonic/sonic_jetson_latefix_2026-10-14.json` | regenerates (table); published record (/proc scheduling readbacks, GR00T rates) |
 
+## GR00T drone (frozen GR00T N1.5 backbone + trained head, MuJoCo quadrotor)
+
+| Measurement | Boards | Script | Result | Status |
+|---|---|---|---|---|
+| Full-cost decision rate (raw frame + prompt + state to setpoints, host included), 3 × 64 decisions | 5090, Thor, Orin | `drone/run_fullcost.sh`, `drone/drone_fulltrt.py fullcost` | `results/drone/drone_table_2026-10-15.json` (`full_cost`) + `results/drone/raw/fullcost/` | regenerates (host + glue share and engine sums DERIVED) |
+| Same on the RTX 5090 pinned to P-cores, plus 75 s loops pinned and unpinned | 5090 | `drone/drone_fulltrt.py fullcost` / `loop` under `taskset` | same table + `results/drone/raw/{fullcost,loops}/` | regenerates |
+| Output gate in action space vs the RTX 5090 eager bf16 reference (RMS, per-frame p95, zero-image null, planted fault) | 5090, Thor, Orin | `drone/drone_fulltrt.py gate`, `drone/score_gate.py` | same table (`output_gate`) + `results/drone/raw/gate/` | regenerates (from the published setpoints; the features themselves are not published) |
+| Closed-loop reach, 40 held-out episodes: lockstep K = 4/15, K sweep, TensorRT vs eager, NVIDIA-EGL reruns | 5090 | `drone/closed_loop.py` | same table (`closed_loop`) + `results/drone/raw/closed_loop/rtx5090_*.jsonl` | regenerates (reach MEASURED; agreement and McNemar DERIVED) |
+| Closed-loop reach with the board serving every decision: lockstep K = 4 and back-to-back at the measured latency | Thor, Orin | `drone/drone_fulltrt.py serve` + `drone/closed_loop.py --policy` | same + `results/drone/raw/closed_loop/{thor,orin}_*.jsonl` | regenerates |
+| Moving while deciding: injected delay d = 1-17 ticks, naive and aligned, vs no delay | 5090 | `drone/closed_loop.py --d N --dmode M` | same + `results/drone/raw/closed_loop/rtx5090_delay_*.jsonl` | regenerates |
+| Nav rate with a 50 MP inspection burst, radar fusion (20 Hz, back to back), and all three jobs at once; gated per window | 5090, Thor, Orin | `drone/contention/` | same table (`contention`) + `results/drone/raw/contention/` | regenerates (rates from per-decision times; stand-ins regenerate from seed 20261015) |
+| IQ-9075 drone port, gate, full cost, closed loop, second-NSP contention | IQ-9075 | `drone/iq9/` | -- | scripts only |
+
 ## Not included
 
 - **Accelerators other than RTX 5090, Jetson AGX Thor, Jetson AGX Orin and Qualcomm IQ-9075** are not part of this repo.
 - **Qualcomm SDK code**: the QAIRT/QNN SDK, its SampleApp utilities (needed to build `resident_orch`) and the Hexagon
   SDK example skeleton are licensed by Qualcomm; get them from Qualcomm and follow `iq9/README.md`.
-- **Model weights, ONNX, engines, context binaries**: downloaded or rebuilt by the scripts; see [docs/SETUP.md](SETUP.md).
+- **Model weights, ONNX, engines, context binaries**: downloaded or rebuilt by the scripts; see [docs/SETUP.md](SETUP.md). The one
+  exception is the drone's small trained head and gate set (`drone/assets/`), which cannot be regenerated bit for bit.

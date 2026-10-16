@@ -291,3 +291,117 @@ MEASURED; `sonic/make_sonic_table.py` rebuilds every cell from `results/sonic/ra
 - 3 runs per arm; sim2sim only; the AGX Orin 64 GB developer kit, not the G1's Orin NX.
 
 Record: `results/sonic/sonic_jetson_latefix_2026-10-14.json` (the change, binaries, scheduling readbacks per run, GR00T rates, caveats). Reproduce: [sonic/README.md](sonic/README.md#late-start-fix-jetsons).
+
+## 9. GR00T as a drone's flight brain (MEASURED, 2026-10-14 / 2026-10-15)
+
+Same brain, new body: GR00T N1.5's frozen vision-language backbone (camera image + instruction in) with a small action head trained to fly a simulated quadrotor to a named pillar (16 velocity setpoints per decision, 20 ms apart). No diffusion transformer: the head replaces GR00T's action head. One decision = raw camera frame + prompt + drone state in, setpoints out, host work included (*full cost*). Method, scripts and how to run it: [drone/README.md](drone/README.md). Every number below is rebuilt from `results/drone/raw/` by `drone/make_drone_table.py`; setup, software and caveats: `results/drone/drone_setup_2026-10-15.json`.
+
+**Target.** 30 decisions per second (Hz) is our design choice, not a standard: any target from 23 to 39 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.
+
+### 9.1 Full-cost decision rate (MEASURED)
+
+3 runs × 64 decisions per machine, each run its own process. Jetsons at MAXN + `jetson_clocks`; RTX 5090 clocks not locked.
+
+| Machine | TensorRT | Full cost (median of 3 runs) | Run spread | Transform / GPU / head (ms) | Host + glue (DERIVED) | Engines alone, summed (DERIVED) |
+|---|---|---|---|---|---|---|
+| RTX 5090 | 11.2.1.2 | **7.16 ms = 139.7 Hz** | 1.09% | 1.77 / 5.00 / 0.36 | 2.6 ms (37%) | 4.57 ms = 219 Hz |
+| Jetson AGX Thor | 10.13.2.6 | **24.49 ms = 40.8 Hz** | 0.51% | 7.10 / 16.61 / 0.80 | 9.7 ms (40%) | 14.33 ms = 70 Hz |
+| Jetson AGX Orin 64 GB | 10.3.0 | **44.94 ms = 22.2 Hz** | 0.05% | 6.94 / 36.57 / 1.44 | 11.3 ms (25%) | 32.79 ms = 31 Hz |
+| RTX 5090, pinned to P-cores, 8 threads | 11.2.1.2 | **6.78 ms = 147.5 Hz** | 0.78% | 1.43 / 5.00 / 0.35 | | |
+
+Host + glue = full cost minus the three engines' in-pipeline time (from the gate pass): GR00T's input transforms, the projector and embedding merge, padding, pooling, copies, the head and a stream sync after every engine. **The RTX 5090's host CPU matters:** it is a hybrid CPU, and the decision takes about 7.2 ms with the Python thread on a performance core (P-core) and about 8.6 ms on an efficiency core (E-core). Over 75 s back to back: 145.8 Hz pinned to the performance cores (10 s bins within 1.8%), 120.7 Hz unpinned (10 s bins 113–136 Hz). The three short unpinned runs above happened to stay on performance cores.
+
+### 9.2 Output gate: same decisions as the RTX 5090 reference? (MEASURED)
+
+The 256 gate frames through each machine's TensorRT path, scored in **action space**: the setpoints the drone would fly, in units of the training data's action spread (σ), against the RTX 5090 running the policy eagerly in bf16 (what the head was trained on).
+
+| Machine | Deviation vs reference (gate ≤ 0.07σ) | Per-frame p95 (≤ 0.20σ) | vs fp32 control | Zero-image null (≥ 10×) | Planted fault (must fail) | Verdict |
+|---|---|---|---|---|---|---|
+| RTX 5090 | **0.027σ** | 0.056σ | 0.013σ | 1.39σ (51×) | 1.49σ, fails | **PASS** |
+| Jetson AGX Thor | **0.026σ** | 0.054σ | 0.011σ | 1.38σ (54×) | 1.49σ, fails | **PASS** |
+| Jetson AGX Orin 64 GB | **0.029σ** | 0.048σ | 0.015σ | 1.38σ (48×) | 1.49σ, fails | **PASS** |
+
+The reference's own bf16-vs-fp32 difference is 0.023σ; the three TensorRT machines differ from each other by 0.011–0.019σ. A pad-token swap and a rerun were bit-identical on every machine. The timed decisions are the gated decisions: the full-cost runs reproduce the gate's actions to float rounding.
+
+### 9.3 Closed loop: does it reach the pillar? (MEASURED; agreement and tests DERIVED)
+
+40 held-out episodes, the same on every machine, rendered with Mesa's software rasteriser (bit-repeatable). Reached = within 0.8 m of the named pillar within 25.6 s of flight. *Lockstep*: the simulator pauses for each decision, then flies 4 setpoints (80 ms). *Back-to-back*: the drone keeps flying the previous setpoints while the next decision is computed, and each new chunk lands its own latency late (rounded up to 20 ms ticks); on the Jetsons that latency is measured per decision (the board serves, the simulator runs on the x86 machine; board-side time while serving, so slightly above §9.1), on the RTX 5090 it is injected as 1 tick (its 7.2 ms rounded up).
+
+| Machine | Lockstep, 4 setpoints | Same outcome as the RTX 5090 (McNemar p) | Back-to-back at own latency | Latency → delay | Same outcome as the RTX 5090 at that delay (p) |
+|---|---|---|---|---|---|
+| RTX 5090 | **32/40** | -- | **33/40** | 7.2 ms → 1 tick (injected) | -- |
+| Jetson AGX Thor | **34/40** | 36/40 (0.62) | **35/40** | 25.5 ms → 2 ticks on every decision | 40/40 (1.00) |
+| Jetson AGX Orin 64 GB | **35/40** | 37/40 (0.25) | **36/40** | 45.2 ms → 3 ticks on every decision | 40/40 (1.00) |
+
+Thor and Orin agree on 37/40 episodes (lockstep) and 39/40 (back-to-back). No pair differs at p < 0.05: at 40 episodes that rules out a large drop, not a small one. Episodes 7, 11, 12 and 17 fail on every machine; in these arms every failure is a fly-away (at least 6.7 m from the pillar), not a near miss.
+
+**On the RTX 5090 alone** (local closed loop):
+
+- Setpoints flown per decision (lockstep): 1: 30/40, 2: 33/40, 4: 32/40, 8: 35/40, 12: 34/40, 15: 37/40, 16: 35/40. Re-deciding every 20 ms is the worst (K = 1 vs K = 15: McNemar p = 0.039, uncorrected).
+- TensorRT fp16 vs the eager bf16 policy, lockstep K = 4: 32/40 vs 35/40, same outcome 37/40; K = 15: 37/40 vs 37/40, same outcome 40/40.
+- With NVIDIA's EGL renderer (not bit-repeatable) the eager policy reached 33/40, 33/40 and 33/40 in three runs; one rerun flipped 2 episodes. That is why every per-episode comparison here uses the software renderer.
+
+**Flying while deciding, delay sweep** (RTX 5090 policy, delay injected; McNemar vs the same K with no delay, DERIVED):
+
+| Setpoints per decision K | Delay d (ticks = ms) | Naive (late chunk starts at setpoint 0) | Aligned (skips the d setpoints already past) | No delay, same K | p (naive / aligned) |
+|---|---|---|---|---|---|
+| 15 | 1 = 20 ms | 36/40 | 35/40 | 37/40 | 1.00 / 0.50 |
+| 15 | 2 = 40 ms | 37/40 | 37/40 | 37/40 | 1.00 / 1.00 |
+| 15 | 3 = 60 ms | 34/40 | 34/40 | 37/40 | 0.25 / 0.25 |
+| 15 | 5 = 100 ms | 36/40 | 33/40 | 37/40 | 1.00 / 0.22 |
+| 15 | 8 = 160 ms | 38/40 | 37/40 | 37/40 | 1.00 / 1.00 |
+| 4 | 1 = 20 ms | 34/40 | 31/40 | 32/40 | 0.62 / 1.00 |
+| 4 | 2 = 40 ms | 35/40 | 34/40 | 32/40 | 0.38 / 0.62 |
+| 4 | 3 = 60 ms | 35/40 | 35/40 | 32/40 | 0.38 / 0.38 |
+| 1 (= d, back-to-back) | 1 = 20 ms | 33/40 | 31/40 | 30/40 | 0.25 / 1.00 |
+| 2 (= d, back-to-back) | 2 = 40 ms | 35/40 | 32/40 | 33/40 | 0.50 / 1.00 |
+| 3 (= d, back-to-back) | 3 = 60 ms | 36/40 | 33/40 | 33/40 | 0.25 / 1.00 |
+| 4 (= d, back-to-back) | 4 = 80 ms | 37/40 | 36/40 | 32/40 | 0.06 / 0.12 |
+| 5 (= d, back-to-back) | 5 = 100 ms | 38/40 | 38/40 | 35/40 | 0.25 / 0.25 |
+| 15 (= d, back-to-back) | 15 = 300 ms | 39/40 | 39/40 | 37/40 | 0.62 / 0.62 |
+| 17 (= d, back-to-back) | 17 = 340 ms | 40/40 | 36/40 | 36/40 | 0.12 / 1.00 |
+
+No delayed arm is worse than its no-delay control at p < 0.05 (smallest p = 0.062, an arm that did *better*). On this task, flying the previous chunk while deciding does not cost reach, up to 340 ms of delay. Aligning the late chunk does not help.
+
+### 9.4 Sharing the computer with other AI jobs (MEASURED rates; % and gate DERIVED)
+
+The nav policy (the drone policy making its flight decisions) runs back to back while other jobs share the same GPU as separate processes. The **50 MP inspection AI on the flight computer is a stress case** (real drones usually run it on a payload computer, or after the flight): a segmentation stand-in over 190 tiles of 512 × 512, 5 bursts 5 s apart. Radar = a point-cloud fusion stand-in at 20 Hz (or back to back). Route planning = the segmentation stand-in at 1024 × 1024, one frame every 3 s (an ASSUMED duty). Stand-ins have random weights from a fixed seed; only their compute matters. Nav decisions are gated in every window (all PASS).
+
+**The 50 MP inspection burst:**
+
+| Machine | Run | Nav alone | Nav during the job | % of alone | Per window | Window length | Gate, all decisions |
+|---|---|---|---|---|---|---|---|
+| RTX 5090 | unpinned, rep 1 | 115.93 Hz | **81.71 Hz** | 70% | 78.88–83.71 Hz | 0.18 s | 0.027σ |
+| RTX 5090 | unpinned, rep 2 | 113.64 Hz | **81.96 Hz** | 72% | 79.52–84.02 Hz | 0.17–0.18 s | 0.027σ |
+| RTX 5090 | nav on P-cores 0–11 (6 threads), burst on 12–15 | 147.28 Hz | **86.01 Hz** | 58% | 85.79–86.18 Hz | 0.19 s | 0.027σ |
+| Jetson AGX Thor | seeded stand-in | 41.12 Hz | **18.15 Hz** | 44% | 16.71–18.59 Hz | 0.54 s | 0.026σ |
+| Jetson AGX Orin 64 GB | seeded stand-in | 22.18 Hz | **11.96 Hz** | 54% | 11.03–12.26 Hz | 1.06–1.09 s | 0.029σ |
+| Jetson AGX Thor | first, unseeded stand-in | 40.95 Hz | **17.69 Hz** | 43% | 16.48–18.66 Hz | 0.54–0.55 s | 0.026σ |
+| Jetson AGX Orin 64 GB | first, unseeded stand-in | 22.07 Hz | **11.52 Hz** | 52% | 11.40–11.72 Hz | 1.11–1.14 s | 0.029σ |
+
+Burst alone, per tile: RTX 5090 0.53 ms, Thor 1.92 ms, Orin 2.94 ms; with the nav running it stretches to 0.93, 2.83 and 5.58 ms (fastest burst). From 1 s after each burst the nav is back at its solo rate, and decisions made during a burst are bit-identical to decisions on the same frame outside it: contention changes timing, not numerics.
+
+**Radar fusion:**
+
+| Machine | Run | Nav alone | Nav during the job | % of alone | Per window | Window length | Gate, all decisions |
+|---|---|---|---|---|---|---|---|
+| RTX 5090 | 20 Hz | 113.46 Hz | **121.50 Hz** | 107% | 112.25–136.50 Hz | 4.00 s | 0.027σ |
+| Jetson AGX Thor | 20 Hz | 40.67 Hz | **40.40 Hz** | 99% | 40.25–40.75 Hz | 4.00 s | 0.026σ |
+| Jetson AGX Orin 64 GB | 20 Hz | 22.29 Hz | **22.05 Hz** | 99% | 22.00–22.25 Hz | 4.00 s | 0.029σ |
+| RTX 5090 | back to back, 4 s | 127.23 Hz | **104.54 Hz** | 82% | 90.00–113.75 Hz | 4.00 s | 0.027σ |
+| Jetson AGX Thor | back to back, 4 s | 40.74 Hz | **33.99 Hz** | 83% | 33.74–34.49 Hz | 4.00 s | 0.026σ |
+| Jetson AGX Orin 64 GB | back to back, 4 s | 22.15 Hz | **18.00 Hz** | 81% | 17.75–18.25 Hz | 4.00 s | 0.029σ |
+
+Radar at 20 Hz costs about 1% on the Jetsons (98.9% and 99.4% of the nav rate right after each window). On the RTX 5090 the windows swing with the host CPU's core placement more than radar costs, so the effect cannot be resolved there. A second radar arm (400 fusions back to back) finished in under 0.25 s per window and left fewer than 5 nav decisions in every window on the Jetsons and in 2 of 5 on the RTX 5090; 5 decisions is our minimum for a scored window, so it is marked VOID (not scored) and kept in the raw data.
+
+**All three at once** (radar 20 Hz + route planning throughout, plus the 5 inspection bursts):
+
+| Machine | Nav alone | Outside the bursts | Inside the bursts | Planning frame (mean) | Gate, all decisions |
+|---|---|---|---|---|---|
+| RTX 5090 | 115.86 Hz | 120.33 Hz (104%) | **79.94 Hz** (69%) | 2.4 ms | 0.027σ |
+| Jetson AGX Thor | 41.05 Hz | 40.38 Hz (98%) | **17.97 Hz** (44%) | 10.7 ms | 0.026σ |
+| Jetson AGX Orin 64 GB | 22.18 Hz | 21.88 Hz (99%) | **11.91 Hz** (54%) | 21.8 ms | 0.029σ |
+
+Inside the bursts all three jobs together cost about what the burst alone costs; radar plus planning take at most ~2% outside them.
+
+**Caveats.** Simulation only: a kinematic drone (velocity setpoints integrated every 20 ms, no aerodynamics), a toy scene with four coloured pillars, ~2 m/s, a 0.8 m goal. The flight controller that would track the setpoints is not modelled. The policy is a frozen GR00T backbone plus a small behaviour-cloned head, not a GR00T fine-tune; a 3B vision-language-action model is far heavier than the navigation networks production drones fly. The 50 MP inspection AI on the flight computer is a stress case: real drones usually run it on a payload computer or after the flight. The stand-ins have random weights: their outputs mean nothing; only their compute shape and the gated nav decisions matter. Route planning duty is ASSUMED. Reference = the RTX 5090's eager bf16 policy (what the head was trained on), not ground truth; bf16 is itself 0.023σ from fp32. Closed loop: the simulator never runs while the policy computes; the delay arms apply the latency in simulator time instead. With 40 paired episodes only large reach differences are detectable. RTX 5090 clocks were not locked, and its host CPU is hybrid: the full-cost decision takes about 7.2 ms with the Python thread on a P-core and about 8.6 ms on an E-core, and the OS moves it every few seconds. Short unpinned runs can land in either state; pinning (the pinned rows) removes it. NVIDIA's full TensorRT path synchronises after every engine and uses no CUDA graphs; a fused export could be faster (not measured). Predictions for every arm were written down before it ran; they are not reproduced here.

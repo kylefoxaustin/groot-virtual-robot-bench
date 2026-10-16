@@ -5,9 +5,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"; source ./versions.env; source ./env.sh
 mkdir -p "$GVRB_WORK"
+# No git-lfs binary but an lfs filter in your git config would break the checkout: switch the filter off for these clones
+# (nothing the benchmarks use is in LFS).
+NOLFS=(); command -v git-lfs >/dev/null || NOLFS=(-c filter.lfs.process= -c filter.lfs.smudge= -c filter.lfs.clean= -c filter.lfs.required=false)
 clone() {  # url commit dir
-  if [ ! -d "$3/.git" ]; then GIT_LFS_SKIP_SMUDGE=1 git clone -q "$1" "$3"; fi
-  (cd "$3" && GIT_LFS_SKIP_SMUDGE=1 git -c advice.detachedHead=false checkout -q "$2")
+  if [ ! -d "$3/.git" ]; then GIT_LFS_SKIP_SMUDGE=1 git "${NOLFS[@]}" clone -q "$1" "$3"; fi
+  (cd "$3" && GIT_LFS_SKIP_SMUDGE=1 git "${NOLFS[@]}" -c advice.detachedHead=false checkout -q "$2")
   echo "$(basename "$3") @ $(cd "$3" && git rev-parse --short HEAD)"
 }
 clone "$ISAAC_GR00T_URL" "$ISAAC_GR00T_COMMIT" "$GROOT_REPO"

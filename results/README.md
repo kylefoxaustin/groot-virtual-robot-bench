@@ -16,6 +16,10 @@ Every published number lives here as JSON. [RESULTS.md](../RESULTS.md) is genera
 | `sonic/sonic_<board>_<date>.json` | GEAR-SONIC whole-body controller records (RTX 5090 reference, Jetson AGX Thor, Jetson AGX Orin): setup, versions, engine hashes, engine-correctness gate, loaded arms, predictions vs outcomes |
 | `sonic/sonic_same_span_table_2026-10-14.json` | every SONIC run and group, rebuilt from `sonic/raw/` by `sonic/make_sonic_table.py` |
 | `sonic/raw/<board>/<run>__*` | per-tick timing (`__ticks.csv.gz`), planner calls (`__planner.csv.gz`) and the per-run simulator record (`__run.json`); times relative to control start |
+| `drone/drone_table_2026-10-15.json` | every drone number (full cost, output gate, closed loop, contention), rebuilt from `drone/raw/` by `drone/make_drone_table.py` |
+| `drone/drone_setup_2026-10-15.json` | how the drone runs were set up: machines, software, clocks, engine checksums, protocols, the 30 Hz target, caveats |
+| `drone/raw/` | per-decision timings (`fullcost/`, `loops/`), the gate setpoints (`gate/`), one row per flight (`closed_loop/`), per-decision times and co-tenant windows (`contention/`) |
+| `drone/standins_MANIFEST.json` | sha256 of the seeded contention stand-ins, to compare with `drone/contention/make_standins.py` |
 | `profiling/` | profiling records, published as measured. `_CLOSED_` in a file name means the investigation is finished |
 
 Dates in file names are when the measurement was made. Most records carry a `tag` (MEASURED / DERIVED / SOURCED), plus software versions and method. Clocks are in the speed

@@ -46,3 +46,5 @@ iq9/work/optionB/src/PAL/
 iq9/work/qnn/io/
 iq9/work/optionB/src/SampleApp.hpp
 iq9/work/optionB/src/QnnTypeMacros.hpp
+# drone: the two small assets that cannot be regenerated bit for bit are shipped (drone/assets/MANIFEST.json)
+!drone/assets/*.npz

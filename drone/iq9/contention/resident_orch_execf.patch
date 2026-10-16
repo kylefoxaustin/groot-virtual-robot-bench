@@ -1,0 +1,112 @@
+--- a/iq9/work/optionB/src/resident_orch.cpp
++++ b/iq9/work/optionB/src/resident_orch.cpp
+@@ -15,6 +15,8 @@
+ //   BFRAME <frameDir> <constDir> <outPrefix> [dump 0|1] [pixelPath] -> OKBFRAME wall_us=.. vit=.. ...
+ //                            (the drone policy's backbone: ViT -> mlp1/scatter -> LLM -> vlln -> mean-pool)
+ //   --device N : pin every graph to HTP device id N (strict: an unknown id is an error, never a fallback)
++//   EXECT / EXECF / EXECNOP <graph> <list> <outDir> [sleep_us] / EXECONLY <graph>  -> OK <graph> <exec_us> k=v ...
++//                            (EXEC with stage timers / one-fwrite output / no NPU work / NPU work only)
+ //
+ // GFRAME runs GR00T's whole glued action loop IN-MEMORY: ViT -> [mlp1 GEMM +
+ // embed/scatter host glue] -> LLM -> vl-self-attn -> state-enc -> 4x{action-enc +
+@@ -26,6 +28,7 @@
+ //==============================================================================
+ 
+ #include <chrono>
++#include <ctime>
+ #include <cmath>
+ #include <cstdint>
+ #include <cstdio>
+@@ -44,6 +47,7 @@
+ #include "IOTensor.hpp"
+ #include "Logger.hpp"
+ #include "PAL/DynamicLoading.hpp"
++#include "PAL/Directory.hpp"
+ #include "QnnSampleAppUtils.hpp"
+ #include "QnnTypeMacros.hpp"
+ #include "QnnWrapperUtils.hpp"
+@@ -517,6 +521,69 @@
+   return true;
+ }
+ 
++
++// ---- instrumented / fast / stubbed variants of EXEC (drone contention study) --------------------
++// mode 0 = EXECT   : the EXEC path unchanged, with per-stage wall + CPU timers (profile)
++// mode 1 = EXECF   : EXEC with the output written by ONE fwrite of the client buffer (same bytes, same path)
++// mode 2 = EXECNOP : EXEC's host work (list parse, input read/populate, byte-wise output write) with
++//                    graphExecute REPLACED by usleep(sleepUs) - the scan's host load with NO NPU work
++// mode 3 = EXECONLY: graphExecute only on the already-populated client buffers - NPU work, minimal host
++static uint64_t cpuUs(clockid_t c) { timespec t; clock_gettime(c, &t); return (uint64_t)t.tv_sec * 1000000ull + t.tv_nsec / 1000; }
++bool execGraphG(const std::string &name, const std::string &listFile, const std::string &outDir, int mode,
++                uint64_t sleepUs, std::string &rep) {
++  auto it = g_graphs.find(name);
++  if (it == g_graphs.end()) { std::cout << "ERR unknown graph: " << name << std::endl; return false; }
++  Loaded &L = it->second;
++  uint64_t w0 = nowUs(), c0 = cpuUs(CLOCK_THREAD_CPUTIME_ID), p0 = cpuUs(CLOCK_PROCESS_CPUTIME_ID);
++  uint64_t wRl = 0, wPop = 0, wEx = 0, wWr = 0, cEx = 0, pEx = 0, cWr = 0;
++  size_t numPop = 1, batch = 1;
++  if (mode != 3) {
++    std::vector<std::vector<std::vector<std::string>>> fileLists;
++    std::vector<std::unordered_map<std::string, uint32_t>> nameToIdx;
++    bool ok = false;
++    std::tie(fileLists, nameToIdx, ok) = sample_app::readInputLists({listFile});
++    if (!ok || fileLists.empty() || fileLists[0].empty()) { std::cout << "ERR readInputLists: " << listFile << std::endl; return false; }
++    uint64_t w1 = nowUs(); wRl = w1 - w0;
++    iotensor::StatusCode s;
++    std::tie(s, numPop, batch) = g_io.populateInputTensors(
++        0, fileLists[0], 0, false, nameToIdx[0], L.inputs, (*L.graphsInfo)[0], iotensor::InputDataType::FLOAT);
++    if (s != iotensor::StatusCode::SUCCESS) { std::cout << "ERR populateInputTensors: " << name << std::endl; return false; }
++    wPop = nowUs() - w1;
++  }
++  uint64_t e0 = nowUs(), ce0 = cpuUs(CLOCK_THREAD_CPUTIME_ID), pe0 = cpuUs(CLOCK_PROCESS_CPUTIME_ID);
++  if (mode == 2) { usleep(sleepUs); }
++  else {
++    Qnn_ErrorHandle_t e = g_fp.qnnInterface.graphExecute((*L.graphsInfo)[0].graph, L.inputs, nIn(L),
++                                                         L.outputs, nOut(L), nullptr, nullptr);
++    if (e != QNN_GRAPH_NO_ERROR) { std::cout << "ERR graphExecute rc=" << e << " graph=" << name << std::endl; return false; }
++  }
++  wEx = nowUs() - e0; cEx = cpuUs(CLOCK_THREAD_CPUTIME_ID) - ce0; pEx = cpuUs(CLOCK_PROCESS_CPUTIME_ID) - pe0;
++  uint64_t r0 = nowUs(), cr0 = cpuUs(CLOCK_THREAD_CPUTIME_ID);
++  if (mode == 0 || mode == 2) {
++    if (g_io.writeOutputTensors(0, 0, (*L.graphsInfo)[0].graphName, L.outputs, nOut(L),
++                                iotensor::OutputDataType::FLOAT_ONLY, 1, outDir, numPop, batch) !=
++        iotensor::StatusCode::SUCCESS) { std::cout << "ERR writeOutputTensors: " << name << std::endl; return false; }
++  } else if (mode == 1) {
++    // same file layout as writeOutputTensors(graphsCount=1, startIdx=0, numPop=1): <outDir>/Result_0/<tensor>.raw
++    std::string dir = outDir + "/Result_0";
++    if (!pal::Directory::makePath(dir)) { std::cout << "ERR makePath " << dir << std::endl; return false; }
++    for (uint32_t i = 0; i < nOut(L); ++i) {
++      if (dtype(L.outputs[i]) != QNN_DATATYPE_FLOAT_32) { std::cout << "ERR EXECF needs FLOAT_32 outputs" << std::endl; return false; }
++      const char *tn = QNN_TENSOR_GET_NAME(L.outputs[i]);
++      std::string f = dir + "/" + ((tn && strlen(tn)) ? std::string(tn) : ("Output_" + std::to_string(i))) + ".raw";
++      FILE *fo = fopen(f.c_str(), "wb"); if (!fo) { std::cout << "ERR open " << f << std::endl; return false; }
++      size_t n = telems(L.outputs[i]) * sizeof(float);
++      size_t got = fwrite(QNN_TENSOR_GET_CLIENT_BUF(L.outputs[i]).data, 1, n, fo); fclose(fo);
++      if (got != n) { std::cout << "ERR short write " << f << std::endl; return false; }
++    }
++  }
++  wWr = nowUs() - r0; cWr = cpuUs(CLOCK_THREAD_CPUTIME_ID) - cr0;
++  uint64_t wT = nowUs() - w0, cT = cpuUs(CLOCK_THREAD_CPUTIME_ID) - c0, pT = cpuUs(CLOCK_PROCESS_CPUTIME_ID) - p0;
++  rep = std::to_string(wEx) + " rl=" + std::to_string(wRl) + " pop=" + std::to_string(wPop) + " ex=" + std::to_string(wEx) +
++        " wr=" + std::to_string(wWr) + " tot=" + std::to_string(wT) + " cpu_ex=" + std::to_string(cEx) + " pcpu_ex=" + std::to_string(pEx) +
++        " cpu_wr=" + std::to_string(cWr) + " cpu_tot=" + std::to_string(cT) + " pcpu_tot=" + std::to_string(pT);
++  return true;
++}
+ }  // namespace
+ 
+ int main(int argc, char **argv) {
+@@ -660,6 +727,14 @@
+                   << " gluevlm=" << tm.gluevlm << " llm=" << tm.llm << " vlln=" << tm.vlln
+                   << " pool=" << tm.pool << std::endl;
+       }
++    } else if ((tok[0] == "EXECT" || tok[0] == "EXECF" || tok[0] == "EXECNOP") && tok.size() >= 4) {
++      int mode = tok[0] == "EXECT" ? 0 : (tok[0] == "EXECF" ? 1 : 2);
++      uint64_t sl = (mode == 2 && tok.size() >= 5) ? strtoull(tok[4].c_str(), nullptr, 10) : 0;
++      std::string rep;
++      if (execGraphG(tok[1], tok[2], tok[3], mode, sl, rep)) std::cout << "OK " << tok[1] << " " << rep << std::endl;
++    } else if (tok[0] == "EXECONLY" && tok.size() >= 2) {
++      std::string rep;
++      if (execGraphG(tok[1], "", "", 3, 0, rep)) std::cout << "OK " << tok[1] << " " << rep << std::endl;
+     } else { std::cout << "ERR bad command: " << line << std::endl; }
+     std::cout.flush();
+   }

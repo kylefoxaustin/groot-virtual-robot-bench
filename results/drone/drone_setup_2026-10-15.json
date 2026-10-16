@@ -1,0 +1,69 @@
+{
+ "_about": "How the drone numbers in drone_table_2026-10-15.json were measured: machines, software, clocks, engines, protocols, caveats. The numbers themselves are rebuilt from raw/ by drone/make_drone_table.py.",
+ "tag": "MEASURED (setup as run, 2026-10-14 to 2026-10-15)",
+ "policy": {
+  "definition": "GR00T N1.5-3B (nvidia/GR00T-N1.5-3B @ 869830fc, base model, frozen) vision-language backbone + a 1,348,672-weight drone action head trained by behaviour cloning on frozen GR00T features (drone/assets/drone_head.npz). No diffusion transformer.",
+  "decision_path": "raw 224 px FPV frame + 'fly to the <colour> pillar' + drone state -> GR00T's own input transforms (host CPU; frame resized to 256 first) -> SigLIP ViT (TensorRT fp16) -> pixel shuffle + mlp1 + embedding + image-token scatter (torch, NVIDIA deployment_scripts/trt_model_forward.eagle_tensorrt_forward, unmodified) -> Qwen LLM (TensorRT fp16, 296-token engine; the 289-token prompt right-padded with pad id 151643, mask 0) -> rows [:289] -> vlln + vl_self_attention (TensorRT fp16, 289-token engine) -> mean over 289 tokens (GPU fp32) -> head (numpy float64 on the host CPU, single-threaded BLAS) -> 16 x [vx, vy, vz, yaw_rate] setpoints, 20 ms apart",
+  "engines": "fp16, strongly typed, built by speed/build_engines.py: ViT and LLM = the 'A' engine build of the speed records (results/speed/groot_*_fulltrt_e2e_2026-10-12.json); vlln + vl_self_attention rebuilt at 289 tokens (it is bidirectional, so padding would change the valid rows) from the same ONNX",
+  "engine_md5": {
+   "rtx5090": {
+    "vit_fp16": "027e4a5d3b74f439e8928bf93e3e72e4",
+    "llm_fp16": "72741ee8c581702073d16d6c03cbed99"
+   },
+   "thor": {
+    "vit_fp16": "948ad5b7d83701ece8b9bcffd4103165",
+    "llm_fp16": "8b3e90a58c071867debdc709b2394a92"
+   },
+   "orin": {
+    "vit_fp16": "0412e82a07767f27d32db5bdfd407570",
+    "llm_fp16": "106581e53ac60afc8d487bf4dafcff0f"
+   }
+  },
+  "onnx_md5_vlln": "vlln_vl_self_attention.onnx 4768bb9636756550dfaf439e796b75d4 / .data 04761bbe00a07e99d84a0b1076d77909 (identical on all three boards)",
+  "assets_sha256": {
+   "drone_head.npz": "09564a0213c7857bf3bb9f36dfcde8692861c0c103186e033f88fc86958d6de5",
+   "gate_set.npz": "c5b1163e7af134ee2f5c2c67d0109937e7892ee7351316a4b318be0f5817bc1a"
+  }
+ },
+ "machines": {
+  "rtx5090": {
+   "hardware": "RTX 5090 32 GB, Intel i9-14900KF (8 P-cores = CPUs 0-15, 16 E-cores = CPUs 16-31), x86 Ubuntu",
+   "software": "Python 3.12 venv: torch 2.9.0+cu128, TensorRT 11.2.1.2, numpy 2.5.2, MuJoCo 3.8.1 (= setup/requirements-x86-groot.txt + drone/requirements-drone.txt); contention workers in the system Python with TensorRT 10.16.1",
+   "clocks": "not locked (default boost; nvidia-smi clocks recorded before and after every run in the raw files)"
+  },
+  "thor": {
+   "hardware": "Jetson AGX Thor developer kit (14 x Neoverse-V3AE), JetPack 7.2.1",
+   "software": "policy in nvcr.io/nvidia/pytorch:25.08-py3 (TensorRT 10.13.2.6, torch 2.8.0 nv25.08, numpy 1.26.4; setup/thor_container.sh); contention workers native with JetPack's TensorRT 10.16.2",
+   "clocks": "MAXN + jetson_clocks, read back before and after: CPU 2601 MHz, GPU 1575 MHz, EMC 4266 MHz"
+  },
+  "orin": {
+   "hardware": "Jetson AGX Orin 64 GB developer kit (12 x A78AE), JetPack 6 (L4T 36.4.7)",
+   "software": "native: TensorRT 10.3.0, torch 2.8.0, numpy 1.26.4 (setup/setup_orin_jp6.sh)",
+   "clocks": "MAXN + jetson_clocks, read back before and after: CPU 2201.6 MHz, GPU 1300.5 MHz, EMC 3199 MHz"
+  },
+  "simulator_host_for_jetson_flights": "the x86 machine above (CPU only): MuJoCo 3.8.1 with Mesa llvmpipe (LLVM 15.0.7) rendering, driving the board's policy server over an ssh tunnel; the network time is excluded from the delay"
+ },
+ "protocols": {
+  "full_cost": "3 runs per machine, each a separate process: 64 decisions after 5 warm-up decisions, frame offsets 0 / 64 / 128 of the 256 gate frames. Each decision is timed from the raw frame to the setpoints (GPU synchronised at the start; the .cpu() copy of the pooled feature synchronises at the end). Rate = 1000 / median of the three run medians. The RTX 5090 was repeated with the process pinned to the P-cores and 8 torch threads, and as two 75 s loops (pinned, and unpinned with 24 threads).",
+  "output_gate": "the 256 gate frames through the board's TensorRT path -> head -> the 4 setpoints a K = 4 loop flies, in vx / vz / yaw_rate, compared with the RTX 5090's eager bf16 policy on the same frames, in units of the training data's action standard deviation (sigma). G1 pooled RMS <= 0.07 sigma; G2 per-frame p95 <= 0.20; G3 a zero-image null must deviate >= 10 x G1; G4 a planted fault (another frame's features, same instruction) must fail G1. The thresholds were fixed before the first board ran.",
+  "closed_loop": "40 held-out episodes (seeds 7000-7039, colour = episode mod 4, start x and y uniform in +-4 m, 1.5-3 m up, random heading). Reached = within 0.8 m of the pillar horizontally, checked at every decision; budget 1,280 control ticks of 20 ms (25.6 s). Lockstep K: the simulator pauses for each decision, then flies K setpoints. Delay d: the drone keeps flying the previous chunk for d ticks after the observation (hovering before the first chunk lands), naive = the late chunk starts at setpoint 0, aligned = at setpoint d. Back-to-back: d = K = the decision's own latency rounded up to 20 ms ticks. All rendering with Mesa llvmpipe (bit-repeatable) except the 'nvidia' reproduction arms.",
+  "contention": "the nav policy back to back on the 256 gate frames in one process; co-tenants in separate processes on the same GPU (default time slicing, no MPS). A nav decision counts in a window if it ENDS inside it; a co-tenant window is the worker's own [start, end] after its engine load and warm-up; solo = from 1 s after the nav is ready to the first co-tenant start; recovery = 1 s after a co-tenant ends to the next start (or + 5 s). Windows with fewer than 5 decisions are VOID. Every window's decisions are gated as above. 50 MP inspection burst = a segmentation stand-in over 190 tiles of 512 x 512 on zero inputs, 5 bursts 5 s apart; radar = a PointNet-style fusion stand-in at 20 Hz (or back to back); route planning = the segmentation stand-in at 1024 x 1024, one frame every 3 s (ASSUMED duty). Stand-ins: drone/contention/make_standins.py, seed 20261015, random weights.",
+  "contention_first_standin": "the runs named *_c2_scan_0925standin used the first, unseeded stand-in of 2026-09-25 (same graph recipe, different random weights; not regenerable from this repo). The seeded stand-in matched it per tile on Thor (ratio 1.0007) and is 7% faster per tile on Orin (traced to the old default-init weights)."
+ },
+ "targets": {
+  "decision_rate_target_hz": 30,
+  "why": "any target from 23 to 39 Hz gives the same verdict (alone: the RTX 5090 and Thor meet it, Orin does not; during the inspection burst only the RTX 5090 does). We picked 30 Hz for this drone: it flies at about 2 m/s and takes a setpoint every 20 ms, so 30 decisions per second keeps each plan less than about 7 cm of flight old. In the simulator the reach numbers hardly depend on speed (it waits for the policy, or applies the delay exactly); on a real drone a slow brain flies on stale plans.",
+  "range_note": "40 Hz would be marginal for Thor: its full-cost rate is 40.8 Hz, but its decisions while serving the closed loop took 25.5 ms (39.2 Hz) and one window of the all-jobs run measured 39.8 Hz."
+ },
+ "caveats": [
+  "Simulation only: a kinematic drone (velocity setpoints integrated every 20 ms, no aerodynamics), a toy scene with four coloured pillars, ~2 m/s, a 0.8 m goal. The flight controller that would track the setpoints is not modelled.",
+  "The policy is a frozen GR00T backbone plus a small behaviour-cloned head, not a GR00T fine-tune; a 3B vision-language-action model is far heavier than the navigation networks production drones fly.",
+  "The 50 MP inspection AI on the flight computer is a stress case: real drones usually run it on a payload computer or after the flight.",
+  "The stand-ins have random weights: their outputs mean nothing; only their compute shape and the gated nav decisions matter. Route planning duty is ASSUMED.",
+  "Reference = the RTX 5090's eager bf16 policy (what the head was trained on), not ground truth; bf16 is itself 0.023\u03c3 from fp32.",
+  "Closed loop: the simulator never runs while the policy computes; the delay arms apply the latency in simulator time instead. With 40 paired episodes only large reach differences are detectable.",
+  "RTX 5090 clocks were not locked, and its host CPU is hybrid: the full-cost decision takes about 7.2 ms with the Python thread on a P-core and about 8.6 ms on an E-core, and the OS moves it every few seconds. Short unpinned runs can land in either state; pinning (the pinned rows) removes it.",
+  "NVIDIA's full TensorRT path synchronises after every engine and uses no CUDA graphs; a fused export could be faster (not measured).",
+  "Predictions for every arm were written down before it ran; they are not reproduced here."
+ ]
+}

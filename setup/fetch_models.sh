@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"; source ./versions.env; source ./env.sh
 dl() { python3 -c "import sys; from huggingface_hub import snapshot_download as s; s(sys.argv[1], revision=sys.argv[2], local_dir=sys.argv[3])" "$1" "$2" "$3"; }
-python3 -c "import huggingface_hub" 2>/dev/null || { echo "pip install huggingface_hub first"; exit 1; }
+python3 -c "import huggingface_hub" 2>/dev/null || { echo "needs huggingface_hub: pip install it into a venv, or on Jetson AGX Thor run: bash setup/thor_container.sh 'bash setup/fetch_models.sh $*'"; exit 1; }
 what="${1:-all}"
 [ "$what" = ft ]   || dl "$BASE_MODEL_REPO" "$BASE_MODEL_REV" "$GROOT_MODEL"
 [ "$what" = base ] || dl "$FT_MODEL_REPO"   "$FT_MODEL_REV"   "$GROOT_FT_MODEL"

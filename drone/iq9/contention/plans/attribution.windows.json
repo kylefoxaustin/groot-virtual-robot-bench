@@ -1,0 +1,6 @@
+[{"label": "s1_exec", "workers": ["s1"]},
+ {"label": "h_host_only", "workers": ["h"]},
+ {"label": "n_npu_only", "workers": ["n"]},
+ {"label": "f_execf", "workers": ["f"]},
+ {"label": "s2_exec", "workers": ["s2"]},
+ {"label": "recovery", "after": "s2", "offset_s": 1, "len_s": 50}]

@@ -1,0 +1,5 @@
+# The simulator side only (drone/closed_loop.py --policy HOST:PORT): no GPU, no GR00T. For a machine that just flies
+# the drone against a policy server, e.g. a Jetson's own CPU outside the container, or a laptop.
+numpy
+mujoco==3.8.1
+PyOpenGL==3.1.10
