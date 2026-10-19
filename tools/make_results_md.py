@@ -39,6 +39,7 @@ w("One `policy.get_action()` on one recorded frame of NVIDIA's simulated GR1 Pic
   "(eager, hybrid, full, hybrid, full, eager; 20 timed calls after 5 warm-up per block) so session drift cancels; two independent "
   "engine builds per board. *Hybrid* = only ViT, LLM and DiT as TensorRT engines, the rest PyTorch eager. *Full TensorRT* = NVIDIA's own "
   "N1.5 deployment path (`deployment_scripts/trt_model_forward`), all 7 modules as engines.\n")
+w("**Camera capture is not included.** Every policy rate in this repo starts from the camera image already in memory: sensor exposure and readout, the CSI transfer, the ISP (debayer, dewarp, scaling) and the DMA and driver hand-off into memory (V4L2 / Argus) come before that and are not timed; everything after it (resize and normalise, tokenising, the copy to the GPU on the RTX 5090, the model, post-processing) is. On a robot the camera runs on its own hardware alongside the policy, so it mostly makes the image older by the time the robot acts (typically up to one frame period, 33 ms at 30 fps, plus readout and ISP; an estimate, no camera was attached) rather than lowering the decision rate, unless capture and decision run one after the other.\n")
 w("| Board | TensorRT | Engines alone, ViT+LLM+4×DiT (DERIVED) | Eager | Hybrid | **Full TensorRT** | Full vs hybrid | Host + glue, full |")
 w("|---|---|---|---|---|---|---|---|")
 for b, _ in BOARDS:
@@ -415,7 +416,7 @@ def rng2(v): a, b = f"{hu(min(v), 2)}", f"{hu(max(v), 2)}"; return a if a == b e
 w("## 9. GR00T as a drone's flight brain (MEASURED, 2026-10-14 / 2026-10-15)\n")
 w("Same brain, new body: GR00T N1.5's frozen vision-language backbone (camera image + instruction in) with a small action head "
   "trained to fly a simulated quadrotor to a named pillar (16 velocity setpoints per decision, 20 ms apart). No diffusion transformer: "
-  "the head replaces GR00T's action head. One decision = raw camera frame + prompt + drone state in, setpoints out, host work included "
+  "the head replaces GR00T's action head. One decision = raw camera frame (already in memory; camera capture is not included, see §1) + prompt + drone state in, setpoints out, host work included "
   "(*full cost*). Method, scripts and how to run it: [drone/README.md](drone/README.md). Every number below is rebuilt from "
   "`results/drone/raw/` by `drone/make_drone_table.py`; setup, software and caveats: `results/drone/drone_setup_2026-10-15.json`.\n")
 w(f"**Target.** {DS_['targets']['decision_rate_target_hz']} decisions per second (Hz) is our design choice, not a standard: {DS_['targets']['why']}\n")
@@ -604,7 +605,7 @@ for b in ("rtx5090", "thor", "orin"):
     H3.append(f"| {DB[b]} | {hu(h['full_cost_ms'], 2)} ms = **{hu(h['full_cost_hz'], 1)} Hz**{pin} | {h['gate']} ({hu(h['gate_sigma'], 3)}σ) "
               f"| {h['reach_lockstep_K4']}/40 · {h['reach_backtoback']}/40 | **{hu(h['scan_hz'], 2)} Hz** ({hu(h['scan_pct_of_solo'], 0)}% of its {hu(h['scan_solo_hz'], 1)} Hz alone in that run) |")
 H3.append("")
-H3.append("MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame + prompt + drone state in, setpoints out, host work included (TensorRT fp16). "
+H3.append("MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame (already in memory; camera capture is not included, see the [FAQ](#faq-aka-the-fine-print)) + prompt + drone state in, setpoints out, host work included (TensorRT fp16). "
           "*Same decisions*: on 256 frames, the setpoints each machine would fly deviate from the RTX 5090 running the policy in plain "
           "PyTorch by 0.026–0.029σ (RMS over all frames; limit 0.07σ; σ = the spread of each setpoint in the training data). "
           "The RTX 5090's rate during the burst is against its own run alone, which was slower than 139.7 Hz because its hybrid CPU "

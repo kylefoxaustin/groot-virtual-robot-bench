@@ -42,7 +42,7 @@ IQ-9075: reproduction scripts in [drone/iq9/](drone/iq9/README.md), no results p
 | Jetson AGX Thor | 24.49 ms = **40.8 Hz** | PASS (0.026σ) | 34/40 · 35/40 | **18.15 Hz** (44% of its 41.1 Hz alone in that run) |
 | Jetson AGX Orin 64 GB | 44.94 ms = **22.3 Hz** | PASS (0.029σ) | 35/40 · 36/40 | **11.96 Hz** (54% of its 22.2 Hz alone in that run) |
 
-MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame + prompt + drone state in, setpoints out, host work included (TensorRT fp16). *Same decisions*: on 256 frames, the setpoints each machine would fly deviate from the RTX 5090 running the policy in plain PyTorch by 0.026–0.029σ (RMS over all frames; limit 0.07σ; σ = the spread of each setpoint in the training data). The RTX 5090's rate during the burst is against its own run alone, which was slower than 139.7 Hz because its hybrid CPU moved the process to efficiency cores; pinned to performance cores it ran 147.3 Hz alone and 86.0 Hz (58%) during the burst. *Lockstep*: the simulator pauses while the policy decides. *Back-to-back*: the drone keeps flying while the next decision is computed, so each new plan lands as late as the decision took (Thor and Orin measured; the RTX 5090's 7.2 ms applied as one injected 20 ms tick). In this simulator reach hardly depends on speed, and no machine differs from the RTX 5090 at p < 0.05; 40 flights rule out only a large drop.
+MEASURED in simulation (percentages and p-values DERIVED). *Full cost*: camera frame (already in memory; camera capture is not included, see the [FAQ](#faq-aka-the-fine-print)) + prompt + drone state in, setpoints out, host work included (TensorRT fp16). *Same decisions*: on 256 frames, the setpoints each machine would fly deviate from the RTX 5090 running the policy in plain PyTorch by 0.026–0.029σ (RMS over all frames; limit 0.07σ; σ = the spread of each setpoint in the training data). The RTX 5090's rate during the burst is against its own run alone, which was slower than 139.7 Hz because its hybrid CPU moved the process to efficiency cores; pinned to performance cores it ran 147.3 Hz alone and 86.0 Hz (58%) during the burst. *Lockstep*: the simulator pauses while the policy decides. *Back-to-back*: the drone keeps flying while the next decision is computed, so each new plan lands as late as the decision took (Thor and Orin measured; the RTX 5090's 7.2 ms applied as one injected 20 ms tick). In this simulator reach hardly depends on speed, and no machine differs from the RTX 5090 at p < 0.05; 40 flights rule out only a large drop.
 
 **Speed is the difference.** Against our 30 Hz target (a design choice; on the full-cost rates any target from 23 to 40 Hz gives the same verdict; serving the closed loop, Thor ran at 39.2 Hz), the RTX 5090 and Thor keep up alone and Orin does not; during the inspection burst only the RTX 5090 does. The RTX 5090 is a desktop reference, not a drone computer. Both extra loads are stress cases: real drones usually run 50 MP inspection on a payload computer or after the flight, and a 3B vision-language-action model is far heavier than the navigation networks production drones fly. [RESULTS.md §9](RESULTS.md#9-gr00t-as-a-drones-flight-brain-measured-2026-10-14--2026-10-15)
 <!-- drone:end -->
@@ -120,7 +120,7 @@ the RoboCasa post-trained model on the milk task.
 
 ## Words we use
 
-- **Policy call**: one full decision -- image + instruction in, action chunk out. Our speed numbers time exactly this.
+- **Policy call**: one full decision -- image (already in memory) + instruction in, action chunk out. Our speed numbers time exactly this; camera capture is not included ([FAQ](#faq-aka-the-fine-print)).
 - **ViT / LLM / DiT**: GR00T's three big parts -- the vision encoder (camera image to tokens), the language model, and
   the diffusion transformer that plans the action chunk (run once per denoise step). Four small modules glue them together.
 - **Eager / hybrid / full TensorRT**: plain PyTorch; only ViT, LLM and DiT compiled with TensorRT; all 7 modules
@@ -175,7 +175,9 @@ quality*, not whether a board keeps up with a real arm.
 
 **Why "whole policy call" and not engine benchmarks?** Engines timed alone and added up overstate the rate a robot sees:
 by about a third even on NVIDIA's full TensorRT path. We report the whole call (image + instruction in, action chunk out),
-with host-side work included. Camera capture and robot I/O are still extra.
+with host-side work included. Robot I/O is extra.
+
+**Camera capture is not included.** Every policy rate in this repo starts from the camera image already in memory: sensor exposure and readout, the CSI transfer, the ISP (debayer, dewarp, scaling) and the DMA and driver hand-off into memory (V4L2 / Argus) come before that and are not timed; everything after it (resize and normalise, tokenising, the copy to the GPU on the RTX 5090, the model, post-processing) is. On a robot the camera runs on its own hardware alongside the policy, so it mostly makes the image older by the time the robot acts (typically up to one frame period, 33 ms at 30 fps, plus readout and ISP; an estimate, no camera was attached) rather than lowering the decision rate, unless capture and decision run one after the other.
 
 **Where are the IQ-9075 numbers?** Not published here -- only the scripts. If you measure it, note that the resident NPU
 loop reads pre-transformed inputs, so image/text preprocessing is not in its time while the GPU times include it.
